@@ -47,6 +47,16 @@ spring:
     password: horrorpond
 
 ---
+# 운영. DB 접속 정보와 비밀값은 환경변수로만 받는다(SPRING_DATASOURCE_URL/USERNAME/PASSWORD, ADMIN_API_KEY).
+spring:
+  config:
+    activate:
+      on-profile: prod
+server:
+  # Caddy(리버스 프록시) 뒤에서 X-Forwarded-* 헤더를 신뢰한다
+  forward-headers-strategy: framework
+
+---
 spring:
   config:
     activate:

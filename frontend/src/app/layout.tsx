@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import Link from "next/link";
+import { SITE_INDEXING } from "@/lib/site";
 import "./globals.css";
 
 const notoSansKr = Noto_Sans_KR({
@@ -19,6 +20,8 @@ export const metadata: Metadata = {
     template: `%s | ${SITE_NAME}`,
   },
   description: "큐레이터가 직접 플레이하고 선별한 공포게임만 소개합니다.",
+  // 비공개 운영 중에는 모든 페이지를 noindex (lib/site)
+  ...(SITE_INDEXING ? {} : { robots: { index: false, follow: false } }),
 };
 
 const NAV = [

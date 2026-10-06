@@ -1,0 +1,25 @@
+# API_DOMAIN 예: 152.70.0.1.sslip.io (도메인이 생기면 api.example.com). ":80"이면 HTTPS 없이 로컬 테스트용.
+# 도메인 주소면 Caddy가 Let's Encrypt 인증서를 자동으로 발급·갱신한다.
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	# actuator는 상태 확인(health)만 외부에 연다
+	@internal {
+		path /actuator/*
+		not path /actuator/health /actuator/health/*
+	}
+	respond @internal 404
+
+	# 무중단 배포: blue/green 중 readiness가 UP인 쪽으로만 보낸다(first = 앞쪽 우선).
+	# 배포 중 이전 버전이 종료되면 연결 실패를 다른 슬롯으로 재시도한다.
+	reverse_proxy app-blue:8080 app-green:8080 {
+		lb_policy first
+		lb_try_duration 15s
+		lb_try_interval 250ms
+
+		health_uri /actuator/health/readiness
+		health_interval 2s
+		health_timeout 2s
+		fail_duration 10s
+	}
+}

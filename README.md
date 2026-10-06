@@ -119,12 +119,18 @@ npm run dev                  # http://localhost:3000
 - 공개·숨김·글 수정은 공개 사이트에 **바로 반영**됩니다. 서버 액션에서 `updateTag("games")`로 게임 데이터 캐시를 즉시 만료시키기 때문입니다(공개 전에 404로 캐시된 상세 페이지 포함).
 - 관리자 키는 httpOnly·SameSite=Strict 쿠키(`/admin` 경로)에만 저장하고, 백엔드 호출은 서버에서만 합니다. 키 검증은 백엔드가 매 요청마다 합니다. 회원 시스템 전까지의 임시 방식입니다.
 
+## 배포
+
+서버 1대(Docker Compose: PostgreSQL, Caddy, Spring Boot blue/green) + Vercel. `main`에 push하면 GitHub Actions가 전체 테스트 후 무중단 배포합니다. 서버 준비부터 운영(롤백, 백업)까지는 [deploy/README.md](deploy/README.md)를 참고하세요.
+
 ## 프로젝트 구조
 
 ```
 .
 ├── CLAUDE.md            # 아키텍처 결정 및 코드 규칙
 ├── docker-compose.yml   # PostgreSQL 16
+├── deploy/              # 운영 서버 구성 (Compose, Caddy, 무중단 배포/롤백/백업 스크립트)
+├── .github/workflows/   # CI(테스트·빌드) + main 배포
 ├── http/                # IntelliJ HTTP Client 예시 요청 (관리자 큐레이션)
 ├── frontend/            # Next.js 공개 사이트 (src/app, src/components, src/lib)
 └── backend/
