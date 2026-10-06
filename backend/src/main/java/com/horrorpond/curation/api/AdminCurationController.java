@@ -3,6 +3,7 @@ package com.horrorpond.curation.api;
 import com.horrorpond.catalog.domain.GameStatus;
 import com.horrorpond.common.web.PageResponse;
 import com.horrorpond.curation.application.AdminArticleResponse;
+import com.horrorpond.curation.application.AdminGameDetailResponse;
 import com.horrorpond.curation.application.AdminGameResponse;
 import com.horrorpond.curation.application.CurationService;
 import com.horrorpond.curation.application.PublishingService;
@@ -47,6 +48,11 @@ public class AdminCurationController {
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
         return PageResponse.from(curationService.search(status, q, PageRequest.of(page, size)));
+    }
+
+    @GetMapping("/{id}")
+    public AdminGameDetailResponse detail(@PathVariable Long id) {
+        return curationService.getDetail(id);
     }
 
     @PutMapping("/{id}/curation")

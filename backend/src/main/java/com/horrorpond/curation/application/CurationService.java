@@ -43,6 +43,12 @@ public class CurationService {
         return adminGameQueryRepository.search(status, titleQuery, pageable).map(AdminGameResponse::from);
     }
 
+    @Transactional(readOnly = true)
+    public AdminGameDetailResponse getDetail(Long gameId) {
+        Game game = findGame(gameId);
+        return AdminGameDetailResponse.of(game, articleRepository.findByGameId(gameId).orElse(null));
+    }
+
     /**
      * @param coop null이면 변경하지 않는다. STEAM 게임의 coop은 Steam 데이터가 소유하므로 지정하면 400.
      */
