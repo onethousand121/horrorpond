@@ -20,7 +20,7 @@ Steam 데이터를 자동으로 수집하지만, **큐레이터가 검증하고 
 | DB | PostgreSQL 16, Flyway |
 | 수집/스케줄링 | RestClient, Spring Framework 7 `@Retryable`, ShedLock |
 | 테스트 | JUnit 5, Testcontainers (PostgreSQL) |
-| Frontend | Next.js App Router, ISR (예정) |
+| Frontend | Next.js 16 App Router, ISR, Tailwind CSS, hls.js |
 
 ## 아키텍처
 
@@ -90,12 +90,29 @@ curl http://localhost:8080/actuator/health
 
 비밀값(Steam API Key, Admin Key 등)은 환경변수로만 주입합니다.
 
+## 프론트엔드 실행
+
+**요구 사항**: Node.js 20 이상, 백엔드 실행 중 (위 "로컬 실행")
+
+```bash
+cd frontend
+cp .env.example .env.local   # API_BASE_URL, SITE_URL (서버 전용 환경변수)
+npm install
+npm run dev                  # http://localhost:3000
+```
+
+- 백엔드는 서버 컴포넌트에서만 호출합니다. 환경변수에 `NEXT_PUBLIC_` 접두사를 쓰지 않아 브라우저 번들에 노출되지 않습니다.
+- 캐시: Cache Components를 쓰지 않는 방식(fetch `next.revalidate`/`next.tags` + 세그먼트 `revalidate = 3600`)입니다. 없는 게임/장르는 실제 404 상태 코드를 돌려줍니다.
+- `npm run build`는 홈·장르·협동 페이지를 빌드 시점에 생성하므로 **백엔드가 떠 있어야** 합니다. 게임 상세(`/games/[slug]`)는 첫 방문 때 생성됩니다.
+
 ## 프로젝트 구조
 
 ```
 .
 ├── CLAUDE.md            # 아키텍처 결정 및 코드 규칙
 ├── docker-compose.yml   # PostgreSQL 16
+├── http/                # IntelliJ HTTP Client 예시 요청 (관리자 큐레이션)
+├── frontend/            # Next.js 공개 사이트 (src/app, src/components, src/lib)
 └── backend/
     └── src/main/java/com/horrorpond/
         ├── catalog/     # 게임, 장르, 개발사
