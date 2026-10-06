@@ -10,7 +10,9 @@
         → raw_snapshot(JSONB) 저장 → normalize(별도 단계, 재실행 가능)
 - 트리거: @Scheduled 일 1회 + POST /api/admin/ingestion/run (X-Admin-Key)
 - 동시성: ShedLock(JDBC provider)
-- 외부 HTTP: RestClient + Resilience4j RateLimiter/Retry
+- 외부 HTTP: RestClient + Spring Framework 7 @Retryable.
+  Steam 호출은 단일 스레드 순차 실행 + 1.5s 고정 간격으로 제어
+  (rate limiter 라이브러리 미사용). 429는 클라이언트에서 명시적으로 60s 대기
 - 게임 소스: STEAM | ITCH | MANUAL, 외부 ID nullable
 
 [Security Rules]
