@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Pagination } from "@/components/Pagination";
 import { searchAdminGames } from "@/lib/admin/api";
@@ -45,6 +47,8 @@ function steamUrl(externalId: string): string {
   return `https://store.steampowered.com/app/${externalId}`;
 }
 
+export const metadata: Metadata = { title: "큐레이션 관리" };
+
 export default async function AdminGamesPage({ searchParams }: PageProps<"/admin">) {
   const params = await searchParams;
   const tab = parseTab(single(params.tab));
@@ -91,6 +95,12 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
         <ul className="divide-y divide-border rounded border border-border">
           {result.content.map((game) => (
             <li key={game.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+              {/* 같은 제목의 원작/리마스터, 본편/체험판은 대표 이미지로 구분하는 경우가 많다 */}
+              <div className="hidden h-[56px] w-[120px] shrink-0 overflow-hidden rounded border border-border bg-background sm:block">
+                {game.headerImageUrl && (
+                  <Image src={game.headerImageUrl} alt="" width={120} height={56} className="h-full w-full object-cover" />
+                )}
+              </div>
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <Link href={`/admin/games/${game.id}`} className="font-medium hover:text-accent">

@@ -20,6 +20,7 @@ export interface AdminGame {
   externalId: string | null;
   slug: string;
   title: string;
+  headerImageUrl: string | null;
   /** yyyy-MM-dd */
   releaseDate: string | null;
   coop: boolean;

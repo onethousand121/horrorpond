@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -10,10 +11,21 @@ import { ArticleForm } from "../../components/ArticleForm";
 import { CurationForm } from "../../components/CurationForm";
 import { ArticleStatusBadge, GameStatusBadge } from "../../components/StatusBadge";
 
+function parseId(id: string): number | null {
+  const gameId = Number(id);
+  return Number.isInteger(gameId) && gameId > 0 ? gameId : null;
+}
+
+export async function generateMetadata({ params }: PageProps<"/admin/games/[id]">): Promise<Metadata> {
+  const gameId = parseId((await params).id);
+  const game = gameId === null ? null : await getAdminGame(gameId);
+  return { title: game ? `편집: ${game.title}` : "게임 편집" };
+}
+
 export default async function AdminGameEditPage({ params }: PageProps<"/admin/games/[id]">) {
   const { id } = await params;
-  const gameId = Number(id);
-  if (!Number.isInteger(gameId) || gameId <= 0) notFound();
+  const gameId = parseId(id);
+  if (gameId === null) notFound();
   const [game, genres] = await Promise.all([getAdminGame(gameId), getGenres()]);
   if (!game) notFound();
 
@@ -38,6 +50,7 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
             alt=""
             width={460}
             height={215}
+            preload
             className="w-full rounded border border-border sm:w-72"
           />
         )}

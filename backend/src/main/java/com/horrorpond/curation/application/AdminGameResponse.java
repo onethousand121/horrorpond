@@ -15,6 +15,7 @@ public record AdminGameResponse(
         String externalId,
         String slug,
         String title,
+        String headerImageUrl,
         LocalDate releaseDate,
         boolean coop,
         GameStatus status,
@@ -25,7 +26,7 @@ public record AdminGameResponse(
 ) {
 
     static AdminGameResponse from(AdminGameRow row) {
-        return new AdminGameResponse(row.id(), row.source(), row.externalId(), row.slug(), row.title(),
+        return new AdminGameResponse(row.id(), row.source(), row.externalId(), row.slug(), row.title(), row.headerImageUrl(),
                 row.releaseDate(), row.coop(), row.status(), row.articleStatus() != null, row.articleStatus(),
                 row.sameTitleCount());
     }
@@ -33,7 +34,7 @@ public record AdminGameResponse(
     static AdminGameResponse of(Game game, CurationArticle article) {
         ArticleStatus articleStatus = article == null ? null : article.getStatus();
         return new AdminGameResponse(game.getId(), game.getSource(), game.getExternalId(), game.getSlug(),
-                game.getTitle(), game.getReleaseDate(), game.isCoop(), game.getStatus(),
+                game.getTitle(), game.getHeaderImageUrl(), game.getReleaseDate(), game.isCoop(), game.getStatus(),
                 article != null, articleStatus, 0);
     }
 }

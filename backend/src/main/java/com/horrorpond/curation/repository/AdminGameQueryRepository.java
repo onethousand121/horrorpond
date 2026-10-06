@@ -43,7 +43,7 @@ public class AdminGameQueryRepository {
         }
         List<AdminGameRow> rows = queryFactory
                 .select(Projections.constructor(AdminGameRow.class,
-                        game.id, game.source, game.externalId, game.slug, game.title, game.releaseDate,
+                        game.id, game.source, game.externalId, game.slug, game.title, game.headerImageUrl, game.releaseDate,
                         game.coop, game.status, article.status,
                         JPAExpressions.select(sameTitle.count())
                                 .from(sameTitle)
@@ -68,6 +68,7 @@ public class AdminGameQueryRepository {
             String externalId,
             String slug,
             String title,
+            String headerImageUrl,
             LocalDate releaseDate,
             boolean coop,
             GameStatus status,

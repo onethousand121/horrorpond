@@ -67,6 +67,7 @@ class AdminCurationApiTest {
                 .andExpect(jsonPath("$.content[0].id").value(id))
                 .andExpect(jsonPath("$.content[0].source").value("STEAM"))
                 .andExpect(jsonPath("$.content[0].externalId").value("739630"))
+                .andExpect(jsonPath("$.content[0].headerImageUrl").value("https://img/739630"))
                 .andExpect(jsonPath("$.content[0].hasArticle").value(false))
                 .andExpect(jsonPath("$.content[0].articleStatus").doesNotExist());
 
