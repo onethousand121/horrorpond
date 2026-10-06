@@ -30,6 +30,14 @@ public record SteamGameData(
         developers = developers == null ? List.of() : List.copyOf(new LinkedHashSet<>(developers));
     }
 
+    /**
+     * ingestion이 개발사 엔티티를 조회/생성한 뒤 크레딧을 채워 넣을 때 쓴다.
+     */
+    public SteamGameData withDevelopers(List<Credit> credits) {
+        return new SteamGameData(title, shortDescription, headerImageUrl, releaseDate, releaseDateText,
+                comingSoon, media, credits);
+    }
+
     public record Media(MediaType type, String url, String thumbnailUrl) {
 
         public Media {

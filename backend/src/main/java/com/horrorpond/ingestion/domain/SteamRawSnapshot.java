@@ -72,6 +72,13 @@ public class SteamRawSnapshot implements Persistable<Integer> {
         this.fetchedAt = Objects.requireNonNull(now, "now");
     }
 
+    /**
+     * payload가 바뀌지 않았을 때 조회 시각만 갱신한다.
+     */
+    public void refreshFetchedAt(Instant now) {
+        this.fetchedAt = Objects.requireNonNull(now, "now");
+    }
+
     public void markNormalized() {
         this.normalizedHash = payloadHash;
     }

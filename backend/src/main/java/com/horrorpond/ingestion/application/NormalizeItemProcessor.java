@@ -1,0 +1,76 @@
+package com.horrorpond.ingestion.application;
+
+import com.horrorpond.catalog.domain.Developer;
+import com.horrorpond.catalog.domain.DeveloperRole;
+import com.horrorpond.catalog.domain.Game;
+import com.horrorpond.catalog.domain.GameSource;
+import com.horrorpond.catalog.domain.SteamGameData;
+import com.horrorpond.catalog.repository.DeveloperRepository;
+import com.horrorpond.catalog.repository.GameRepository;
+import com.horrorpond.common.util.SlugGenerator;
+import com.horrorpond.ingestion.domain.SteamRawSnapshot;
+import com.horrorpond.ingestion.repository.SteamRawSnapshotRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Predicate;
+
+/**
+ * 스냅샷 1건을 1트랜잭션으로 Game에 반영한다. catalog 서비스가 아니라 Repository만 사용한다.
+ */
+@Component
+@RequiredArgsConstructor
+public class NormalizeItemProcessor {
+
+    private static final String DEVELOPER_SLUG_FALLBACK = "developer";
+
+    private final SteamRawSnapshotRepository snapshotRepository;
+    private final GameRepository gameRepository;
+    private final DeveloperRepository developerRepository;
+    private final SteamAppDetailsParser parser;
+
+    @Transactional
+    public void process(int appid) {
+        SteamRawSnapshot snapshot = snapshotRepository.findById(appid).orElseThrow();
+        ParsedSteamApp parsed = parser.parse(snapshot.getPayload());
+        if (parsed.isGame()) {
+            SteamGameData data = parsed.data();
+            Game game = gameRepository.findBySourceAndExternalId(GameSource.STEAM, String.valueOf(appid))
+                    .orElseGet(() -> gameRepository.save(Game.candidateFromSteam(appid, data.title(),
+                            uniqueSlug(SlugGenerator.forSteamCandidate(data.title(), appid),
+                                    gameRepository::existsBySlug))));
+            game.applySteamData(data.withDevelopers(credits(parsed)));
+        }
+        snapshot.markNormalized();
+    }
+
+    private List<SteamGameData.Credit> credits(ParsedSteamApp parsed) {
+        List<SteamGameData.Credit> credits = new ArrayList<>();
+        parsed.developerNames().forEach(name ->
+                credits.add(new SteamGameData.Credit(findOrCreateDeveloper(name), DeveloperRole.DEVELOPER)));
+        parsed.publisherNames().forEach(name ->
+                credits.add(new SteamGameData.Credit(findOrCreateDeveloper(name), DeveloperRole.PUBLISHER)));
+        return credits;
+    }
+
+    private Developer findOrCreateDeveloper(String name) {
+        return developerRepository.findByName(name)
+                .orElseGet(() -> developerRepository.save(Developer.create(name,
+                        uniqueSlug(SlugGenerator.slugify(name, DEVELOPER_SLUG_FALLBACK),
+                                developerRepository::existsBySlug))));
+    }
+
+    /**
+     * 이미 쓰인 slug면 "-2", "-3"... 접미사를 붙인다.
+     */
+    static String uniqueSlug(String base, Predicate<String> exists) {
+        String candidate = base;
+        for (int suffix = 2; exists.test(candidate); suffix++) {
+            candidate = base + "-" + suffix;
+        }
+        return candidate;
+    }
+}

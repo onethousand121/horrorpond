@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 
 /**
  * 제목을 URL slug(소문자 영숫자 + 하이픈)로 변환한다.
- * 영문/숫자 외 문자는 제거하고, 결과가 비면 "game"을 쓴다.
+ * 영문/숫자 외 문자는 제거하고, 결과가 비면 fallback(기본 "game")을 쓴다.
  */
 public final class SlugGenerator {
 
@@ -22,10 +22,17 @@ public final class SlugGenerator {
     }
 
     public static String slugify(String title) {
-        if (title == null) {
-            return FALLBACK;
+        return slugify(title, FALLBACK);
+    }
+
+    /**
+     * @param fallback 변환 결과가 비었을 때 쓸 값 (예: 개발사는 "developer")
+     */
+    public static String slugify(String text, String fallback) {
+        if (text == null) {
+            return fallback;
         }
-        String s = Normalizer.normalize(title, Normalizer.Form.NFKD);
+        String s = Normalizer.normalize(text, Normalizer.Form.NFKD);
         s = DIACRITICS.matcher(s).replaceAll("");
         s = s.toLowerCase(Locale.ROOT);
         s = APOSTROPHES.matcher(s).replaceAll("");
@@ -34,7 +41,7 @@ public final class SlugGenerator {
         if (s.length() > MAX_LENGTH) {
             s = EDGE_HYPHENS.matcher(s.substring(0, MAX_LENGTH)).replaceAll("");
         }
-        return s.isEmpty() ? FALLBACK : s;
+        return s.isEmpty() ? fallback : s;
     }
 
     /**

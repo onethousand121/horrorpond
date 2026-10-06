@@ -8,4 +8,6 @@ import java.util.Optional;
 public interface DeveloperRepository extends JpaRepository<Developer, Long> {
 
     Optional<Developer> findByName(String name);
+
+    boolean existsBySlug(String slug);
 }
