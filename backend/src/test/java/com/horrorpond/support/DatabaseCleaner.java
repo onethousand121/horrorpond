@@ -11,14 +11,20 @@ public final class DatabaseCleaner {
     }
 
     /**
+     * V3에서 시드한 장르는 마이그레이션 데이터이므로 남긴다.
+     */
+    static final String SEEDED_GENRE_SLUGS = "'psychological', 'survival', 'occult', 'analog', 'cosmic'";
+
+    /**
      * shedlock 행은 지우지 않고 락만 푼다. ShedLock은 한 번 만든 락 행을 기억해 이후 UPDATE만 하므로,
      * 행을 지우면 같은 컨텍스트에서 다시는 락을 잡지 못한다.
      */
     public static void clean(JdbcTemplate jdbc) {
         jdbc.execute("""
                 TRUNCATE game_genre, game_developer, game_media, store_link, curation_article,
-                         game, developer, genre, steam_app_seed, steam_raw_snapshot, ingestion_job
+                         game, developer, steam_app_seed, steam_raw_snapshot, ingestion_job
                 RESTART IDENTITY CASCADE""");
+        jdbc.update("DELETE FROM genre WHERE slug NOT IN (" + SEEDED_GENRE_SLUGS + ")");
         jdbc.update("UPDATE shedlock SET lock_until = locked_at");
     }
 }

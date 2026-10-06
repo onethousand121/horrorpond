@@ -39,18 +39,32 @@ class CatalogMappingTest {
     EntityManager em;
 
     @Test
+    void seededGenresFromV3InDisplayOrder() {
+        assertThat(genreRepository.findAllByOrderByDisplayOrderAsc())
+                .extracting(Genre::getSlug, Genre::getName, Genre::getDisplayOrder)
+                .containsExactly(
+                        tuple("psychological", "심리 공포", 1),
+                        tuple("survival", "서바이벌 호러", 2),
+                        tuple("occult", "오컬트", 3),
+                        tuple("analog", "아날로그 호러", 4),
+                        tuple("cosmic", "코스믹 호러", 5));
+        assertThat(genreRepository.findBySlug("occult").orElseThrow().getDescription())
+                .isEqualTo("귀신, 민속, 종교적 공포");
+    }
+
+    @Test
     void genreRoundTrip() {
-        genreRepository.save(Genre.create("Survival", "survival", null, 2));
-        genreRepository.save(Genre.create("Psychological", "psychological", "mind games", 1));
+        genreRepository.save(Genre.create("Test B", "test-b", null, 102));
+        genreRepository.save(Genre.create("Test A", "test-a", "mind games", 101));
         flushAndClear();
 
-        Genre found = genreRepository.findBySlug("psychological").orElseThrow();
-        assertThat(found.getName()).isEqualTo("Psychological");
+        Genre found = genreRepository.findBySlug("test-a").orElseThrow();
+        assertThat(found.getName()).isEqualTo("Test A");
         assertThat(found.getDescription()).isEqualTo("mind games");
         assertThat(found.getCreatedAt()).isNotNull();
         assertThat(found.getUpdatedAt()).isNotNull();
         assertThat(genreRepository.findAllByOrderByDisplayOrderAsc())
-                .extracting(Genre::getSlug).containsExactly("psychological", "survival");
+                .extracting(Genre::getSlug).endsWith("test-a", "test-b");
     }
 
     @Test
@@ -67,7 +81,7 @@ class CatalogMappingTest {
 
     @Test
     void gameAggregateRoundTrip() {
-        Genre genre = genreRepository.save(Genre.create("Psychological", "psychological", null, 0));
+        Genre genre = genreRepository.findBySlug("psychological").orElseThrow();
         Developer dev = developerRepository.save(Developer.create("Red Barrels", "red-barrels"));
 
         Game game = Game.candidateFromSteam(238320, "Outlast", "outlast-238320");
