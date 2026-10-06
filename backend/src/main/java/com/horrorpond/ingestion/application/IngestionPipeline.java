@@ -1,0 +1,49 @@
+package com.horrorpond.ingestion.application;
+
+import com.horrorpond.ingestion.domain.JobType;
+import com.horrorpond.ingestion.domain.TriggerType;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.time.Duration;
+import java.util.Collection;
+import java.util.List;
+
+/**
+ * 수집 단계를 discovery → enrichment → normalize 순서로 실행한다.
+ * 앞 단계가 실패해도 다음 단계는 진행한다 (각 단계는 자기 job에 결과를 남긴다).
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class IngestionPipeline {
+
+    public static final String LOCK_NAME = "steam-ingestion";
+    public static final Duration LOCK_AT_MOST_FOR = Duration.ofHours(2);
+    public static final List<JobType> ALL_STEPS = List.of(JobType.DISCOVERY, JobType.ENRICHMENT, JobType.NORMALIZE);
+
+    private final DiscoveryService discoveryService;
+    private final EnrichmentService enrichmentService;
+    private final NormalizeService normalizeService;
+
+    /**
+     * 요청 순서와 무관하게 정해진 단계 순서로, 중복 없이 실행한다.
+     */
+    public void runSteps(Collection<JobType> steps, TriggerType trigger) {
+        for (JobType step : ALL_STEPS) {
+            if (!steps.contains(step)) {
+                continue;
+            }
+            try {
+                switch (step) {
+                    case DISCOVERY -> discoveryService.run(trigger);
+                    case ENRICHMENT -> enrichmentService.run(trigger);
+                    case NORMALIZE -> normalizeService.run(trigger);
+                }
+            } catch (RuntimeException e) {
+                log.error("Ingestion step {} failed unexpectedly; continuing with next step", step, e);
+            }
+        }
+    }
+}

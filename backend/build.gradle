@@ -34,7 +34,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-aspectj'
 
     // DB / migration (Boot 4: Flyway 자동 구성은 spring-boot-starter-flyway 필요)
     runtimeOnly 'org.postgresql:postgresql'
