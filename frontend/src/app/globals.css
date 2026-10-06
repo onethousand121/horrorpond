@@ -1,28 +1,39 @@
 @import "tailwindcss";
 
-/* 다크 테마 기본. 디자인은 최소한으로 두고 나중에 다듬는다. */
+/*
+ * "깊은 연못" 테마: 탁한 물빛의 녹흑색 바탕 + 개구리 눈처럼 빛나는 라임 포인트.
+ * 빨강(danger)은 경고·피 같은 의미에만 아껴 쓴다.
+ */
 :root {
-  --background: #0b0b0d;
-  --surface: #151518;
-  --border: #26262b;
-  --foreground: #e8e8ea;
-  --muted: #9a9aa3;
-  --accent: #d64545;
+  --background: #070b0a;
+  --surface: #0e1513;
+  --surface-2: #142019;
+  --border: #1e2b26;
+  --foreground: #e4ebe7;
+  --muted: #8a9a94;
+  --accent: #b8f24a;
+  --accent-ink: #0b1205;
+  --danger: #e0444a;
   color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-border: var(--border);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-danger: var(--danger);
   --font-sans: var(--font-noto-sans-kr), system-ui, sans-serif;
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(1200px 500px at 50% -200px, rgba(184, 242, 74, 0.06), transparent 70%),
+    var(--background);
   color: var(--foreground);
 }
 

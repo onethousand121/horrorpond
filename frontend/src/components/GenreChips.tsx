@@ -13,8 +13,8 @@ export function GenreChips({ genres, activeSlug }: { genres: Genre[]; activeSlug
             aria-current={active ? "page" : undefined}
             className={`rounded-full border px-3 py-1 text-sm ${
               active
-                ? "border-accent bg-accent/15 text-foreground"
-                : "border-border text-muted hover:border-foreground/40 hover:text-foreground"
+                ? "border-accent bg-accent text-accent-ink font-medium"
+                : "border-border bg-surface/60 text-muted hover:border-accent/50 hover:text-foreground"
             }`}
           >
             {genre.name}

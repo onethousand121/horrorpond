@@ -8,12 +8,10 @@ export function HighlightList({ items, compact = false }: { items: string[]; com
 
   if (compact) {
     return (
-      <ul className="space-y-0.5 text-xs text-foreground/90">
+      <ul className="space-y-1 text-[13px] text-foreground/90">
         {items.map((item) => (
-          <li key={item} className="flex gap-1.5">
-            <span className="text-accent" aria-hidden>
-              ▸
-            </span>
+          <li key={item} className="flex gap-2">
+            <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
             {item}
           </li>
         ))}
@@ -22,13 +20,13 @@ export function HighlightList({ items, compact = false }: { items: string[]; com
   }
 
   return (
-    <section aria-label="장점 포인트" className="rounded-lg border border-accent/40 bg-accent/10 p-5">
-      <h2 className="mb-3 text-sm font-bold text-accent">이 게임의 장점</h2>
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {items.map((item) => (
-          <li key={item} className="flex gap-2 text-base font-medium">
-            <span className="text-accent" aria-hidden>
-              ✦
+    <section aria-label="장점 포인트" className="rounded-xl border border-accent/25 bg-accent/[0.06] p-5">
+      <h2 className="mb-3 text-xs font-bold tracking-widest text-accent">이 게임을 해야 하는 이유</h2>
+      <ul className="space-y-2.5">
+        {items.map((item, i) => (
+          <li key={item} className="flex items-baseline gap-3 text-base font-medium">
+            <span className="w-5 shrink-0 text-sm font-bold text-accent tabular-nums" aria-hidden>
+              {String(i + 1).padStart(2, "0")}
             </span>
             {item}
           </li>

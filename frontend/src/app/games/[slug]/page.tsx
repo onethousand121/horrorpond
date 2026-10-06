@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { CoopBadge, GenreBadge } from "@/components/Badges";
+import { CuratorNote } from "@/components/CuratorNote";
 import { HighlightList } from "@/components/HighlightList";
 import { Markdown } from "@/components/Markdown";
 import { MediaGallery } from "@/components/MediaGallery";
@@ -47,88 +48,98 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[slug
   const releaseDate = formatReleaseDate(game);
   const steamLink = game.storeLinks.find((link) => link.store === "STEAM");
 
+  // 같은 그림이 두 번 보이지 않게: 헤더 이미지(상단 히어로)와 첫 스크린샷(갤러리 큰 화면)을 피해 포스터를 고른다
+  const trailerPoster = (screenshots[1] ?? screenshots[0])?.url ?? game.headerImageUrl;
+
   return (
-    <article className="mx-auto max-w-4xl space-y-8">
-      {game.headerImageUrl && (
-        <div className="relative aspect-[460/215] overflow-hidden rounded-lg bg-surface">
-          <Image
-            src={game.headerImageUrl}
-            alt=""
-            fill
-            priority
-            sizes="(min-width: 896px) 896px, 100vw"
-            className="object-cover"
-          />
+    <article className="space-y-10">
+      <header className="relative -mx-4 overflow-hidden sm:mx-0 sm:rounded-2xl">
+        <div className="relative aspect-[460/215] max-h-[420px] w-full bg-surface sm:aspect-[21/8]">
+          {game.headerImageUrl && (
+            <Image
+              src={game.headerImageUrl}
+              alt=""
+              fill
+              priority
+              sizes="(min-width: 1152px) 1152px, 100vw"
+              className="object-cover"
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         </div>
-      )}
-
-      <header className="space-y-4">
-        <h1 className="text-3xl font-bold">{game.title}</h1>
-
-        {article.sponsored && (
-          <aside
-            aria-label="협찬 고지"
-            className="flex gap-3 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 text-sm text-amber-100"
-          >
-            <SponsorBadge />
-            <p className="whitespace-pre-line">{article.sponsorDisclosure}</p>
-          </aside>
-        )}
-
-        <p className="text-lg text-foreground/90">{article.oneLiner}</p>
-
-        <div className="flex flex-wrap gap-1.5">
-          {game.coop && <CoopBadge />}
-          {game.genres.map((genre) => (
-            <GenreBadge key={genre.slug} genre={genre} linked />
-          ))}
+        <div className="relative -mt-10 space-y-3 px-4 sm:-mt-28 sm:px-8">
+          <div className="flex flex-wrap gap-1.5">
+            {game.coop && <CoopBadge />}
+            {game.genres.map((genre) => (
+              <GenreBadge key={genre.slug} genre={genre} linked />
+            ))}
+          </div>
+          <h1 className="text-3xl font-bold drop-shadow sm:text-5xl">{game.title}</h1>
+          <p className="max-w-3xl text-lg text-foreground/90">{article.oneLiner}</p>
         </div>
       </header>
 
-      <HighlightList items={article.highlights} />
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="min-w-0 space-y-10">
+          {article.sponsored && (
+            <aside
+              aria-label="협찬 고지"
+              className="flex gap-3 rounded-xl border border-amber-500/50 bg-amber-500/10 p-4 text-sm text-amber-100"
+            >
+              <SponsorBadge />
+              <p className="whitespace-pre-line">{article.sponsorDisclosure}</p>
+            </aside>
+          )}
 
-      {(trailers.length > 0 || screenshots.length > 0) && (
-        <section aria-label="미디어" className="space-y-6">
-          <TrailerPlayer trailers={trailers} poster={game.headerImageUrl} title={game.title} />
-          <MediaGallery screenshots={screenshots} title={game.title} />
-        </section>
-      )}
+          <HighlightList items={article.highlights} />
 
-      <section aria-labelledby="article-title" className="space-y-4">
-        <h2 id="article-title" className="text-xl font-bold">
-          {article.title}
-        </h2>
-        <Markdown>{article.body}</Markdown>
-      </section>
+          <section aria-labelledby="article-title" className="space-y-4">
+            <h2 id="article-title" className="text-2xl font-bold">
+              {article.title}
+            </h2>
+            <Markdown>{article.body}</Markdown>
+          </section>
 
-      <section className="space-y-2 border-t border-border pt-6 text-sm">
-        {developers.length > 0 && (
-          <dl className="flex flex-wrap gap-x-6 gap-y-1">
-            {developers.map((dev) => (
-              <div key={dev.name} className="flex gap-2">
-                <dt className="text-muted">{dev.label}</dt>
-                <dd>{dev.name}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
-        {releaseDate && (
-          <p>
-            <span className="text-muted">출시일</span> {releaseDate}
-          </p>
-        )}
-      </section>
+          {(trailers.length > 0 || screenshots.length > 0) && (
+            <section aria-label="영상과 스크린샷" className="space-y-4">
+              <h2 className="text-lg font-bold">영상과 스크린샷</h2>
+              <TrailerPlayer trailers={trailers} poster={trailerPoster} title={game.title} />
+              <MediaGallery screenshots={screenshots} title={game.title} />
+            </section>
+          )}
+        </div>
 
-      {steamLink && (
-        <a
-          href={steamLink.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-3 font-bold text-white hover:bg-accent/90"
-        >
-          Steam에서 보기 ↗
-        </a>
-      )}
+        <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+          <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 text-sm">
+            <h2 className="text-xs font-bold tracking-widest text-muted">게임 정보</h2>
+            <dl className="space-y-2">
+              {releaseDate && (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted">출시일</dt>
+                  <dd>{releaseDate}</dd>
+                </div>
+              )}
+              {developers.map((dev) => (
+                <div key={dev.name} className="flex justify-between gap-4">
+                  <dt className="shrink-0 text-muted">{dev.label}</dt>
+                  <dd className="text-right">{dev.name}</dd>
+                </div>
+              ))}
+            </dl>
+            {steamLink && (
+              <a
+                href={steamLink.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 font-bold text-accent-ink hover:brightness-110"
+              >
+                Steam에서 보기 ↗
+              </a>
+            )}
+          </section>
+          <CuratorNote compact />
+        </aside>
+      </div>
     </article>
   );
 }
