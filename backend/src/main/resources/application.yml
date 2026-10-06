@@ -35,3 +35,12 @@ spring:
     url: jdbc:postgresql://localhost:5432/horrorpond
     username: horrorpond
     password: horrorpond
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+ingestion:
+  scheduler:
+    enabled: false
