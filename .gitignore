@@ -30,3 +30,6 @@ $RECYCLE.BIN/
 # Logs
 *.log
 logs/
+
+# IntelliJ HTTP Client 비밀 환경 (adminKey 등)
+http-client.private.env.json

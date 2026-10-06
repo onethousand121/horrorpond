@@ -1,0 +1,54 @@
+### 큐레이션 흐름 예시 (IntelliJ HTTP Client)
+# 환경: http-client.env.json (baseUrl), http-client.private.env.json (adminKey, git에 올리지 않음)
+# private 파일 예시:
+#   { "local": { "adminKey": "<ADMIN_API_KEY와 같은 값>" } }
+
+### 1. 검토 대기열 (CANDIDATE, 제목 부분일치)
+GET {{baseUrl}}/api/admin/games?status=CANDIDATE&q=&page=0&size=20
+X-Admin-Key: {{adminKey}}
+
+> {%
+    client.global.set("gameId", response.body.content[0].id);
+%}
+
+### 2. 큐레이션: slug, 장르 (coop은 MANUAL/ITCH 게임만 지정 가능)
+PUT {{baseUrl}}/api/admin/games/{{gameId}}/curation
+X-Admin-Key: {{adminKey}}
+Content-Type: application/json
+
+{
+  "slug": "my-curated-game",
+  "genreSlugs": ["psychological"]
+}
+
+### 3. 글 작성/수정 (없으면 초안 생성)
+PUT {{baseUrl}}/api/admin/games/{{gameId}}/article
+X-Admin-Key: {{adminKey}}
+Content-Type: application/json
+
+{
+  "title": "글 제목",
+  "oneLiner": "한 줄 소개",
+  "body": "## 추천 이유\n\n마크다운 본문",
+  "highlights": ["포인트 1", "포인트 2", "포인트 3"],
+  "sponsored": false,
+  "sponsorDisclosure": null
+}
+
+### 4. 공개 (글 + 게임)
+POST {{baseUrl}}/api/admin/games/{{gameId}}/publish
+X-Admin-Key: {{adminKey}}
+
+### 5. 공개 API 확인
+GET {{baseUrl}}/api/games
+
+### 6. 공개 상세
+GET {{baseUrl}}/api/games/my-curated-game
+
+### 숨김 / 숨김 해제
+POST {{baseUrl}}/api/admin/games/{{gameId}}/hide
+X-Admin-Key: {{adminKey}}
+
+###
+POST {{baseUrl}}/api/admin/games/{{gameId}}/unhide
+X-Admin-Key: {{adminKey}}
