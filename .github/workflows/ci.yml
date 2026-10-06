@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      # 전체 테스트(Testcontainers PostgreSQL 포함) 통과 후에만 배포용 jar를 만든다
+      - run: ./gradlew test bootJar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: backend/build/libs/app.jar
+          retention-days: 7
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx next typegen
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      # 빌드는 백엔드를 호출하지 않는다 (README 참고). 주소만 형식상 넣는다.
+      - run: npm run build
+        env:
+          API_BASE_URL: http://localhost:9
+
+  # 서버 무중단 배포. 저장소 변수 DEPLOY_ENABLED=true 와 Secrets(DEPLOY_HOST 등)를 설정해야 동작한다.
+  deploy:
+    needs: [backend, frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: release/build/libs
+      - name: Prepare release
+        run: cp backend/Dockerfile release/Dockerfile
+      - name: SSH key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Upload and deploy
+        env:
+          TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+        run: |
+          TAG="${GITHUB_SHA::12}"
+          SSH_OPTS=(-i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes)
+          ssh "${SSH_OPTS[@]}" "$TARGET" "mkdir -p horrorpond/releases/$TAG"
+          scp "${SSH_OPTS[@]}" -r release/. "$TARGET:horrorpond/releases/$TAG/"
+          scp "${SSH_OPTS[@]}" deploy/compose.yaml deploy/Caddyfile deploy/deploy.sh deploy/rollback.sh deploy/backup.sh "$TARGET:horrorpond/"
+          ssh "${SSH_OPTS[@]}" "$TARGET" "cd horrorpond && ./deploy.sh releases/$TAG $TAG"

@@ -65,3 +65,12 @@ tasks.named('test') {
     useJUnitPlatform()
     systemProperty 'spring.profiles.active', 'test'
 }
+
+// 배포 이미지(Dockerfile)가 고정 이름으로 복사한다. plain jar는 쓰지 않는다.
+tasks.named('bootJar') {
+    archiveFileName = 'app.jar'
+}
+
+tasks.named('jar') {
+    enabled = false
+}

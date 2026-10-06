@@ -1,0 +1,70 @@
+# 운영 서버(단일 VM) 구성. 이 디렉터리를 서버의 ~/horrorpond 에 두고 .env 를 채운다(.env.example 참고).
+#
+# - postgres, caddy: 항상 실행 (docker compose up -d)
+# - app-blue, app-green: 무중단 배포용 두 슬롯. 평소에는 하나만 실행되고, deploy.sh가 번갈아 띄운다.
+#   (profile "app"이라 docker compose up -d 로는 뜨지 않는다)
+name: horrorpond
+
+x-app: &app
+  profiles: ["app"]
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+  environment:
+    SPRING_PROFILES_ACTIVE: prod
+    SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/horrorpond
+    SPRING_DATASOURCE_USERNAME: horrorpond
+    SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+    ADMIN_API_KEY: ${ADMIN_API_KEY:?ADMIN_API_KEY must be set in .env}
+    TZ: Asia/Seoul
+  mem_limit: 1536m
+  # graceful shutdown(30s) + 여유
+  stop_grace_period: 45s
+  logging:
+    driver: json-file
+    options: { max-size: "20m", max-file: "5" }
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: horrorpond
+      POSTGRES_USER: horrorpond
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U horrorpond -d horrorpond"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    # 외부에 포트를 열지 않는다. 백업/접속은 docker compose exec 로만.
+
+  app-blue:
+    <<: *app
+    image: horrorpond-backend:${BLUE_TAG:-none}
+
+  app-green:
+    <<: *app
+    image: horrorpond-backend:${GREEN_TAG:-none}
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?API_DOMAIN must be set in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
