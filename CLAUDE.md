@@ -1,7 +1,9 @@
 ## Architecture Decisions (horrorpond MVP)
 - Frontend: Next.js App Router, ISR(revalidate 3600), 서버 컴포넌트에서만 백엔드 호출
 - Backend: Spring Boot 4.1.x / Java 17, 모듈러 모놀리스
-  패키지 모듈: catalog(조회 공개 API), curation(관리자 CRUD), ingestion(수집), common
+  패키지 모듈: catalog(게임/장르 도메인, 장르 조회 API),
+  curation(큐레이션 관리 API + 공개 게임 조회 API), ingestion(수집), common
+  (공개 사이트의 게임은 곧 큐레이션된 게임이며, Article 조합이 필요하므로 공개 게임 조회는 curation이 담당)
   ingestion은 catalog/curation 서비스를 직접 호출하지 않고 Repository 레벨로만 반영
 - DB: PostgreSQL 16, Flyway 마이그레이션. Redis 미사용(MVP)
 - 노출 정책: Game.status = CANDIDATE | PUBLISHED | HIDDEN. 공개 API는 PUBLISHED만 반환
