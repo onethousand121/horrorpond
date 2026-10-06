@@ -1,4 +1,4 @@
-[Architecture Decisions - horrorpond MVP]
+## Architecture Decisions (horrorpond MVP)
 - Frontend: Next.js App Router, ISR(revalidate 3600), 서버 컴포넌트에서만 백엔드 호출
 - Backend: Spring Boot 4.1.x / Java 17, 모듈러 모놀리스
   패키지 모듈: catalog(조회 공개 API), curation(관리자 CRUD), ingestion(수집), common
@@ -15,7 +15,7 @@
   (rate limiter 라이브러리 미사용). 429는 클라이언트에서 명시적으로 60s 대기
 - 게임 소스: STEAM | ITCH | MANUAL, 외부 ID nullable
 
-[Security Rules]
+## Security Rules
 - Steam API Key, Admin Key 등 비밀값은 환경변수로만 주입. yml에 기본값 금지.
   로컬 DB 접속 정보(docker-compose 값)만 예외
 
@@ -32,3 +32,12 @@
 - enum은 @Enumerated(STRING)
 - 시간 타입은 Instant (TIMESTAMPTZ), 날짜는 LocalDate
 - 다른 애그리거트는 ID로만 참조 (예: CurationArticle.gameId)
+
+## Migration Rules
+- 블루그린 배포 대비: 모든 마이그레이션은 직전 버전 애플리케이션과 호환되어야 함
+- 컬럼/테이블 삭제·이름 변경은 expand → migrate → contract 단계로 분리 배포
+- 이미 적용된 마이그레이션 파일 수정 금지 (새 버전으로만 변경)
+
+## Transaction Rules
+- 외부 HTTP 호출과 sleep은 트랜잭션 밖에서. 트랜잭션은 아이템 1건 단위
+- @Transactional/@Retryable은 프록시 기반: 같은 클래스 내부 호출 금지, 별도 빈으로 분리
