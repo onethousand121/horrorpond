@@ -12,6 +12,8 @@
 - 장르: 자체 택소노미(curator 관리). Steam genres/categories는 참고용 raw 데이터로만 보관
 - 수집: discovery(SteamSpy tag) → enrichment(appdetails, 1.5s throttle, 429→60s backoff)
         → raw_snapshot(JSONB) 저장 → normalize(별도 단계, 재실행 가능)
+  enrichment는 SteamSpy 발견 seed를 먼저 SteamSpy appdetails(1s 간격) 상위 태그로 판정해
+  Horror 계열 태그가 없으면 NOT_HORROR로 기록하고 Steam 호출에서 제외 (MANUAL seed는 판정 안 함)
 - 트리거: @Scheduled 일 1회 + POST /api/admin/ingestion/run (X-Admin-Key)
 - 동시성: ShedLock(JDBC provider)
 - 외부 HTTP: RestClient + Spring Framework 7 @Retryable.

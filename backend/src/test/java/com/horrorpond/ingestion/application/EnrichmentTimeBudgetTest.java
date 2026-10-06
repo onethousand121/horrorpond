@@ -4,9 +4,11 @@ import com.horrorpond.ingestion.client.AppDetailsResult;
 import com.horrorpond.ingestion.client.IngestionProperties;
 import com.horrorpond.ingestion.client.Sleeper;
 import com.horrorpond.ingestion.client.SteamRateLimitedException;
+import com.horrorpond.ingestion.client.SteamSpyClient;
 import com.horrorpond.ingestion.client.SteamStoreClient;
 import com.horrorpond.ingestion.domain.DiscoveredBy;
 import com.horrorpond.ingestion.domain.FetchStatus;
+import com.horrorpond.ingestion.domain.HorrorTag;
 import com.horrorpond.ingestion.domain.JobType;
 import com.horrorpond.ingestion.domain.SteamAppSeed;
 import com.horrorpond.ingestion.domain.TriggerType;
@@ -42,26 +44,30 @@ class EnrichmentTimeBudgetTest {
     private final MutableClock clock = new MutableClock(T0);
     private final SteamAppSeedRepository seedRepository = mock(SteamAppSeedRepository.class);
     private final SteamStoreClient storeClient = mock(SteamStoreClient.class);
+    // 태그 정보 없음(빈 목록) → HORROR로 판정되어 Steam 호출까지 진행한다
+    private final SteamSpyClient steamSpyClient = mock(SteamSpyClient.class);
     private final EnrichmentItemWriter itemWriter = mock(EnrichmentItemWriter.class);
     private final IngestionJobRecorder jobRecorder = mock(IngestionJobRecorder.class);
     private final Sleeper sleeper = clock::advance;
 
     private final IngestionProperties properties = new IngestionProperties(
-            "https://store.test", "https://spy.test", Duration.ofMillis(1500), Duration.ofMinutes(60), 3,
+            "https://store.test", "https://spy.test", Duration.ofMillis(1500), Duration.ofSeconds(1),
+            Duration.ofMinutes(60), 3,
             Duration.ofHours(2),
             new IngestionProperties.Enrichment(2000, Duration.ofDays(7), Duration.ofDays(1), 3),
             new IngestionProperties.Scheduler(false, "-", "UTC"));
 
     private final EnrichmentService service = new EnrichmentService(
-            seedRepository, storeClient, itemWriter, jobRecorder, properties, sleeper, clock);
+            seedRepository, storeClient, steamSpyClient, itemWriter, jobRecorder, properties, sleeper, clock);
 
     @BeforeEach
     void setUp() {
         List<SteamAppSeed> seeds = IntStream.rangeClosed(1, 5)
                 .mapToObj(appid -> SteamAppSeed.discovered(appid, DiscoveredBy.STEAMSPY_TAG, T0))
                 .toList();
-        when(seedRepository.findByFetchStatusAndDiscoveredByOrderByAppidDesc(
-                eq(FetchStatus.PENDING), eq(DiscoveredBy.STEAMSPY_TAG), any())).thenReturn(seeds);
+        when(seedRepository.findByFetchStatusAndDiscoveredByAndHorrorTagNotOrderByAppidDesc(
+                eq(FetchStatus.PENDING), eq(DiscoveredBy.STEAMSPY_TAG), eq(HorrorTag.NOT_HORROR), any()))
+                .thenReturn(seeds);
         when(jobRecorder.start(JobType.ENRICHMENT, TriggerType.MANUAL)).thenReturn(JOB_ID);
     }
 

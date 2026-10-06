@@ -33,6 +33,10 @@ public final class SteamMockServer {
         return STORE_BASE + "/api/appdetails?appids=" + appid + "&cc=kr&l=koreana";
     }
 
+    public static String steamSpyAppDetailsUrl(int appid) {
+        return SPY_BASE + "/api.php?request=appdetails&appid=" + appid;
+    }
+
     public static String steamSpyHorrorUrl() {
         return SPY_BASE + "/api.php?request=tag&tag=Horror";
     }

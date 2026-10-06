@@ -50,12 +50,15 @@ Steam 데이터를 자동으로 수집하지만, **큐레이터가 검증하고 
 | 단계 | 역할 | 비고 |
 |---|---|---|
 | Discovery | SteamSpy `tag=Horror`로 후보 appid 확보 | `steam_app_seed` |
-| Enrichment | Steam Store `appdetails` 호출, 원본 JSON 저장 | 약 200회/5분 제한 → 1.5초 간격, 429 시 60초 대기 |
+| Enrichment | ① SteamSpy `appdetails`로 공포게임 판정 → ② Steam Store `appdetails` 호출, 원본 JSON 저장 | ① 초당 1회 ② 약 200회/5분 제한 → 1.5초 간격, 429 시 60초 대기 |
 | Normalize | raw JSONB → `game` 테이블 반영 | 외부 호출 없이 재실행 가능, hash 비교로 변경분만 처리 |
 
 정규화 시에는 Steam이 소유한 필드(제목, 설명, 미디어 등)만 갱신합니다. 큐레이터가 소유한 필드(공개 상태, slug, 장르)는 재수집해도 덮어쓰지 않습니다.
 
 ## 설계 결정 기록
+
+### SteamSpy Horror 태그 노이즈 걸러내기
+SteamSpy `tag=Horror` 목록(약 1만 1천 개)에는 Horror 표가 한 표라도 있는 게임이 모두 들어 있어 PUBG, Apex Legends 같은 게임이 섞입니다. 게임별 상위 태그(최대 20개)를 확인해 보니 실제 공포게임은 Horror 계열 태그가 그 안에 있었고(Dead by Daylight 1위, Left 4 Dead 2 9위, OMORI 10위), 노이즈 게임은 없었습니다. 그래서 enrichment 직전에 SteamSpy `appdetails`로 상위 태그를 확인해, Horror가 들어간 태그가 없으면 `NOT_HORROR`로 기록하고 Steam 호출과 Game 생성을 건너뜁니다. 노이즈 게임의 Steam 호출(1.5초 간격)이 사라지므로 전체 수집 시간도 줄어듭니다. 수동 추가 seed는 판정하지 않습니다.
 
 ### Spring Boot 3.5 → 4.1 전환
 프로젝트 생성 직후, 3.5가 2026년 6월 OSS 지원이 종료된 버전임을 확인했습니다. 빈 뼈대 상태여서 전환 비용이 거의 없었기 때문에 4.1로 올렸습니다. 4.0은 2026년 말 지원이 끝나므로 4.1을 선택했습니다. 이 과정에서 Boot 4 모듈화로 바뀐 스타터 구성(Flyway 전용 스타터 등)을 반영했습니다.

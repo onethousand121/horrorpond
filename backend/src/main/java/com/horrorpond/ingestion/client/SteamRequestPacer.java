@@ -8,8 +8,8 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * Steam Store 호출 간격을 고정 간격(requestInterval) 이상으로 유지한다.
- * 마지막 호출 이후 간격이 덜 지났으면 남은 시간만큼 대기한다.
+ * 호출 간격을 고정 간격 이상으로 유지한다. 마지막 호출 이후 간격이 덜 지났으면 남은 시간만큼 대기한다.
+ * 빈으로는 Steam Store용(requestInterval)이 등록되고, SteamSpy는 {@link SteamSpyClient}가 자기 인스턴스를 만든다.
  */
 @Component
 public class SteamRequestPacer {

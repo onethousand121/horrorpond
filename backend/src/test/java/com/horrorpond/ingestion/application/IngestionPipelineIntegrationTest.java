@@ -12,6 +12,7 @@ import com.horrorpond.catalog.repository.GenreRepository;
 import com.horrorpond.ingestion.client.Sleeper;
 import com.horrorpond.ingestion.domain.DiscoveredBy;
 import com.horrorpond.ingestion.domain.FetchStatus;
+import com.horrorpond.ingestion.domain.HorrorTag;
 import com.horrorpond.ingestion.domain.IngestionJob;
 import com.horrorpond.ingestion.domain.JobStatus;
 import com.horrorpond.ingestion.domain.JobType;
@@ -127,6 +128,7 @@ class IngestionPipelineIntegrationTest {
     @Test
     void fullPipelineCreatesCandidateGamesWithDevelopers() {
         expectSteamSpy(1262350, 739630, 594330, 5060920, 1);
+        expectHorrorTags(1262350, 739630, 594330, 5060920, 1);
         expectAppDetails(1262350, 739630, 594330, 5060920, 1);
 
         assertJob(discoveryService.run(TriggerType.MANUAL), JobType.DISCOVERY, JobStatus.SUCCEEDED, 5, 0);
@@ -165,6 +167,39 @@ class IngestionPipelineIntegrationTest {
         assertThat(gameRepository.count()).isEqualTo(3);
         assertThat(developerRepository.count()).isEqualTo(4);
         assertThat(developerRepository.findByName("rose-engine").orElseThrow().getSlug()).isEqualTo("rose-engine");
+    }
+
+    @Test
+    void gamesWithoutHorrorInTopTagsAreExcludedBeforeSteamCall() {
+        // PUBG(578080)는 SteamSpy Horror 태그 목록에 있지만 상위 태그에 Horror가 없다
+        expectSteamSpy(739630, 578080);
+        expectHorrorTags(739630);
+        expectTags(578080, "Survival", "Shooter", "Battle Royale");
+        expectAppDetails(739630);
+
+        discoveryService.run(TriggerType.MANUAL);
+        assertJob(enrichmentService.run(TriggerType.MANUAL), JobType.ENRICHMENT, JobStatus.SUCCEEDED, 2, 0);
+        SERVER.verify();
+
+        SteamAppSeed pubg = seedRepository.findById(578080).orElseThrow();
+        assertThat(pubg.getHorrorTag()).isEqualTo(HorrorTag.NOT_HORROR);
+        assertThat(pubg.getHorrorTagCheckedAt()).isNotNull();
+        assertThat(pubg.getFetchStatus()).isEqualTo(FetchStatus.PENDING);
+        assertThat(snapshotRepository.existsById(578080)).isFalse();
+        assertThat(seedRepository.findById(739630).orElseThrow().getHorrorTag()).isEqualTo(HorrorTag.HORROR);
+
+        // 다음 실행부터는 판정을 다시 하지 않고 대상에서도 빠진다
+        assertThat(enrichmentService.selectTargets()).isEmpty();
+    }
+
+    @Test
+    void manualSeedsSkipHorrorTagCheck() {
+        seedRepository.save(SteamAppSeed.discovered(739630, DiscoveredBy.MANUAL, clock.instant()));
+        expectAppDetails(739630);
+
+        assertJob(enrichmentService.run(TriggerType.MANUAL), JobType.ENRICHMENT, JobStatus.SUCCEEDED, 1, 0);
+        SERVER.verify();
+        assertThat(seedRepository.findById(739630).orElseThrow().getHorrorTag()).isEqualTo(HorrorTag.UNCHECKED);
     }
 
     @Test
@@ -281,9 +316,20 @@ class IngestionPipelineIntegrationTest {
         exhausted.markFailed(now.minus(Duration.ofDays(2)));
         SteamAppSeed notFound = SteamAppSeed.discovered(600, DiscoveredBy.STEAMSPY_TAG, now);
         notFound.markFetched(FetchStatus.NOT_FOUND, now.minus(Duration.ofDays(30)));
-        seedRepository.saveAll(List.of(staleOk, freshOk, retryable, tooRecent, exhausted, notFound));
+        // NOT_HORROR: 상태와 무관하게 모두 제외
+        SteamAppSeed notHorrorPending = SteamAppSeed.discovered(700, DiscoveredBy.STEAMSPY_TAG, now);
+        notHorrorPending.recordHorrorTag(HorrorTag.NOT_HORROR, now);
+        SteamAppSeed notHorrorStaleOk = SteamAppSeed.discovered(701, DiscoveredBy.STEAMSPY_TAG, now);
+        notHorrorStaleOk.markFetched(FetchStatus.OK, now.minus(Duration.ofDays(8)));
+        notHorrorStaleOk.recordHorrorTag(HorrorTag.NOT_HORROR, now);
+        SteamAppSeed notHorrorRetryable = SteamAppSeed.discovered(702, DiscoveredBy.STEAMSPY_TAG, now);
+        notHorrorRetryable.markFailed(now.minus(Duration.ofDays(2)));
+        notHorrorRetryable.recordHorrorTag(HorrorTag.NOT_HORROR, now);
+        seedRepository.saveAll(List.of(staleOk, freshOk, retryable, tooRecent, exhausted, notFound,
+                notHorrorPending, notHorrorStaleOk, notHorrorRetryable));
 
         assertThat(enrichmentService.selectTargets())
+                .extracting(SteamAppSeed::getAppid)
                 .containsExactly(999999, 10, 300, 200, 100, 400, 500);
     }
 
@@ -309,6 +355,7 @@ class IngestionPipelineIntegrationTest {
 
     private void ingest(int... appids) {
         expectSteamSpy(appids);
+        expectHorrorTags(appids);
         expectAppDetails(appids);
         discoveryService.run(TriggerType.MANUAL);
         enrichmentService.run(TriggerType.MANUAL);
@@ -322,6 +369,20 @@ class IngestionPipelineIntegrationTest {
                 .mapToObj(appid -> "\"" + appid + "\":{\"appid\":" + appid + "}")
                 .collect(Collectors.joining(",", "{", "}"));
         SERVER.expect(once(), requestTo(SteamMockServer.steamSpyHorrorUrl()))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+    }
+
+    private void expectHorrorTags(int... appids) {
+        for (int appid : appids) {
+            expectTags(appid, "Horror", "Online Co-Op", "Psychological Horror");
+        }
+    }
+
+    private void expectTags(int appid, String... tags) {
+        String body = Arrays.stream(tags)
+                .map(tag -> "\"" + tag + "\":100")
+                .collect(Collectors.joining(",", "{\"appid\":" + appid + ",\"tags\":{", "}}"));
+        SERVER.expect(once(), requestTo(SteamMockServer.steamSpyAppDetailsUrl(appid)))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
     }
 
