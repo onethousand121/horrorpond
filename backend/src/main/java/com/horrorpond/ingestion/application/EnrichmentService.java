@@ -18,6 +18,7 @@ import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -93,11 +94,22 @@ public class EnrichmentService {
         query.apply(Limit.of(remaining)).forEach(seed -> targets.add(seed.getAppid()));
     }
 
+    /**
+     * 새 아이템을 시작하기 전마다 경과 시간을 확인한다. 429 대기가 누적돼도 락 유지 시간 안에서 끝내기 위해,
+     * 예산(lockAtMostFor × 0.8)을 넘으면 남은 아이템은 다음 실행으로 넘기고 정상 종료한다.
+     */
     private Outcome enrich(List<Integer> appids) {
+        Instant startedAt = clock.instant();
+        Duration budget = properties.runTimeBudget();
         int processed = 0;
         int failed = 0;
         int consecutiveRateLimits = 0;
-        for (int appid : appids) {
+        for (int i = 0; i < appids.size(); i++) {
+            if (Duration.between(startedAt, clock.instant()).compareTo(budget) >= 0) {
+                log.warn("Enrichment time budget reached, processed {} / remaining {}", i, appids.size() - i);
+                break;
+            }
+            int appid = appids.get(i);
             while (true) {
                 try {
                     AppDetailsResult result = storeClient.fetchAppDetails(appid);

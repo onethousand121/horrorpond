@@ -28,7 +28,14 @@ public record IngestionProperties(
      */
     @AssertTrue(message = "enrichment.max-per-run x request-interval must not exceed 80% of lock-at-most-for")
     public boolean isEnrichmentRunWithinLock() {
-        return estimatedEnrichmentDuration().toMillis() <= lockAtMostFor.toMillis() * MAX_RUN_TO_LOCK_RATIO;
+        return estimatedEnrichmentDuration().compareTo(runTimeBudget()) <= 0;
+    }
+
+    /**
+     * 한 번의 실행이 쓸 수 있는 최대 시간 (lockAtMostFor의 80%). 기동 검증과 실행 중 예산 확인이 함께 쓴다.
+     */
+    public Duration runTimeBudget() {
+        return Duration.ofMillis((long) (lockAtMostFor.toMillis() * MAX_RUN_TO_LOCK_RATIO));
     }
 
     public Duration estimatedEnrichmentDuration() {
