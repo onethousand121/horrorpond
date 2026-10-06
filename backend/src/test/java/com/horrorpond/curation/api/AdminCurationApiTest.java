@@ -67,6 +67,7 @@ class AdminCurationApiTest {
                 .andExpect(jsonPath("$.content[0].id").value(id))
                 .andExpect(jsonPath("$.content[0].source").value("STEAM"))
                 .andExpect(jsonPath("$.content[0].externalId").value("739630"))
+                .andExpect(jsonPath("$.content[0].headerImageUrl").value("https://img/739630"))
                 .andExpect(jsonPath("$.content[0].hasArticle").value(false))
                 .andExpect(jsonPath("$.content[0].articleStatus").doesNotExist());
 
@@ -106,6 +107,47 @@ class AdminCurationApiTest {
         mvc.perform(get("/api/games/phasmophobia")).andExpect(status().isNotFound());
         mvc.perform(admin(post("/api/admin/games/{id}/unhide", id)))
                 .andExpect(jsonPath("$.status").value("CANDIDATE"));
+    }
+
+    @Test
+    void detailIncludesCuratorFieldsAndArticle() throws Exception {
+        Long id = steamCandidate(739630, "Phasmophobia", "phasmophobia-739630");
+
+        mvc.perform(admin(get("/api/admin/games/{id}", id)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Phasmophobia"))
+                .andExpect(jsonPath("$.shortDescription").value("desc"))
+                .andExpect(jsonPath("$.headerImageUrl").value("https://img/739630"))
+                .andExpect(jsonPath("$.steamUrl").value("https://store.steampowered.com/app/739630"))
+                .andExpect(jsonPath("$.genreSlugs", hasSize(0)))
+                .andExpect(jsonPath("$.article").doesNotExist());
+
+        mvc.perform(admin(put("/api/admin/games/{id}/curation", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"slug\":\"phasmophobia\",\"genreSlugs\":[\"psychological\",\"occult\"]}"))
+                .andExpect(status().isOk());
+        mvc.perform(admin(put("/api/admin/games/{id}/article", id))
+                        .contentType(MediaType.APPLICATION_JSON).content(ARTICLE))
+                .andExpect(status().isOk());
+
+        mvc.perform(admin(get("/api/admin/games/{id}", id)))
+                .andExpect(jsonPath("$.slug").value("phasmophobia"))
+                .andExpect(jsonPath("$.genreSlugs", contains("occult", "psychological")))
+                .andExpect(jsonPath("$.article.status").value("DRAFT"))
+                .andExpect(jsonPath("$.article.highlights", contains("4인 협동", "음성 인식", "장비 운용")));
+        mvc.perform(admin(get("/api/admin/games/{id}", 9999))).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void listCountsOtherGamesWithSameTitle() throws Exception {
+        steamCandidate(9050, "DOOM 3", "doom-3-9050");
+        steamCandidate(208200, "Doom 3", "doom-3-208200");
+        steamCandidate(10, "Unique", "unique-10");
+
+        mvc.perform(admin(get("/api/admin/games").param("q", "doom")))
+                .andExpect(jsonPath("$.content[*].sameTitleCount", contains(1, 1)));
+        mvc.perform(admin(get("/api/admin/games").param("q", "unique")))
+                .andExpect(jsonPath("$.content[0].sameTitleCount").value(0));
     }
 
     @Test

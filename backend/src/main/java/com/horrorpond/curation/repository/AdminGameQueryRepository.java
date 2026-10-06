@@ -7,6 +7,7 @@ import com.horrorpond.curation.domain.ArticleStatus;
 import com.horrorpond.curation.domain.QCurationArticle;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Projections;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,12 +20,15 @@ import java.util.List;
 
 /**
  * 관리자 검토 대기열. 글이 없는 게임도 보여야 하므로 article은 LEFT JOIN 한다.
+ * sameTitleCount: 제목이 같은(대소문자 무시) 다른 게임 수. 원작/리마스터, 본편/체험판처럼 Steam에 따로 등록된
+ * 같은 이름의 게임을 큐레이터가 구분할 수 있게 한다.
  */
 @Repository
 @RequiredArgsConstructor
 public class AdminGameQueryRepository {
 
     private static final QGame game = QGame.game;
+    private static final QGame sameTitle = new QGame("sameTitle");
     private static final QCurationArticle article = QCurationArticle.curationArticle;
 
     private final JPAQueryFactory queryFactory;
@@ -39,8 +43,11 @@ public class AdminGameQueryRepository {
         }
         List<AdminGameRow> rows = queryFactory
                 .select(Projections.constructor(AdminGameRow.class,
-                        game.id, game.source, game.externalId, game.slug, game.title, game.releaseDate,
-                        game.coop, game.status, article.status))
+                        game.id, game.source, game.externalId, game.slug, game.title, game.headerImageUrl, game.releaseDate,
+                        game.coop, game.status, article.status,
+                        JPAExpressions.select(sameTitle.count())
+                                .from(sameTitle)
+                                .where(sameTitle.title.lower().eq(game.title.lower()), sameTitle.id.ne(game.id))))
                 .from(game)
                 .leftJoin(article).on(article.gameId.eq(game.id))
                 .where(where)
@@ -61,10 +68,12 @@ public class AdminGameQueryRepository {
             String externalId,
             String slug,
             String title,
+            String headerImageUrl,
             LocalDate releaseDate,
             boolean coop,
             GameStatus status,
-            ArticleStatus articleStatus
+            ArticleStatus articleStatus,
+            long sameTitleCount
     ) {
     }
 }
