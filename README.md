@@ -103,7 +103,9 @@ npm run dev                  # http://localhost:3000
 
 - 백엔드는 서버 컴포넌트에서만 호출합니다. 환경변수에 `NEXT_PUBLIC_` 접두사를 쓰지 않아 브라우저 번들에 노출되지 않습니다.
 - 캐시: Cache Components를 쓰지 않는 방식(fetch `next.revalidate`/`next.tags` + 세그먼트 `revalidate = 3600`)입니다. 없는 게임/장르는 실제 404 상태 코드를 돌려줍니다.
-- `npm run build`는 홈·장르·협동 페이지를 빌드 시점에 생성하므로 **백엔드가 떠 있어야** 합니다. 게임 상세(`/games/[slug]`)는 첫 방문 때 생성됩니다.
+- `npm run build`는 **백엔드 없이** 동작합니다. 빌드 때 백엔드를 호출하는 페이지가 없습니다.
+  - 게임 상세(`/games/[slug]`), 장르(`/genres/[slug]`): ISR. 빌드 때는 만들지 않고 첫 방문 때 생성한 뒤 1시간마다 갱신합니다.
+  - 홈, 협동(`/coop`), 전체 목록(`/games`), `sitemap.xml`: 요청 시 렌더링합니다. 백엔드 응답은 fetch 데이터 캐시(1시간)에 저장되므로 백엔드 호출 빈도는 ISR과 같습니다.
 
 ## 프로젝트 구조
 
@@ -126,11 +128,11 @@ npm run dev                  # http://localhost:3000
 **MVP**
 - [x] 프로젝트 뼈대 (Spring Boot 4.1, PostgreSQL, Flyway)
 - [x] 초기 스키마 (V1)
-- [ ] 도메인 엔티티 및 Repository
-- [ ] Steam 수집 파이프라인 (스케줄러 + 수동 트리거)
-- [ ] 게임 목록/상세/장르 필터 API
-- [ ] 큐레이션 글 작성 및 공개 처리
-- [ ] Next.js 프론트엔드
+- [x] 도메인 엔티티 및 Repository
+- [x] Steam 수집 파이프라인 (스케줄러 + 수동 트리거)
+- [x] 게임 목록/상세/장르 필터 API
+- [x] 큐레이션 글 작성 및 공개 처리
+- [x] Next.js 프론트엔드
 
 **이후**
 - [ ] AI 기반 취향 추천 (pgvector)
