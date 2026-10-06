@@ -2,6 +2,7 @@ package com.horrorpond.ingestion.application;
 
 import com.horrorpond.common.domain.DomainStateException;
 import com.horrorpond.common.domain.DomainValidationException;
+import com.horrorpond.ingestion.client.IngestionProperties;
 import com.horrorpond.ingestion.domain.JobType;
 import com.horrorpond.ingestion.domain.TriggerType;
 import lombok.extern.slf4j.Slf4j;
@@ -30,12 +31,15 @@ public class IngestionTriggerService implements DisposableBean {
     private final LockProvider lockProvider;
     private final IngestionPipeline pipeline;
     private final Clock clock;
+    private final Duration lockAtMostFor;
     private final ThreadPoolTaskExecutor executor;
 
-    public IngestionTriggerService(LockProvider lockProvider, IngestionPipeline pipeline, Clock clock) {
+    public IngestionTriggerService(LockProvider lockProvider, IngestionPipeline pipeline, Clock clock,
+                                   IngestionProperties properties) {
         this.lockProvider = lockProvider;
         this.pipeline = pipeline;
         this.clock = clock;
+        this.lockAtMostFor = properties.lockAtMostFor();
         this.executor = singleThreadExecutor();
     }
 
@@ -44,7 +48,7 @@ public class IngestionTriggerService implements DisposableBean {
             throw new DomainValidationException("steps must not be empty");
         }
         LockConfiguration config = new LockConfiguration(
-                clock.instant(), IngestionPipeline.LOCK_NAME, IngestionPipeline.LOCK_AT_MOST_FOR, Duration.ZERO);
+                clock.instant(), IngestionPipeline.LOCK_NAME, lockAtMostFor, Duration.ZERO);
         SimpleLock lock = lockProvider.lock(config)
                 .orElseThrow(() -> new DomainStateException("Ingestion is already running"));
         try {

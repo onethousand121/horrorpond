@@ -44,6 +44,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -255,6 +256,38 @@ class IngestionPipelineIntegrationTest {
     }
 
     @Test
+    void enrichmentTargetsFollowPriorityOrder() {
+        Instant now = clock.instant();
+        // STEAMSPY PENDING: appid 내림차순이어야 한다
+        saveSeed(100, DiscoveredBy.STEAMSPY_TAG, now.minus(Duration.ofDays(1)));
+        saveSeed(300, DiscoveredBy.STEAMSPY_TAG, now.minus(Duration.ofDays(1)));
+        saveSeed(200, DiscoveredBy.STEAMSPY_TAG, now.minus(Duration.ofDays(1)));
+        // MANUAL PENDING: appid와 무관하게 가장 먼저, 발견 순서대로
+        saveSeed(999999, DiscoveredBy.MANUAL, now.minus(Duration.ofHours(2)));
+        saveSeed(10, DiscoveredBy.MANUAL, now.minus(Duration.ofHours(1)));
+        // OK: 갱신 주기(7일) 지난 것만
+        SteamAppSeed staleOk = SteamAppSeed.discovered(400, DiscoveredBy.STEAMSPY_TAG, now);
+        staleOk.markFetched(FetchStatus.OK, now.minus(Duration.ofDays(8)));
+        SteamAppSeed freshOk = SteamAppSeed.discovered(401, DiscoveredBy.STEAMSPY_TAG, now);
+        freshOk.markFetched(FetchStatus.OK, now.minus(Duration.ofDays(1)));
+        // FAILED: 재시도 대기(1일) 지났고 실패 횟수 < 3 인 것만
+        SteamAppSeed retryable = SteamAppSeed.discovered(500, DiscoveredBy.STEAMSPY_TAG, now);
+        retryable.markFailed(now.minus(Duration.ofDays(2)));
+        SteamAppSeed tooRecent = SteamAppSeed.discovered(501, DiscoveredBy.STEAMSPY_TAG, now);
+        tooRecent.markFailed(now.minus(Duration.ofHours(1)));
+        SteamAppSeed exhausted = SteamAppSeed.discovered(502, DiscoveredBy.STEAMSPY_TAG, now);
+        exhausted.markFailed(now.minus(Duration.ofDays(4)));
+        exhausted.markFailed(now.minus(Duration.ofDays(3)));
+        exhausted.markFailed(now.minus(Duration.ofDays(2)));
+        SteamAppSeed notFound = SteamAppSeed.discovered(600, DiscoveredBy.STEAMSPY_TAG, now);
+        notFound.markFetched(FetchStatus.NOT_FOUND, now.minus(Duration.ofDays(30)));
+        seedRepository.saveAll(List.of(staleOk, freshOk, retryable, tooRecent, exhausted, notFound));
+
+        assertThat(enrichmentService.selectTargets())
+                .containsExactly(999999, 10, 300, 200, 100, 400, 500);
+    }
+
+    @Test
     void staleRunningJobsAreFailedOnStartup() {
         Instant now = clock.instant();
         Long staleId = jobRepository.save(IngestionJob.start(JobType.ENRICHMENT, TriggerType.SCHEDULED,
@@ -268,6 +301,10 @@ class IngestionPipelineIntegrationTest {
         assertThat(stale.getStatus()).isEqualTo(JobStatus.FAILED);
         assertThat(stale.getErrorMessage()).isEqualTo("interrupted by shutdown");
         assertThat(jobRepository.findById(recentId).orElseThrow().getStatus()).isEqualTo(JobStatus.RUNNING);
+    }
+
+    private void saveSeed(int appid, DiscoveredBy by, Instant discoveredAt) {
+        seedRepository.save(SteamAppSeed.discovered(appid, by, discoveredAt));
     }
 
     private void ingest(int... appids) {

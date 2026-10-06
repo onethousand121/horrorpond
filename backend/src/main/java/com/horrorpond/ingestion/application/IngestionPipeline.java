@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 
@@ -20,7 +19,6 @@ import java.util.List;
 public class IngestionPipeline {
 
     public static final String LOCK_NAME = "steam-ingestion";
-    public static final Duration LOCK_AT_MOST_FOR = Duration.ofHours(2);
     public static final List<JobType> ALL_STEPS = List.of(JobType.DISCOVERY, JobType.ENRICHMENT, JobType.NORMALIZE);
 
     private final DiscoveryService discoveryService;

@@ -1,5 +1,6 @@
 package com.horrorpond.ingestion.repository;
 
+import com.horrorpond.ingestion.domain.DiscoveredBy;
 import com.horrorpond.ingestion.domain.FetchStatus;
 import com.horrorpond.ingestion.domain.SteamAppSeed;
 import org.springframework.data.domain.Limit;
@@ -15,7 +16,11 @@ public interface SteamAppSeedRepository extends JpaRepository<SteamAppSeed, Inte
     @Query("select s.appid from SteamAppSeed s")
     Set<Integer> findAllAppids();
 
-    List<SteamAppSeed> findByFetchStatusOrderByDiscoveredAtAscAppidAsc(FetchStatus status, Limit limit);
+    List<SteamAppSeed> findByFetchStatusAndDiscoveredByOrderByDiscoveredAtAscAppidAsc(
+            FetchStatus status, DiscoveredBy discoveredBy, Limit limit);
+
+    List<SteamAppSeed> findByFetchStatusAndDiscoveredByOrderByAppidDesc(
+            FetchStatus status, DiscoveredBy discoveredBy, Limit limit);
 
     List<SteamAppSeed> findByFetchStatusAndLastFetchedAtBeforeOrderByLastFetchedAtAscAppidAsc(
             FetchStatus status, Instant fetchedBefore, Limit limit);

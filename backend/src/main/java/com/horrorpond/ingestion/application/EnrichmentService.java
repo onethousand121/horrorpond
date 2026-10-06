@@ -6,6 +6,7 @@ import com.horrorpond.ingestion.client.Sleeper;
 import com.horrorpond.ingestion.client.SteamRateLimitedException;
 import com.horrorpond.ingestion.client.SteamStoreClient;
 import com.horrorpond.ingestion.client.SteamTransientException;
+import com.horrorpond.ingestion.domain.DiscoveredBy;
 import com.horrorpond.ingestion.domain.FetchStatus;
 import com.horrorpond.ingestion.domain.JobType;
 import com.horrorpond.ingestion.domain.SteamAppSeed;
@@ -58,14 +59,22 @@ public class EnrichmentService {
     }
 
     /**
-     * 우선순위: PENDING → 갱신 주기가 지난 OK → 재시도 대기가 지난 FAILED(실패 횟수 제한 이내).
+     * 우선순위:
+     * 1) 수동 추가한 PENDING (관리자가 명시적으로 원한 것)
+     * 2) SteamSpy로 발견한 PENDING, appid 내림차순 (최신 게임 먼저)
+     * 3) 갱신 주기가 지난 OK (오래된 순)
+     * 4) 재시도 대기가 지난 FAILED (실패 횟수 제한 이내)
      */
     List<Integer> selectTargets() {
         IngestionProperties.Enrichment config = properties.enrichment();
         Instant now = clock.instant();
         Set<Integer> targets = new LinkedHashSet<>();
         addAll(targets, config.maxPerRun(), remaining -> seedRepository
-                .findByFetchStatusOrderByDiscoveredAtAscAppidAsc(FetchStatus.PENDING, remaining));
+                .findByFetchStatusAndDiscoveredByOrderByDiscoveredAtAscAppidAsc(
+                        FetchStatus.PENDING, DiscoveredBy.MANUAL, remaining));
+        addAll(targets, config.maxPerRun(), remaining -> seedRepository
+                .findByFetchStatusAndDiscoveredByOrderByAppidDesc(
+                        FetchStatus.PENDING, DiscoveredBy.STEAMSPY_TAG, remaining));
         addAll(targets, config.maxPerRun(), remaining -> seedRepository
                 .findByFetchStatusAndLastFetchedAtBeforeOrderByLastFetchedAtAscAppidAsc(
                         FetchStatus.OK, now.minus(config.refreshAfter()), remaining));

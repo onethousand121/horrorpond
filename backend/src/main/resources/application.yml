@@ -21,6 +21,10 @@ spring:
 server:
   shutdown: graceful
 
+ingestion:
+  # ShedLock 락 유지 시간. SchedulingConfig(@EnableSchedulerLock)와 수동 트리거가 함께 쓴다
+  lock-at-most-for: PT2H
+
 management:
   endpoint:
     health:

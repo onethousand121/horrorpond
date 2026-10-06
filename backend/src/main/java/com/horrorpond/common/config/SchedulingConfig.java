@@ -12,7 +12,7 @@ import javax.sql.DataSource;
 
 @Configuration
 @EnableScheduling
-@EnableSchedulerLock(defaultLockAtMostFor = "PT2H")
+@EnableSchedulerLock(defaultLockAtMostFor = "${ingestion.lock-at-most-for}")
 public class SchedulingConfig {
 
     /**
