@@ -2,6 +2,7 @@ package com.horrorpond.ingestion.repository;
 
 import com.horrorpond.ingestion.domain.DiscoveredBy;
 import com.horrorpond.ingestion.domain.FetchStatus;
+import com.horrorpond.ingestion.domain.HorrorTag;
 import com.horrorpond.ingestion.domain.SteamAppSeed;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,12 +20,12 @@ public interface SteamAppSeedRepository extends JpaRepository<SteamAppSeed, Inte
     List<SteamAppSeed> findByFetchStatusAndDiscoveredByOrderByDiscoveredAtAscAppidAsc(
             FetchStatus status, DiscoveredBy discoveredBy, Limit limit);
 
-    List<SteamAppSeed> findByFetchStatusAndDiscoveredByOrderByAppidDesc(
-            FetchStatus status, DiscoveredBy discoveredBy, Limit limit);
+    List<SteamAppSeed> findByFetchStatusAndDiscoveredByAndHorrorTagNotOrderByAppidDesc(
+            FetchStatus status, DiscoveredBy discoveredBy, HorrorTag excluded, Limit limit);
 
-    List<SteamAppSeed> findByFetchStatusAndLastFetchedAtBeforeOrderByLastFetchedAtAscAppidAsc(
-            FetchStatus status, Instant fetchedBefore, Limit limit);
+    List<SteamAppSeed> findByFetchStatusAndHorrorTagNotAndLastFetchedAtBeforeOrderByLastFetchedAtAscAppidAsc(
+            FetchStatus status, HorrorTag excluded, Instant fetchedBefore, Limit limit);
 
-    List<SteamAppSeed> findByFetchStatusAndFailCountLessThanAndLastFetchedAtBeforeOrderByLastFetchedAtAscAppidAsc(
-            FetchStatus status, int maxFailCount, Instant fetchedBefore, Limit limit);
+    List<SteamAppSeed> findByFetchStatusAndHorrorTagNotAndFailCountLessThanAndLastFetchedAtBeforeOrderByLastFetchedAtAscAppidAsc(
+            FetchStatus status, HorrorTag excluded, int maxFailCount, Instant fetchedBefore, Limit limit);
 }

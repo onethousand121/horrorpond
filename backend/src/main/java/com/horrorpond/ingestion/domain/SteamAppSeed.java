@@ -48,6 +48,12 @@ public class SteamAppSeed implements Persistable<Integer> {
     @Column(nullable = false)
     private int failCount;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private HorrorTag horrorTag;
+
+    private Instant horrorTagCheckedAt;
+
     @Transient
     @Getter(AccessLevel.NONE)
     private boolean newEntity = true;
@@ -58,7 +64,23 @@ public class SteamAppSeed implements Persistable<Integer> {
         seed.discoveredBy = Objects.requireNonNull(by, "by");
         seed.discoveredAt = Objects.requireNonNull(now, "now");
         seed.fetchStatus = FetchStatus.PENDING;
+        seed.horrorTag = HorrorTag.UNCHECKED;
         return seed;
+    }
+
+    /**
+     * SteamSpy 태그로 발견했고 아직 판정 전인 seed만 판정한다. 수동 추가는 관리자가 원한 것이라 판정하지 않는다.
+     */
+    public boolean needsHorrorTagCheck() {
+        return discoveredBy == DiscoveredBy.STEAMSPY_TAG && horrorTag == HorrorTag.UNCHECKED;
+    }
+
+    public void recordHorrorTag(HorrorTag result, Instant now) {
+        if (result == HorrorTag.UNCHECKED) {
+            throw new DomainValidationException("recordHorrorTag accepts HORROR or NOT_HORROR only");
+        }
+        this.horrorTag = result;
+        this.horrorTagCheckedAt = Objects.requireNonNull(now, "now");
     }
 
     /**

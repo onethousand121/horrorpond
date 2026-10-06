@@ -2,6 +2,7 @@ package com.horrorpond.ingestion.application;
 
 import com.horrorpond.ingestion.client.AppDetailsResult;
 import com.horrorpond.ingestion.domain.FetchStatus;
+import com.horrorpond.ingestion.domain.HorrorTag;
 import com.horrorpond.ingestion.domain.SteamAppSeed;
 import com.horrorpond.ingestion.domain.SteamRawSnapshot;
 import com.horrorpond.ingestion.repository.SteamAppSeedRepository;
@@ -39,6 +40,11 @@ public class EnrichmentItemWriter {
         } else {
             seed.markFetched(FetchStatus.NOT_FOUND, now);
         }
+    }
+
+    @Transactional
+    public void recordHorrorTag(int appid, HorrorTag result) {
+        seedRepository.findById(appid).orElseThrow().recordHorrorTag(result, clock.instant());
     }
 
     @Transactional
