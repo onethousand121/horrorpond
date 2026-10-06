@@ -4,12 +4,11 @@ import { GameGrid } from "@/components/GameGrid";
 import { GenreChips } from "@/components/GenreChips";
 import { getGames, getGenres, MAX_PAGE_SIZE } from "@/lib/api";
 
-// ISR: 장르는 빌드 때 모두 생성하고 1시간마다 갱신. 큐레이터가 새 장르를 추가하면 첫 방문 때 생성된다.
+// ISR: 빌드 때는 만들지 않고(빈 배열, 빌드가 백엔드에 의존하지 않게) 첫 방문 때 정적 생성 후 1시간마다 갱신.
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
-  const genres = await getGenres();
-  return genres.map((genre) => ({ slug: genre.slug }));
+  return [];
 }
 
 async function findGenre(slug: string) {

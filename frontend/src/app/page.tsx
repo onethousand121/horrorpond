@@ -1,14 +1,16 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { GameGrid } from "@/components/GameGrid";
 import { GenreChips } from "@/components/GenreChips";
 import { getGames, getGenres } from "@/lib/api";
 
-// ISR: 정적으로 생성하고 1시간마다 다시 생성 (lib/api REVALIDATE_SECONDS와 같은 값)
-export const revalidate = 3600;
+// 요청 시 렌더링: 고정 경로는 빌드 때 사전 렌더링되므로, connection()으로 빌드가 백엔드에 의존하지 않게 한다.
+// 백엔드 호출은 lib/api의 fetch 데이터 캐시(1시간, 태그 기반 갱신)가 막아 준다.
 
 const RECENT_COUNT = 12;
 
 export default async function HomePage() {
+  await connection();
   const [recent, genres] = await Promise.all([getGames({ size: RECENT_COUNT }), getGenres()]);
 
   return (

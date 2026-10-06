@@ -1,5 +1,7 @@
 ## Architecture Decisions (horrorpond MVP)
 - Frontend: Next.js App Router, ISR(revalidate 3600), 서버 컴포넌트에서만 백엔드 호출
+  빌드는 백엔드에 의존하지 않음: 동적 경로는 generateStaticParams가 [] 반환,
+  데이터를 쓰는 고정 경로는 connection()으로 요청 시 렌더링 + fetch 데이터 캐시(1h, 태그)
 - Backend: Spring Boot 4.1.x / Java 17, 모듈러 모놀리스
   패키지 모듈: catalog(게임/장르 도메인, 장르 조회 API),
   curation(큐레이션 관리 API + 공개 게임 조회 API), ingestion(수집), common
