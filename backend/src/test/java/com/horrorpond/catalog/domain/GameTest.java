@@ -33,6 +33,7 @@ class GameTest {
         assertThat(game.getGenres()).containsExactly(genre);
 
         assertThat(game.getTitle()).isEqualTo("Outlast");
+        assertThat(game.isCoop()).isTrue();
         assertThat(game.getReleaseDate()).isEqualTo(LocalDate.of(2013, 9, 4));
         assertThat(game.getMedia()).extracting(GameMedia::getSortOrder).containsExactly(0, 1);
         assertThat(game.getDevelopers()).extracting(GameDeveloper::getRole)
@@ -62,7 +63,7 @@ class GameTest {
         game.applySteamData(steamData("Title", dev));
         GameDeveloper originalCredit = game.getDevelopers().get(0);
 
-        game.applySteamData(new SteamGameData("Title", null, null, null, null, true,
+        game.applySteamData(new SteamGameData("Title", null, null, null, null, true, false,
                 List.of(new SteamGameData.Media(MediaType.TRAILER, "https://v/2", null)),
                 List.of(new SteamGameData.Credit(dev, DeveloperRole.DEVELOPER),
                         new SteamGameData.Credit(publisher, DeveloperRole.PUBLISHER))));
@@ -79,6 +80,17 @@ class GameTest {
 
         assertThatThrownBy(() -> game.applySteamData(steamData("X", Developer.create("Dev", "dev"))))
                 .isInstanceOf(DomainStateException.class);
+    }
+
+    @Test
+    void changeCoopIsForNonSteamGamesOnly() {
+        Game manual = Game.manual("Manual", "manual");
+        manual.changeCoop(true);
+        assertThat(manual.isCoop()).isTrue();
+
+        Game steam = Game.candidateFromSteam(1, "Title", "title-1");
+        assertThatThrownBy(() -> steam.changeCoop(true)).isInstanceOf(DomainStateException.class);
+        assertThat(steam.isCoop()).isFalse();
     }
 
     @Test
@@ -116,7 +128,7 @@ class GameTest {
 
     private static SteamGameData steamData(String title, Developer dev) {
         return new SteamGameData(title, "desc", "https://img/header.jpg",
-                LocalDate.of(2013, 9, 4), "4 Sep, 2013", false,
+                LocalDate.of(2013, 9, 4), "4 Sep, 2013", false, true,
                 List.of(new SteamGameData.Media(MediaType.SCREENSHOT, "https://s/1", "https://t/1"),
                         new SteamGameData.Media(MediaType.TRAILER, "https://v/1", null)),
                 List.of(new SteamGameData.Credit(dev, DeveloperRole.DEVELOPER)));

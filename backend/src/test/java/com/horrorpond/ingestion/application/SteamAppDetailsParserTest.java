@@ -103,6 +103,24 @@ class SteamAppDetailsParserTest {
     }
 
     @Test
+    void coopFromFixtureCategories() {
+        // 739630: 9 협동, 38 온라인 협동 / 1262350, 594330: 싱글 플레이어만
+        assertThat(parser.parse(fixtureData(739630)).data().coop()).isTrue();
+        assertThat(parser.parse(fixtureData(1262350)).data().coop()).isFalse();
+        assertThat(parser.parse(fixtureData(594330)).data().coop()).isFalse();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"9,true", "38,true", "39,true", "48,true", "44,false", "1,false", "49,false"})
+    void eachCoopCategoryIdAloneMarksCoop(int categoryId, boolean expected) {
+        String json = modified(1262350, d -> {
+            d.putArray("categories").addObject().put("id", categoryId).put("description", "x");
+        });
+
+        assertThat(parser.parse(json).data().coop()).isEqualTo(expected);
+    }
+
+    @Test
     void developersAndPublishersFromFixture() {
         ParsedSteamApp parsed = parser.parse(fixtureData(1262350));
 
@@ -122,6 +140,7 @@ class SteamAppDetailsParserTest {
         assertThat(data.releaseDate()).isNull();
         assertThat(data.releaseDateText()).isNull();
         assertThat(data.comingSoon()).isFalse();
+        assertThat(data.coop()).isFalse();
         assertThat(data.media()).isEmpty();
         assertThat(parsed.developerNames()).isEmpty();
         assertThat(parsed.publisherNames()).isEmpty();

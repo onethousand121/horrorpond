@@ -198,6 +198,33 @@ class IngestionPipelineIntegrationTest {
     }
 
     @Test
+    void renormalizeUpdatesCoopButKeepsCuratorSlugGenresAndStatus() {
+        ingest(739630);
+        Long genreId = genreRepository.save(Genre.create("Co-op", "co-op", null, 0)).getId();
+        tx.executeWithoutResult(status -> {
+            Game game = steamGame(739630);
+            assertThat(game.isCoop()).as("fixture에 9/38 협동 카테고리").isTrue();
+            game.changeSlug("phasmophobia");
+            game.replaceGenres(Set.of(genreRepository.findById(genreId).orElseThrow()));
+            game.publish(true, clock.instant());
+        });
+
+        String singlePlayerOnly = SteamAppDetailsParserTest.modified(739630, d ->
+                d.putArray("categories").addObject().put("id", 2).put("description", "싱글 플레이어"));
+        tx.executeWithoutResult(status -> snapshotRepository.findById(739630).orElseThrow()
+                .replace(singlePlayerOnly, EnrichmentItemWriter.sha256(singlePlayerOnly), clock.instant()));
+
+        assertJob(normalizeService.run(TriggerType.MANUAL), JobType.NORMALIZE, JobStatus.SUCCEEDED, 1, 0);
+        tx.executeWithoutResult(status -> {
+            Game game = steamGame(739630);
+            assertThat(game.isCoop()).isFalse();
+            assertThat(game.getSlug()).isEqualTo("phasmophobia");
+            assertThat(game.getGenres()).extracting(Genre::getSlug).containsExactly("co-op");
+            assertThat(game.getStatus()).isEqualTo(GameStatus.PUBLISHED);
+        });
+    }
+
+    @Test
     void rateLimitWaitsThenRetriesSameAppid() {
         seedRepository.save(SteamAppSeed.discovered(739630, DiscoveredBy.MANUAL, clock.instant()));
         SERVER.expect(once(), requestTo(SteamMockServer.appDetailsUrl(739630)))

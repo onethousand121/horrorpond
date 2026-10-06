@@ -26,6 +26,13 @@ public class SteamAppDetailsParser {
 
     static final String TYPE_GAME = "game";
 
+    /**
+     * Steam categories 중 협동 계열 (실제 응답으로 확인한 id, 설명은 l=koreana 기준):
+     * 9 협동, 38 온라인 협동, 39 스크린 공유 및 분할 협동, 48 LAN 협동.
+     * 44 Remote Play Together는 원격 플레이 기능이라 제외한다.
+     */
+    static final Set<Integer> COOP_CATEGORY_IDS = Set.of(9, 38, 39, 48);
+
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final Pattern HTML_TAG = Pattern.compile("<[^>]*>");
     // &nbsp;를 unescape하면  이 되는데 \s에 포함되지 않으므로 따로 넣는다
@@ -54,6 +61,7 @@ public class SteamAppDetailsParser {
                 parseReleaseDate(releaseDateText),
                 releaseDateText,
                 release.path("coming_soon").asBoolean(false),
+                isCoop(root),
                 media(root),
                 List.of());
         return new ParsedSteamApp(type, data, names(root, "developers"), names(root, "publishers"));
@@ -102,6 +110,16 @@ public class SteamAppDetailsParser {
             }
         }
         return media;
+    }
+
+    private static boolean isCoop(JsonNode root) {
+        for (JsonNode category : root.path("categories")) {
+            JsonNode id = category.get("id");
+            if (id != null && id.isNumber() && COOP_CATEGORY_IDS.contains(id.asInt())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static List<String> names(JsonNode root, String field) {

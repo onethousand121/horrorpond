@@ -18,6 +18,7 @@ public record SteamGameData(
         LocalDate releaseDate,
         String releaseDateText,
         boolean comingSoon,
+        boolean coop,
         List<Media> media,
         List<Credit> developers
 ) {
@@ -35,7 +36,7 @@ public record SteamGameData(
      */
     public SteamGameData withDevelopers(List<Credit> credits) {
         return new SteamGameData(title, shortDescription, headerImageUrl, releaseDate, releaseDateText,
-                comingSoon, media, credits);
+                comingSoon, coop, media, credits);
     }
 
     public record Media(MediaType type, String url, String thumbnailUrl) {

@@ -71,6 +71,12 @@ public class Game extends BaseTimeEntity {
     @Column(nullable = false)
     private boolean comingSoon;
 
+    /**
+     * STEAM 게임은 Steam categories에서 파생된다. MANUAL/ITCH 게임은 큐레이터가 정한다.
+     */
+    @Column(nullable = false)
+    private boolean coop;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private GameStatus status;
@@ -117,7 +123,7 @@ public class Game extends BaseTimeEntity {
     // ===== Steam 소유 필드 =====
 
     /**
-     * Steam이 소유한 필드만 갱신한다. status/slug/genres는 큐레이터 소유이므로 건드리지 않는다.
+     * Steam이 소유한 필드(coop 포함)만 갱신한다. status/slug/genres는 큐레이터 소유이므로 건드리지 않는다.
      */
     public void applySteamData(SteamGameData data) {
         Objects.requireNonNull(data, "data");
@@ -130,6 +136,7 @@ public class Game extends BaseTimeEntity {
         this.releaseDate = data.releaseDate();
         this.releaseDateText = data.releaseDateText();
         this.comingSoon = data.comingSoon();
+        this.coop = data.coop();
         replaceMedia(data.media());
         replaceDevelopers(data.developers());
         upsertStoreLink(Store.STEAM, STEAM_STORE_URL + externalId);
@@ -172,6 +179,16 @@ public class Game extends BaseTimeEntity {
 
     public void changeSlug(String slug) {
         this.slug = requireText(slug, "slug");
+    }
+
+    /**
+     * STEAM 게임의 coop은 Steam 데이터가 소유하므로(다음 normalize에서 덮어씀) 큐레이터 변경을 막는다.
+     */
+    public void changeCoop(boolean coop) {
+        if (source == GameSource.STEAM) {
+            throw new DomainStateException("coop of STEAM games is derived from Steam categories");
+        }
+        this.coop = coop;
     }
 
     public void replaceGenres(Set<Genre> genres) {

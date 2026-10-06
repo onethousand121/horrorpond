@@ -73,7 +73,7 @@ class CatalogMappingTest {
         Game game = Game.candidateFromSteam(238320, "Outlast", "outlast-238320");
         game.replaceGenres(Set.of(genre));
         game.applySteamData(new SteamGameData("Outlast", "Hell is an experiment you can't survive.",
-                "https://img/header.jpg", LocalDate.of(2013, 9, 4), "4 Sep, 2013", false,
+                "https://img/header.jpg", LocalDate.of(2013, 9, 4), "4 Sep, 2013", false, false,
                 List.of(new SteamGameData.Media(MediaType.SCREENSHOT, "https://s/1", "https://t/1"),
                         new SteamGameData.Media(MediaType.TRAILER, "https://v/1", null)),
                 List.of(new SteamGameData.Credit(dev, DeveloperRole.DEVELOPER),
@@ -140,7 +140,7 @@ class CatalogMappingTest {
     }
 
     private static SteamGameData steamData(List<SteamGameData.Credit> credits) {
-        return new SteamGameData("Title", null, null, null, "Coming soon", true,
+        return new SteamGameData("Title", null, null, null, "Coming soon", true, false,
                 List.of(new SteamGameData.Media(MediaType.SCREENSHOT, "https://s/1", null)),
                 credits);
     }
