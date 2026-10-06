@@ -15,6 +15,8 @@
   enrichment는 SteamSpy 발견 seed를 먼저 SteamSpy appdetails(1s 간격) 상위 태그로 판정해
   Horror 계열 태그가 없으면 NOT_HORROR로 기록하고 Steam 호출에서 제외 (MANUAL seed는 판정 안 함)
 - 트리거: @Scheduled 일 1회 + POST /api/admin/ingestion/run (X-Admin-Key)
+- 관리 화면: Next.js /admin. Admin Key를 httpOnly 쿠키에 두고 서버에서만 백엔드 호출.
+  변경 서버 액션은 updateTag("games")로 공개 페이지 캐시를 즉시 만료
 - 동시성: ShedLock(JDBC provider)
 - 외부 HTTP: RestClient + Spring Framework 7 @Retryable.
   Steam 호출은 단일 스레드 순차 실행 + 1.5s 고정 간격으로 제어
