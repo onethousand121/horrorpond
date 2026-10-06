@@ -43,3 +43,7 @@
 ## Transaction Rules
 - 외부 HTTP 호출과 sleep은 트랜잭션 밖에서. 트랜잭션은 아이템 1건 단위
 - @Transactional/@Retryable은 프록시 기반: 같은 클래스 내부 호출 금지, 별도 빈으로 분리
+
+## Test Rules
+- 개발 중에는 변경한 영역의 테스트만 실행 (./gradlew test --tests '패키지.*')
+- 커밋 직전에만 전체 테스트 실행

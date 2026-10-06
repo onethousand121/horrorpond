@@ -3,6 +3,7 @@ package com.horrorpond.common.error;
 import com.horrorpond.common.domain.DomainStateException;
 import com.horrorpond.common.domain.DomainValidationException;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,8 +35,22 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.message").value("bad state"));
     }
 
+    @Test
+    void dataIntegrityViolationIs409WithoutSqlDetails() throws Exception {
+        mvc.perform(get("/integrity"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONFLICT"))
+                .andExpect(jsonPath("$.message").value("Request conflicts with existing data"));
+    }
+
     @RestController
     static class ThrowingController {
+
+        @GetMapping("/integrity")
+        void integrity() {
+            throw new DataIntegrityViolationException(
+                    "duplicate key value violates unique constraint \"game_slug_key\"");
+        }
 
         @GetMapping("/validation")
         void validation() {

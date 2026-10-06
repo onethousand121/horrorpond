@@ -2,6 +2,7 @@ package com.horrorpond.common.error;
 
 import com.horrorpond.common.domain.DomainStateException;
 import com.horrorpond.common.domain.DomainValidationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -61,6 +62,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleState(DomainStateException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse("INVALID_STATE", e.getMessage()));
+    }
+
+    /**
+     * 사전 검사를 통과한 뒤 동시 요청이 같은 유니크 값(slug 등)을 먼저 차지한 경우.
+     * DB 제약/SQL 상세는 응답에 노출하지 않는다.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("CONFLICT", "Request conflicts with existing data"));
     }
 
     private static ResponseEntity<ErrorResponse> badRequest(String code, String message) {
