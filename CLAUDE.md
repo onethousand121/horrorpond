@@ -18,3 +18,17 @@
 [Security Rules]
 - Steam API Key, Admin Key 등 비밀값은 환경변수로만 주입. yml에 기본값 금지.
   로컬 DB 접속 정보(docker-compose 값)만 예외
+
+## Package Rules
+- 기능별 패키지: catalog, curation, ingestion, common
+- 각 기능 내부: domain / repository / application / api / (ingestion만) client
+- 의존 방향: curation → catalog, ingestion → catalog. catalog는 다른 기능을 모름.
+  역방향 의존 금지
+
+## Entity Rules
+- setter 금지. 상태 변경은 의도가 드러나는 메서드로만
+- @NoArgsConstructor(access = PROTECTED), 생성은 정적 팩토리
+- Lombok @Data/@EqualsAndHashCode/@Setter 엔티티에 사용 금지. @ToString은 연관관계 제외
+- enum은 @Enumerated(STRING)
+- 시간 타입은 Instant (TIMESTAMPTZ), 날짜는 LocalDate
+- 다른 애그리거트는 ID로만 참조 (예: CurationArticle.gameId)
