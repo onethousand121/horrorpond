@@ -68,3 +68,20 @@ export function groupDevelopers(credits: DeveloperCredit[]): DeveloperGroup[] {
         : ROLE_LABEL[roles.has("DEVELOPER") ? "DEVELOPER" : "PUBLISHER"],
   }));
 }
+
+/** 리뷰 수를 짧게: 950 → "950", 12,300 → "1.2만", 684,837 → "68만" */
+export function formatCount(n: number): string {
+  if (n < 10_000) return n.toLocaleString("ko-KR");
+  const man = n / 10_000;
+  return `${man < 10 ? man.toFixed(1).replace(/\.0$/, "") : Math.round(man)}만`;
+}
+
+/** ISO 시각 → "3일 전", "2주 전" 같은 상대 시간 (오늘 기준, 대략) */
+export function formatRelative(iso: string, now: Date = new Date()): string {
+  const days = Math.floor((now.getTime() - new Date(iso).getTime()) / 86_400_000);
+  if (days < 1) return "오늘";
+  if (days < 7) return `${days}일 전`;
+  if (days < 30) return `${Math.floor(days / 7)}주 전`;
+  if (days < 365) return `${Math.floor(days / 30)}개월 전`;
+  return `${Math.floor(days / 365)}년 전`;
+}

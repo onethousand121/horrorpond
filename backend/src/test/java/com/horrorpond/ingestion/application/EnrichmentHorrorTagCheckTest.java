@@ -95,6 +95,35 @@ class EnrichmentHorrorTagCheckTest {
     }
 
     @Test
+    void missingReviewCountIsFilledFromAppReviews() {
+        when(steamSpyClient.fetchTopTags(anyInt())).thenReturn(List.of("Horror"));
+        when(storeClient.fetchAppDetails(10)).thenReturn(new AppDetailsResult.Found("{\"name\":\"New\"}"));
+        when(storeClient.fetchReviewCount(10)).thenReturn(1509);
+        when(storeClient.fetchAppDetails(20))
+                .thenReturn(new AppDetailsResult.Found("{\"name\":\"Old\",\"recommendations\":{\"total\":7}}"));
+
+        service.run(TriggerType.MANUAL);
+
+        verify(itemWriter).write(10,
+                new AppDetailsResult.Found("{\"name\":\"New\",\"recommendations\":{\"total\":1509}}"));
+        verify(storeClient, never()).fetchReviewCount(20);
+        verify(jobRecorder).succeed(JOB_ID, 2, 0);
+    }
+
+    @Test
+    void appReviewsFailureStillSavesAppDetails() {
+        when(steamSpyClient.fetchTopTags(anyInt())).thenReturn(List.of("Horror"));
+        when(storeClient.fetchAppDetails(anyInt())).thenReturn(new AppDetailsResult.Found("{\"name\":\"New\"}"));
+        when(storeClient.fetchReviewCount(anyInt())).thenThrow(new SteamTransientException("down"));
+
+        service.run(TriggerType.MANUAL);
+
+        verify(itemWriter).write(10, new AppDetailsResult.Found("{\"name\":\"New\"}"));
+        verify(itemWriter).write(20, new AppDetailsResult.Found("{\"name\":\"New\"}"));
+        verify(jobRecorder).succeed(JOB_ID, 2, 0);
+    }
+
+    @Test
     void manualSeedGetsTagsWithoutHorrorCheckAndTagFailureDoesNotBlock() {
         when(seedRepository.findByFetchStatusAndDiscoveredByAndHorrorTagNotOrderByAppidDesc(
                 eq(FetchStatus.PENDING), eq(DiscoveredBy.STEAMSPY_TAG), eq(HorrorTag.NOT_HORROR), any()))

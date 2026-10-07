@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { GameDetail, GameSort, GameSummary, Genre, PageResponse } from "./types";
+import type { GameDetail, GameSort, GameSummary, Genre, PageResponse, ReleaseWindow } from "./types";
 
 /**
  * 데이터 캐시 수명(초). 페이지의 `export const revalidate`와 같은 값으로 맞춘다
@@ -13,6 +13,7 @@ export const CACHE_TAGS = {
   games: "games",
   genres: "genres",
   game: (slug: string) => `game:${slug}`,
+  videos: "videos",
 } as const;
 
 export const DEFAULT_PAGE_SIZE = 24;
@@ -52,6 +53,9 @@ async function failure(res: Response, path: string): Promise<ApiError> {
 export interface GetGamesParams {
   genre?: string;
   coop?: boolean;
+  release?: ReleaseWindow;
+  /** 재일 추천만 */
+  picked?: boolean;
   sort?: GameSort;
   page?: number;
   size?: number;
@@ -61,6 +65,8 @@ export async function getGames(params: GetGamesParams = {}): Promise<PageRespons
   const query = new URLSearchParams();
   if (params.genre) query.set("genre", params.genre);
   if (params.coop !== undefined) query.set("coop", String(params.coop));
+  if (params.release) query.set("release", params.release);
+  if (params.picked) query.set("picked", "true");
   if (params.sort) query.set("sort", params.sort);
   query.set("page", String(params.page ?? 0));
   query.set("size", String(params.size ?? DEFAULT_PAGE_SIZE));

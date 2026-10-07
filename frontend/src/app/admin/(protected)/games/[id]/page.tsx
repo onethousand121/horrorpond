@@ -4,12 +4,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAdminGame } from "@/lib/admin/api";
 import { getGenres } from "@/lib/api";
-import { formatDate } from "@/lib/format";
+import { formatCount, formatDate } from "@/lib/format";
 import { hideAction, publishAction, unhideAction } from "../../actions";
 import { ActionButton } from "../../components/ActionButton";
 import { ArticleForm } from "../../components/ArticleForm";
 import { CurationForm } from "../../components/CurationForm";
-import { ArticleStatusBadge, GameStatusBadge } from "../../components/StatusBadge";
+import { AdultBadge, ArticleStatusBadge, GameStatusBadge, VisibilityBadge } from "../../components/StatusBadge";
 
 function parseId(id: string): number | null {
   const gameId = Number(id);
@@ -30,12 +30,13 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
   if (!game) notFound();
 
   const article = game.article;
-  const canPublish = article !== null && article.highlights.length > 0;
-  const publishHint = article === null
-    ? "글을 먼저 저장하세요."
-    : article.highlights.length === 0
-      ? "장점 포인트를 1개 이상 넣고 저장하세요."
-      : null;
+  /** 자동 노출이 안 되는 이유 (공개 사이트 규칙: 백엔드 ExposurePolicy) */
+  const hiddenReason =
+    game.status === "HIDDEN"
+      ? "숨김 상태입니다."
+      : game.adult
+        ? "성인 콘텐츠라 자동 노출되지 않습니다. 보여주려면 고정 노출하세요."
+        : "Steam 리뷰가 적어 자동 노출 기준(10개)에 못 미칩니다. 보여주려면 고정 노출하세요.";
 
   return (
     <div className="space-y-8">
@@ -57,7 +58,9 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-bold">{game.title}</h1>
+            <VisibilityBadge visible={game.publiclyVisible} />
             <GameStatusBadge status={game.status} />
+            {game.adult && <AdultBadge />}
             <ArticleStatusBadge status={article?.status ?? null} />
           </div>
           <div className="flex flex-wrap gap-3 text-sm text-muted">
@@ -66,29 +69,29 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
                 Steam 스토어 ↗
               </a>
             )}
-            {game.releaseDate && <span>출시 {formatDate(game.releaseDate)}</span>}
-            {game.status === "PUBLISHED" && (
+            {game.comingSoon ? <span>출시 예정</span> : game.releaseDate && <span>출시 {formatDate(game.releaseDate)}</span>}
+            <span>리뷰 {game.reviewCount == null ? "-" : formatCount(game.reviewCount)}</span>
+            {game.publiclyVisible && (
               <Link href={`/games/${game.slug}`} target="_blank" className="hover:text-foreground">
                 사이트에서 보기 ↗
               </Link>
             )}
           </div>
           {game.shortDescription && <p className="text-sm text-muted">{game.shortDescription}</p>}
+          {game.tags.length > 0 && <p className="text-xs text-muted">태그: {game.tags.slice(0, 10).join(", ")}</p>}
         </div>
       </header>
 
       <section className="space-y-3 rounded border border-border bg-surface p-4">
-        <h2 className="font-semibold">공개 상태</h2>
+        <h2 className="font-semibold">노출</h2>
+        {!game.publiclyVisible && <p className="text-sm text-amber-300">{hiddenReason}</p>}
         <div className="flex flex-wrap items-center gap-3">
-          {/* 글이 생기거나 장점 포인트 수가 바뀌면 다시 마운트해 이전 실패 메시지("글이 필요합니다" 등)를 지운다.
-              공개 상태는 key에 넣지 않는다(공개 성공 메시지가 바로 사라지므로). */}
           <ActionButton
-            key={`${article ? "article" : "none"}-${article?.highlights.length ?? 0}`}
             action={publishAction}
             gameId={game.id}
             variant="primary"
-            label={game.status === "PUBLISHED" ? "다시 공개(글 공개 상태 확인)" : "공개하기"}
-            pendingLabel="공개 중…"
+            label={game.status === "PUBLISHED" ? "글 공개 반영" : "고정 노출"}
+            pendingLabel="처리 중…"
           />
           {game.status === "HIDDEN" ? (
             <ActionButton action={unhideAction} gameId={game.id} label="숨김 해제" />
@@ -98,13 +101,14 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
               gameId={game.id}
               label="숨기기"
               variant="danger"
-              confirmMessage={game.status === "PUBLISHED" ? "사이트에서 이 게임을 내릴까요?" : undefined}
+              confirmMessage={game.publiclyVisible ? "사이트에서 이 게임을 내릴까요?" : undefined}
             />
           )}
         </div>
-        {!canPublish && publishHint && <p className="text-sm text-amber-300">{publishHint}</p>}
         <p className="text-xs text-muted">
-          공개하면 글과 게임이 함께 공개되고 사이트에 바로 반영됩니다. 공개 중인 글을 수정해도 공개 상태는 유지됩니다.
+          수집된 공포게임은 성인 콘텐츠가 아니고 출시 예정이거나 리뷰가 10개 이상이면 자동으로 노출됩니다.
+          고정 노출은 이 기준과 상관없이 항상 보여줍니다. 장점 포인트가 있는 글이 있으면 &quot;{"재일 추천"}&quot;으로
+          함께 공개됩니다. 모든 변경은 사이트에 바로 반영됩니다.
         </p>
       </section>
 

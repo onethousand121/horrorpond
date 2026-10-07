@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { CoopBadge, GenreBadge } from "@/components/Badges";
-import { CuratorNote } from "@/components/CuratorNote";
 import { HighlightList } from "@/components/HighlightList";
 import { Markdown } from "@/components/Markdown";
 import { MediaGallery } from "@/components/MediaGallery";
 import { SponsorBadge } from "@/components/SponsorBadge";
 import { TrailerPlayer } from "@/components/TrailerPlayer";
 import { getGame } from "@/lib/api";
-import { formatReleaseDate, groupDevelopers } from "@/lib/format";
+import { formatCount, formatReleaseDate, groupDevelopers } from "@/lib/format";
+import { CURATOR } from "@/lib/site";
 
 // ISR: 빌드 때는 만들지 않고(빈 배열) 첫 방문 때 정적 생성 후 1시간마다 갱신.
 // 없는 slug는 notFound()로 실제 404 상태 코드를 돌려준다.
@@ -23,13 +23,14 @@ export async function generateMetadata({ params }: PageProps<"/games/[slug]">): 
   const { slug } = await params;
   const game = await getGame(slug);
   if (!game) return {};
+  const description = game.article?.oneLiner ?? game.shortDescription ?? undefined;
   return {
     title: game.title,
-    description: game.article.oneLiner,
+    description,
     alternates: { canonical: `/games/${game.slug}` },
     openGraph: {
       title: game.title,
-      description: game.article.oneLiner,
+      description,
       images: game.headerImageUrl ? [game.headerImageUrl] : [],
       type: "article",
     },
@@ -75,30 +76,45 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[slug
             ))}
           </div>
           <h1 className="text-3xl font-bold drop-shadow sm:text-5xl">{game.title}</h1>
-          <p className="max-w-3xl text-lg text-foreground/90">{article.oneLiner}</p>
+          {article?.oneLiner && <p className="max-w-3xl text-lg text-foreground/90">{article.oneLiner}</p>}
         </div>
       </header>
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-10">
-          {article.sponsored && (
-            <aside
-              aria-label="협찬 고지"
-              className="flex gap-3 rounded-xl border border-amber-500/50 bg-amber-500/10 p-4 text-sm text-amber-100"
-            >
-              <SponsorBadge />
-              <p className="whitespace-pre-line">{article.sponsorDisclosure}</p>
-            </aside>
+          {article ? (
+            <section aria-label={`${CURATOR.name} 추천`} className="space-y-6">
+              <p className="inline-block rounded bg-accent-2/90 px-2 py-0.5 font-pixel text-[11px] text-accent-ink">
+                {CURATOR.name} 추천
+              </p>
+              {article.sponsored && (
+                <aside
+                  aria-label="협찬 고지"
+                  className="flex gap-3 rounded-xl border border-amber-500/50 bg-amber-500/10 p-4 text-sm text-amber-100"
+                >
+                  <SponsorBadge />
+                  <p className="whitespace-pre-line">{article.sponsorDisclosure}</p>
+                </aside>
+              )}
+              <HighlightList items={article.highlights} />
+              <div className="space-y-4">
+                <h2 id="article-title" className="font-pixel text-[22px] leading-snug">
+                  {article.title}
+                </h2>
+                <Markdown>{article.body}</Markdown>
+              </div>
+              {game.shortDescription && (
+                <p className="border-l-2 border-border pl-4 text-sm text-muted">{game.shortDescription}</p>
+              )}
+            </section>
+          ) : (
+            game.shortDescription && (
+              <section aria-label="게임 소개" className="space-y-2">
+                <h2 className="font-pixel text-[11px] text-muted">게임 소개 (Steam)</h2>
+                <p className="leading-relaxed text-foreground/90">{game.shortDescription}</p>
+              </section>
+            )
           )}
-
-          <HighlightList items={article.highlights} />
-
-          <section aria-labelledby="article-title" className="space-y-4">
-            <h2 id="article-title" className="font-pixel text-[22px] leading-snug">
-              {article.title}
-            </h2>
-            <Markdown>{article.body}</Markdown>
-          </section>
 
           {(trailers.length > 0 || screenshots.length > 0) && (
             <section aria-label="영상과 스크린샷" className="space-y-4">
@@ -120,6 +136,12 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[slug
                   <dd>{releaseDate}</dd>
                 </div>
               )}
+              {game.reviewCount != null && game.reviewCount > 0 && (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted">Steam 리뷰</dt>
+                  <dd>{formatCount(game.reviewCount)}개</dd>
+                </div>
+              )}
               {developers.map((dev) => (
                 <div key={dev.name} className="flex justify-between gap-4">
                   <dt className="shrink-0 text-muted">{dev.label}</dt>
@@ -138,7 +160,6 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[slug
               </a>
             )}
           </section>
-          <CuratorNote compact />
         </aside>
       </div>
     </article>

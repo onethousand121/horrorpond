@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * seed별 appdetails를 받아 원본 스냅샷으로 저장한다.
+ * seed별 appdetails를 받아 원본 스냅샷으로 저장한다. appdetails에 리뷰 수가 없으면 appreviews로 채운다.
  * SteamSpy로 발견한 seed는 먼저 SteamSpy 상위 태그로 공포게임인지 판정하고, 아니면 Steam 호출 없이 제외한다.
  * HTTP 호출과 대기는 트랜잭션 밖에서 하고, 저장은 {@link EnrichmentItemWriter}가 1건씩 커밋한다.
  */
@@ -157,7 +157,7 @@ public class EnrichmentService {
             }
             while (true) {
                 try {
-                    AppDetailsResult result = storeClient.fetchAppDetails(appid);
+                    AppDetailsResult result = withReviewCount(appid, storeClient.fetchAppDetails(appid));
                     consecutiveRateLimits = 0;
                     itemWriter.write(appid, result);
                     processed++;
@@ -185,6 +185,23 @@ public class EnrichmentService {
         log.info("Enrichment finished: targets={}, processed={} (excluded as not horror={}), failed={}",
                 seeds.size(), processed, excluded, failed);
         return new Outcome(processed, failed, null);
+    }
+
+    /**
+     * 자동 노출 기준이 리뷰 수라, appdetails에 리뷰 수가 빠진 게임은 appreviews로 한 번 더 받는다.
+     * 실패하면 리뷰 수 없이 저장하고 다음 갱신 때 다시 받는다 (429는 호출한 쪽의 대기/재시도로 넘긴다).
+     */
+    private AppDetailsResult withReviewCount(int appid, AppDetailsResult result) {
+        if (!(result instanceof AppDetailsResult.Found found) || found.hasReviewCount()) {
+            return result;
+        }
+        try {
+            Integer reviewCount = storeClient.fetchReviewCount(appid);
+            return reviewCount == null ? found : found.withReviewCount(reviewCount);
+        } catch (SteamTransientException e) {
+            log.warn("appreviews failed after retries: appid={}, {}", appid, e.getMessage());
+            return found;
+        }
     }
 
     private record Outcome(int processed, int failed, String abortReason) {

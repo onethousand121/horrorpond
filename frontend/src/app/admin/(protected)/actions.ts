@@ -73,7 +73,7 @@ export async function saveArticleAction(_prev: ActionResult | null, formData: Fo
 
 export async function publishAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const id = gameId(formData);
-  return run(() => publishGame(id), "공개했습니다. 사이트에 바로 반영됩니다.");
+  return run(() => publishGame(id), "고정 노출했습니다. 사이트에 바로 반영됩니다.");
 }
 
 export async function hideAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
@@ -83,5 +83,5 @@ export async function hideAction(_prev: ActionResult | null, formData: FormData)
 
 export async function unhideAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const id = gameId(formData);
-  return run(() => unhideGame(id), "숨김을 해제했습니다. 다시 공개하려면 공개 버튼을 누르세요.");
+  return run(() => unhideGame(id), "숨김을 해제했습니다. 자동 노출 기준을 만족하면 다시 보입니다.");
 }

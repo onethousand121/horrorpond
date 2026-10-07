@@ -15,7 +15,8 @@
 - 수집: discovery(SteamSpy tag) → enrichment(appdetails, 1.5s throttle, 429→60s backoff)
         → raw_snapshot(JSONB) 저장 → normalize(별도 단계, 재실행 가능)
   enrichment는 SteamSpy 발견 seed를 먼저 SteamSpy appdetails(1s 간격) 상위 태그로 판정해
-  Horror 계열 태그가 없으면 NOT_HORROR로 기록하고 Steam 호출에서 제외 (MANUAL seed는 판정 안 함)
+  상위 10개 태그 안에 Horror 계열 태그가 없으면 NOT_HORROR로 기록하고 Steam 호출에서 제외 (MANUAL seed는 판정 안 함)
+  appdetails에 recommendations(리뷰 수)가 없으면 appreviews로 받아 같은 모양으로 채운다
 - 트리거: @Scheduled 일 1회 + POST /api/admin/ingestion/run (X-Admin-Key)
 - 관리 화면: Next.js /admin. Admin Key를 httpOnly 쿠키에 두고 서버에서만 백엔드 호출.
   변경 서버 액션은 updateTag("games")로 공개 페이지 캐시를 즉시 만료

@@ -29,7 +29,7 @@ export default async function GenrePage({ params }: PageProps<"/genres/[slug]">)
   if (!genre) notFound();
 
   // MVP: 첫 48개만 보여준다 (페이지네이션은 공개 게임이 늘면 추가)
-  const games = await getGames({ genre: genre.slug, size: MAX_PAGE_SIZE });
+  const games = await getGames({ genre: genre.slug, sort: "POPULAR", size: MAX_PAGE_SIZE });
 
   return (
     <div className="space-y-6">
@@ -38,7 +38,7 @@ export default async function GenrePage({ params }: PageProps<"/genres/[slug]">)
         {genre.description && <p className="text-muted">{genre.description}</p>}
       </header>
       <GenreChips genres={genres} activeSlug={genre.slug} />
-      <GameGrid games={games.content} emptyMessage="이 장르에 소개된 게임이 아직 없습니다." />
+      <GameGrid games={games.content} emptyMessage="이 장르의 게임이 아직 없습니다." />
     </div>
   );
 }

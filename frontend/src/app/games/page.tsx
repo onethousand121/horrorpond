@@ -2,23 +2,26 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { GameGrid } from "@/components/GameGrid";
 import { Pagination } from "@/components/Pagination";
-import { getGames } from "@/lib/api";
-import type { GameSort } from "@/lib/types";
+import { getGames, type GetGamesParams } from "@/lib/api";
+import { CURATOR } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "전체 게임",
-  description: "큐레이터가 소개한 공포게임 전체 목록",
+  title: "공포게임 둘러보기",
+  description: "출시 예정작부터 인기작까지, Steam 공포게임 전체 목록",
 };
 
-const SORTS = [
-  { key: "latest", label: "최근 소개순", api: "LATEST" },
-  { key: "release", label: "최근 출시순", api: "RELEASE" },
-] as const satisfies readonly { key: string; label: string; api: GameSort }[];
+const VIEWS = [
+  { key: "popular", label: "인기", params: { sort: "POPULAR" } },
+  { key: "recent", label: "최근 출시", params: { release: "RECENT", sort: "RELEASE" } },
+  { key: "upcoming", label: "출시 예정", params: { release: "UPCOMING" } },
+  { key: "latest", label: "새로 추가", params: { sort: "LATEST" } },
+  { key: "picked", label: `${CURATOR.name} 추천`, params: { picked: true } },
+] as const satisfies readonly { key: string; label: string; params: GetGamesParams }[];
 
-type SortKey = (typeof SORTS)[number]["key"];
+type ViewKey = (typeof VIEWS)[number]["key"];
 
-function parseSort(value: string | string[] | undefined): SortKey {
-  return value === "release" ? "release" : "latest";
+function parseView(value: string | string[] | undefined): ViewKey {
+  return VIEWS.some((v) => v.key === value) ? (value as ViewKey) : "popular";
 }
 
 /** URL의 ?page는 1부터. 잘못된 값은 1페이지로 본다. */
@@ -27,9 +30,9 @@ function parsePage(value: string | string[] | undefined): number {
   return Number.isInteger(page) && page >= 1 ? page : 1;
 }
 
-function href(sort: SortKey, page: number): string {
+function href(view: ViewKey, page: number): string {
   const params = new URLSearchParams();
-  if (sort !== "latest") params.set("sort", sort);
+  if (view !== "popular") params.set("view", view);
   if (page > 1) params.set("page", String(page));
   const query = params.toString();
   return query ? `/games?${query}` : "/games";
@@ -38,33 +41,37 @@ function href(sort: SortKey, page: number): string {
 // searchParams를 읽으므로 요청마다 렌더링된다. API 응답은 데이터 캐시(1시간)를 거친다.
 export default async function GamesPage({ searchParams }: PageProps<"/games">) {
   const query = await searchParams;
-  const sort = parseSort(query.sort);
+  const view = parseView(query.view);
   const page = parsePage(query.page);
-  const sortApi = SORTS.find((s) => s.key === sort)!.api;
+  const params = VIEWS.find((v) => v.key === view)!.params;
 
-  const games = await getGames({ sort: sortApi, page: page - 1 });
+  const games = await getGames({ ...params, page: page - 1 });
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-baseline justify-between gap-4">
         <h1 className="font-pixel text-[22px]">
-          전체 게임 <span className="text-base font-normal text-muted">{games.totalElements}</span>
+          공포게임 <span className="font-sans text-base font-normal text-muted">{games.totalElements}</span>
         </h1>
-        <nav aria-label="정렬" className="flex gap-3 text-sm">
-          {SORTS.map((s) => (
+        <nav aria-label="보기" className="flex flex-wrap gap-1.5 text-sm">
+          {VIEWS.map((v) => (
             <Link
-              key={s.key}
-              href={href(s.key, 1)}
-              aria-current={s.key === sort ? "true" : undefined}
-              className={s.key === sort ? "font-bold text-foreground" : "text-muted hover:text-foreground"}
+              key={v.key}
+              href={href(v.key, 1)}
+              aria-current={v.key === view ? "page" : undefined}
+              className={`rounded-full border px-3 py-1 ${
+                v.key === view
+                  ? "border-accent bg-accent font-medium text-accent-ink"
+                  : "border-border text-muted hover:border-accent/50 hover:text-foreground"
+              }`}
             >
-              {s.label}
+              {v.label}
             </Link>
           ))}
         </nav>
       </div>
       <GameGrid games={games.content} />
-      <Pagination page={page - 1} totalPages={games.totalPages} hrefFor={(p) => href(sort, p + 1)} />
+      <Pagination page={page - 1} totalPages={games.totalPages} hrefFor={(p) => href(view, p + 1)} />
     </div>
   );
 }

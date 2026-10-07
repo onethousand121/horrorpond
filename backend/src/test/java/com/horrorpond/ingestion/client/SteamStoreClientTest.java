@@ -70,6 +70,27 @@ class SteamStoreClientTest {
     }
 
     @Test
+    void reviewCountReadsTotalReviews() {
+        server.expect(once(), requestTo(BASE + "/appreviews/" + APPID
+                        + "?json=1&language=all&purchase_type=all&num_per_page=0"))
+                .andRespond(withSuccess("""
+                        {"success":1,"query_summary":{"num_reviews":0,"total_positive":2287,
+                        "total_negative":296,"total_reviews":2583},"reviews":[]}""", MediaType.APPLICATION_JSON));
+
+        assertThat(client.fetchReviewCount(APPID)).isEqualTo(2583);
+        server.verify();
+    }
+
+    @Test
+    void reviewCountIsNullWhenSummaryMissing() {
+        server.expect(once(), requestTo(BASE + "/appreviews/" + APPID
+                        + "?json=1&language=all&purchase_type=all&num_per_page=0"))
+                .andRespond(withSuccess("{\"success\":2}", MediaType.APPLICATION_JSON));
+
+        assertThat(client.fetchReviewCount(APPID)).isNull();
+    }
+
+    @Test
     void successFalseIsNotFound() {
         server.expect(once(), requestTo(BASE + "/api/appdetails?appids=1&cc=kr&l=koreana"))
                 .andRespond(withSuccess(Fixtures.appDetails(1), MediaType.APPLICATION_JSON));

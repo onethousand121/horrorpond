@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     default: `${SITE_NAME} — ${SITE_TAGLINE}`,
     template: `%s | ${SITE_NAME}`,
   },
-  description: `큐레이터 ${CURATOR.name}이 직접 플레이하고 건져 올린 공포게임만 소개합니다.`,
+  description: "출시 예정 신작부터 인기작까지, 공포게임을 한곳에서 모아 봅니다.",
   // 비공개 운영 중에는 모든 페이지를 noindex (lib/site)
   ...(SITE_INDEXING ? {} : { robots: { index: false, follow: false } }),
 };
@@ -60,7 +60,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <footer className="border-t border-border">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs text-muted">
             <span>
-              {SITE_NAME} · 큐레이터 {CURATOR.name} ·{" "}
+              {SITE_NAME} · 운영 {CURATOR.name} ·{" "}
               <a href={CURATOR.youtubeUrl} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
                 YouTube
               </a>

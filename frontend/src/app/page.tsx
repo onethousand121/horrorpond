@@ -1,74 +1,95 @@
-import Image from "next/image";
 import Link from "next/link";
 import { connection } from "next/server";
-import { CuratorNote } from "@/components/CuratorNote";
-import { FeaturedGame } from "@/components/FeaturedGame";
 import { GameGrid } from "@/components/GameGrid";
+import { GameRow } from "@/components/GameRow";
 import { GenreChips } from "@/components/GenreChips";
+import { VideoRow } from "@/components/VideoRow";
 import { getGames, getGenres } from "@/lib/api";
-import { CURATOR, SITE_TAGLINE } from "@/lib/site";
+import { CURATOR } from "@/lib/site";
+import { getLatestVideos } from "@/lib/youtube";
 
 // 요청 시 렌더링: 고정 경로는 빌드 때 사전 렌더링되므로, connection()으로 빌드가 백엔드에 의존하지 않게 한다.
-// 백엔드 호출은 lib/api의 fetch 데이터 캐시(1시간, 태그 기반 갱신)가 막아 준다.
+// 백엔드·유튜브 호출은 fetch 데이터 캐시(1시간, 태그 기반 갱신)가 막아 준다.
 
-/** 대표 1개 + 그리드 9개 */
-const RECENT_COUNT = 10;
+const ROW = 8;
+const POPULAR = 8;
+const PICKS = 4;
+const VIDEOS = 4;
+
+function SectionHeader({ title, href, more = "더 보기" }: { title: string; href?: string; more?: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4">
+      <h2 className="font-pixel text-[22px]">{title}</h2>
+      {href && (
+        <Link href={href} className="shrink-0 text-sm text-muted hover:text-accent">
+          {more} →
+        </Link>
+      )}
+    </div>
+  );
+}
 
 export default async function HomePage() {
   await connection();
-  const [recent, genres] = await Promise.all([getGames({ size: RECENT_COUNT }), getGenres()]);
-  const [featured, ...rest] = recent.content;
+  const [genres, upcoming, recent, popular, picks, videos] = await Promise.all([
+    getGenres(),
+    getGames({ release: "UPCOMING", size: ROW }),
+    getGames({ release: "RECENT", sort: "RELEASE", size: ROW }),
+    getGames({ sort: "POPULAR", size: POPULAR }),
+    getGames({ picked: true, size: PICKS }),
+    getLatestVideos(VIDEOS),
+  ]);
 
   return (
-    <div className="space-y-14">
-      <section className="space-y-6">
-        {/* 유튜브 배너와 같은 8bit 연못. 간판과 개구리가 있는 가운데 띠가 보이게 자른다 */}
-        <div className="relative -mx-4 overflow-hidden border-y border-border sm:mx-0 sm:rounded-2xl sm:border">
-          <div className="relative aspect-[16/9] sm:aspect-[21/8]">
-            <Image
-              src="/brand/pond-banner.webp"
-              alt={`${CURATOR.name} HORROR GAME, lurkpond: 밤의 연못과 컵 속 개구리`}
-              fill
-              priority
-              sizes="(min-width: 1152px) 1152px, 100vw"
-              className="object-cover object-[50%_55%]"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-          </div>
-        </div>
-        <div className="space-y-4">
-          <h1 className="font-pixel text-[22px] leading-snug sm:text-[33px]">
-            {SITE_TAGLINE}을 <span className="whitespace-nowrap text-accent">건져 올립니다</span>
-          </h1>
-          <p className="max-w-2xl text-muted">
-            큐레이터 {CURATOR.name}이 직접 플레이하고 고른 게임만 소개합니다. 점수 대신, 이 게임을 해야 하는 이유를
-            적었습니다.
-          </p>
-          <GenreChips genres={genres} />
-        </div>
+    <div className="space-y-12">
+      <section className="space-y-4 pt-2">
+        <h1 className="font-pixel text-[22px] leading-snug sm:text-[33px]">
+          공포게임, <span className="whitespace-nowrap text-accent">한 연못에 모아 봤습니다</span>
+        </h1>
+        <p className="max-w-2xl text-muted">
+          Steam에 새로 올라오는 공포게임을 매일 모읍니다. 출시 예정작부터 꾸준히 사랑받는 게임까지 한곳에서
+          둘러보세요.
+        </p>
+        <GenreChips genres={genres} />
       </section>
 
-      <hr className="divider" />
-
-      {featured ? (
-        <FeaturedGame game={featured} label="새로 건져 올린 게임" />
-      ) : (
-        <p className="rounded-xl border border-border p-8 text-center text-muted">아직 소개된 게임이 없습니다.</p>
-      )}
-
-      {rest.length > 0 && (
+      {upcoming.content.length > 0 && (
         <section className="space-y-4">
-          <div className="flex items-baseline justify-between">
-            <h2 className="font-pixel text-[22px]">최근 소개한 게임</h2>
-            <Link href="/games" className="text-sm text-muted hover:text-accent">
-              전체 보기 →
-            </Link>
-          </div>
-          <GameGrid games={rest} />
+          <SectionHeader title="출시 예정" href="/games?view=upcoming" />
+          <GameRow games={upcoming.content} />
         </section>
       )}
 
+      {recent.content.length > 0 && (
+        <section className="space-y-4">
+          <SectionHeader title="최근 출시" href="/games?view=recent" />
+          <GameRow games={recent.content} />
+        </section>
+      )}
+
+      {videos.length > 0 && (
+        <>
+          <hr className="divider" />
+          <section className="space-y-4">
+            <SectionHeader title={`${CURATOR.name}의 최근 영상`} href={CURATOR.youtubeUrl} more="채널 가기" />
+            <VideoRow videos={videos} />
+          </section>
+        </>
+      )}
+
       <hr className="divider" />
+
+      <section className="space-y-4">
+        <SectionHeader title="인기 공포게임" href="/games?view=popular" />
+        <GameGrid games={popular.content} />
+      </section>
+
+      {picks.content.length > 0 && (
+        <section className="space-y-4">
+          <SectionHeader title={`${CURATOR.name} 추천`} href="/games?view=picked" />
+          <GameGrid games={picks.content} />
+        </section>
+      )}
 
       <Link
         href="/coop"
@@ -80,8 +101,6 @@ export default async function HomePage() {
         </span>
         <span className="text-accent-2">→</span>
       </Link>
-
-      <CuratorNote />
     </div>
   );
 }

@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export default async function CoopPage() {
   await connection();
   // MVP: 첫 48개만 보여준다 (페이지네이션은 공개 게임이 늘면 추가)
-  const games = await getGames({ coop: true, size: MAX_PAGE_SIZE });
+  const games = await getGames({ coop: true, sort: "POPULAR", size: MAX_PAGE_SIZE });
 
   return (
     <div className="space-y-6">

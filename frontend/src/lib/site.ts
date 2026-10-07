@@ -5,10 +5,11 @@
 export const SITE_INDEXING = process.env.SITE_INDEXING === "true";
 
 export const SITE_NAME = "lurkpond";
-export const SITE_TAGLINE = "연못 아래 숨은 공포게임";
+export const SITE_TAGLINE = "공포게임 모아보기";
 
-/** 큐레이터. 유튜브 주소는 실제 채널 핸들로 확인 필요 */
+/** 운영자(유튜버). channelId는 채널 RSS 피드용 (youtube.com/@ryujaeil의 canonical) */
 export const CURATOR = {
   name: "류재일",
   youtubeUrl: "https://www.youtube.com/@ryujaeil",
+  youtubeChannelId: "UCogL3pDWR26j0R3H0UH4sbg",
 } as const;
