@@ -1,7 +1,7 @@
 import "server-only";
 
 import { DEFAULT_LOCALE, type Locale } from "./i18n";
-import type { GameDetail, GameSort, GameSummary, Genre, PageResponse, ReleaseWindow } from "./types";
+import type { GameDetail, GameSort, GameSummary, Genre, HubStats, PageResponse, ReleaseWindow } from "./types";
 
 /**
  * 데이터 캐시 수명(초). 페이지의 `export const revalidate`와 같은 값으로 맞춘다
@@ -103,6 +103,13 @@ export async function getGame(slug: string, lang?: Locale): Promise<GameDetail |
 export async function getGenres(lang?: Locale): Promise<Genre[]> {
   const path = withLang("/api/genres", lang);
   const res = await apiFetch(path, [CACHE_TAGS.genres]);
+  if (!res.ok) throw await failure(res, path);
+  return res.json();
+}
+
+export async function getStats(): Promise<HubStats> {
+  const path = "/api/stats";
+  const res = await apiFetch(path, [CACHE_TAGS.games]);
   if (!res.ok) throw await failure(res, path);
   return res.json();
 }

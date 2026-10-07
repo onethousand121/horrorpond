@@ -7,7 +7,10 @@ public enum ReleaseWindow {
     /** 출시 예정 (Steam coming_soon). 출시일이 가까운 순 */
     UPCOMING,
     /** 최근 출시 (오늘 기준 RECENT_DAYS일 이내) */
-    RECENT;
+    RECENT,
+    /** 이번 주 출시 (오늘 포함 최근 WEEK_DAYS일) */
+    THIS_WEEK;
 
     public static final int RECENT_DAYS = 90;
+    public static final int WEEK_DAYS = 7;
 }

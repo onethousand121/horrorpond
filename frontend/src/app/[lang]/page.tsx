@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { GameRow } from "@/components/GameRow";
 import { PopularShowcase } from "@/components/PopularShowcase";
 import { VideoRow } from "@/components/VideoRow";
-import { getGames, getGenres } from "@/lib/api";
+import { getGames, getGenres, getStats } from "@/lib/api";
 import { getDictionary, isLocale, localePath } from "@/lib/i18n";
 import { CURATOR } from "@/lib/site";
 import { getFreshVideos } from "@/lib/youtube";
@@ -37,7 +37,8 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
   await connection();
   const dict = getDictionary(lang);
   const t = dict.home;
-  const [genres, popular, recent, upcoming, videos] = await Promise.all([
+  const [stats, genres, popular, recent, upcoming, videos] = await Promise.all([
+    getStats(),
     getGenres(lang),
     getGames({ sort: "POPULAR", size: SHOWCASE, lang }),
     getGames({ release: "RECENT", sort: "RELEASE", size: ROW, lang }),
@@ -55,6 +56,21 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           {t.intro1}
           <br className="hidden sm:block" /> {t.intro2}
         </p>
+        <ul aria-label={t.statsLabel} className="flex flex-wrap gap-x-5 gap-y-1 font-pixel text-[11px] text-muted">
+          {[
+            { label: t.statThisWeek, value: stats.releasedThisWeek, href: "/games?view=recent" },
+            { label: t.statUpcoming, value: stats.upcoming, href: "/games?view=upcoming" },
+            { label: t.statTotal, value: stats.total, href: "/games" },
+          ].map(({ label: [before, after], value, href }) => (
+            <li key={href}>
+              <Link href={localePath(lang, href)} className="hover:text-foreground">
+                {before}
+                <strong className="text-[13px] font-normal text-accent">{value.toLocaleString(dict.htmlLang)}</strong>
+                {after}
+              </Link>
+            </li>
+          ))}
+        </ul>
         <nav aria-label={t.quickFilters} className="flex flex-wrap gap-2">
           <Link
             href={localePath(lang, "/coop")}

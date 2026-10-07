@@ -155,6 +155,24 @@ class PublicGameApiTest {
     }
 
     @Test
+    void hubStatsCountOnlyVisibleGames() throws Exception {
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+        create(spec("soon").comingSoon(true).releaseDate(today.plusDays(3)));
+        create(spec("today").releaseDate(today));
+        create(spec("six-days-ago").releaseDate(today.minusDays(6)));
+        create(spec("seven-days-ago").releaseDate(today.minusDays(7)));
+        create(spec("hidden-today").gameStatus(GameStatus.HIDDEN).releaseDate(today));
+
+        mvc.perform(get("/api/stats"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(4))
+                .andExpect(jsonPath("$.upcoming").value(1))
+                .andExpect(jsonPath("$.releasedThisWeek").value(2));
+        mvc.perform(get("/api/games").param("release", "THIS_WEEK"))
+                .andExpect(jsonPath("$.content[*].slug", containsInAnyOrder("today", "six-days-ago")));
+    }
+
+    @Test
     void newReleasesWithoutReviewsAreVisibleForTenDays() throws Exception {
         LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
         create(spec("day-ten").gameStatus(GameStatus.CANDIDATE).releaseDate(today.minusDays(10)));

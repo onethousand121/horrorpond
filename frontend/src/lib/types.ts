@@ -8,8 +8,15 @@ export type MediaType = "SCREENSHOT" | "TRAILER";
 export type Store = "STEAM" | "ITCH" | "HUMBLE" | "FANATICAL" | "GMG";
 /** 백엔드 CuratedGameSort: 최근 추가 / 최신 출시 / 인기(Steam 리뷰 수) */
 export type GameSort = "LATEST" | "RELEASE" | "POPULAR";
-/** 백엔드 ReleaseWindow: 출시 예정 / 최근 90일 출시 */
-export type ReleaseWindow = "UPCOMING" | "RECENT";
+/** 백엔드 ReleaseWindow: 출시 예정 / 최근 90일 출시 / 오늘 포함 최근 7일 출시 */
+export type ReleaseWindow = "UPCOMING" | "RECENT" | "THIS_WEEK";
+
+/** 백엔드 HubStatsResponse: 홈 상단 숫자 (모두 사이트에 보이는 게임 기준) */
+export interface HubStats {
+  total: number;
+  upcoming: number;
+  releasedThisWeek: number;
+}
 
 export interface PageResponse<T> {
   content: T[];

@@ -61,6 +61,15 @@ public class PublicGameQueryService {
                 resolver.resolve(curatorGenres.getOrDefault(row.id(), List.of()), row.tags(), language), language));
     }
 
+    public HubStatsResponse stats() {
+        return new HubStatsResponse(count(null), count(ReleaseWindow.UPCOMING), count(ReleaseWindow.THIS_WEEK));
+    }
+
+    private long count(ReleaseWindow release) {
+        return curatedGameQueryRepository.countVisible(new PublicGameQuery(exposurePolicy.visible(QGame.game), null,
+                null, null, release, exposurePolicy.today(), false, CuratedGameSort.LATEST));
+    }
+
     /**
      * 컬렉션(미디어/개발사/장르/상점 링크)은 default_batch_fetch_size로 읽어 개수와 무관하게 쿼리 수가 일정하다.
      */

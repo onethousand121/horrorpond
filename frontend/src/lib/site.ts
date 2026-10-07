@@ -5,7 +5,6 @@
 export const SITE_INDEXING = process.env.SITE_INDEXING === "true";
 
 export const SITE_NAME = "lurkpond";
-export const SITE_TAGLINE = "공포게임 모아보기";
 
 /** 운영자(유튜버). channelId는 채널 RSS 피드용 (youtube.com/@ryujaeil의 canonical) */
 export const CURATOR = {

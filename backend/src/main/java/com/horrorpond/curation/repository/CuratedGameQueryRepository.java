@@ -64,6 +64,17 @@ public class CuratedGameQueryRepository {
                 .fetchOne());
     }
 
+    /** 목록과 같은 조건의 개수만 센다 (허브 통계용) */
+    public long countVisible(PublicGameQuery query) {
+        Long count = queryFactory
+                .select(game.count())
+                .from(game)
+                .leftJoin(article).on(article.gameId.eq(game.id), article.status.eq(ArticleStatus.PUBLISHED))
+                .where(where(query))
+                .fetchOne();
+        return count == null ? 0 : count;
+    }
+
     /**
      * 목록에 나온 게임들에 큐레이터가 붙인 장르를 IN 쿼리 1번으로 읽는다.
      */
@@ -104,6 +115,8 @@ public class CuratedGameQueryRepository {
                 case UPCOMING -> game.comingSoon.isTrue()
                         .and(game.releaseDate.isNull().or(game.releaseDate.after(query.today())));
                 case RECENT -> game.releaseDate.between(query.today().minusDays(ReleaseWindow.RECENT_DAYS),
+                        query.today());
+                case THIS_WEEK -> game.releaseDate.between(query.today().minusDays(ReleaseWindow.WEEK_DAYS - 1),
                         query.today());
             });
         }
