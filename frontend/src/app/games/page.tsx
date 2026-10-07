@@ -47,7 +47,7 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-baseline justify-between gap-4">
-        <h1 className="text-2xl font-bold">
+        <h1 className="font-pixel text-[22px]">
           전체 게임 <span className="text-base font-normal text-muted">{games.totalElements}</span>
         </h1>
         <nav aria-label="정렬" className="flex gap-3 text-sm">

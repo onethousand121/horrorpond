@@ -1,16 +1,21 @@
 import type { Metadata } from "next";
-import { Noto_Sans_KR } from "next/font/google";
+import localFont from "next/font/local";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { CURATOR, SITE_INDEXING, SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 import "./globals.css";
 
-const notoSansKr = Noto_Sans_KR({
-  variable: "--font-noto-sans-kr",
-  weight: ["400", "500", "700"],
-  subsets: ["latin"],
+/** 제목·장식용 픽셀 폰트 (갈무리11 Bold, OFL. src/fonts/galmuri/OFL.md) */
+const galmuri = localFont({
+  src: "../fonts/galmuri/Galmuri11-Bold.woff2",
+  weight: "700",
+  variable: "--font-galmuri",
   display: "swap",
 });
+
+/** 본문 폰트 Pretendard: 페이지에 쓰인 글자 묶음만 내려받는 동적 서브셋 (공식 권장 방식) */
+const PRETENDARD_CSS =
+  "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.SITE_URL ?? "http://localhost:3000"),
@@ -31,16 +36,20 @@ const NAV = [
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" className={`${notoSansKr.variable} h-full antialiased`}>
+    <html lang="ko" className={`${galmuri.variable} h-full antialiased`}>
+      <head>
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+        <link rel="stylesheet" href={PRETENDARD_CSS} crossOrigin="anonymous" />
+      </head>
       <body className="flex min-h-full flex-col font-sans">
-        <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur">
+        <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
             <Link href="/" aria-label={`${SITE_NAME} 홈`}>
               <Logo />
             </Link>
-            <nav className="flex gap-4 text-sm text-muted">
+            <nav className="flex gap-5 font-pixel text-[11px] text-muted">
               {NAV.map((item) => (
-                <Link key={item.href} href={item.href} className="hover:text-foreground">
+                <Link key={item.href} href={item.href} className="hover:text-accent">
                   {item.label}
                 </Link>
               ))}

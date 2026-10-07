@@ -19,7 +19,7 @@ export default async function CoopPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold">협동 공포게임</h1>
+        <h1 className="font-pixel text-[22px]">협동 공포게임</h1>
         <p className="text-muted">혼자는 무섭다면, 친구와 함께. 온라인·로컬 협동을 지원하는 게임만 모았습니다.</p>
       </header>
       <GameGrid games={games.content} emptyMessage="협동 게임이 아직 없습니다." />

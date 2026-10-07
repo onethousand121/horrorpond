@@ -7,7 +7,7 @@ import type { GameSummary } from "@/lib/types";
 /** 홈 맨 위의 큰 카드: 가장 최근에 소개한 게임 */
 export function FeaturedGame({ game, label }: { game: GameSummary; label: string }) {
   return (
-    <article className="group relative grid overflow-hidden rounded-2xl border border-border bg-surface md:grid-cols-[1.35fr_1fr]">
+    <article className="glow-hover group relative grid overflow-hidden rounded-2xl border border-border bg-surface md:grid-cols-[1.35fr_1fr]">
       <div className="relative aspect-[460/215] md:aspect-auto md:min-h-72">
         {game.headerImageUrl && (
           <Image
@@ -23,7 +23,7 @@ export function FeaturedGame({ game, label }: { game: GameSummary; label: string
       </div>
       <div className="flex flex-col gap-4 p-6 md:p-8">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold tracking-widest text-accent">{label}</span>
+          <span className="font-pixel text-[11px] text-accent">{label}</span>
           {game.sponsored && <SponsorBadge />}
         </div>
         <h2 className="text-2xl font-bold md:text-3xl">
@@ -35,7 +35,7 @@ export function FeaturedGame({ game, label }: { game: GameSummary; label: string
         <ul className="space-y-2">
           {game.highlights.map((item, i) => (
             <li key={item} className="flex items-baseline gap-3 text-sm">
-              <span className="text-xs font-bold text-accent tabular-nums" aria-hidden>
+              <span className="font-pixel text-[11px] text-accent" aria-hidden>
                 {String(i + 1).padStart(2, "0")}
               </span>
               {item}

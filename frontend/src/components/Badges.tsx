@@ -16,7 +16,7 @@ export function GenreBadge({ genre, linked = false }: { genre: GenreSummary; lin
 
 export function CoopBadge() {
   return (
-    <span className="rounded-full border border-sky-400/30 bg-sky-400/10 px-2 py-0.5 text-xs font-medium text-sky-300">
+    <span className="rounded-full border border-accent-2/35 bg-accent-2/10 px-2 py-0.5 text-xs font-medium text-accent-2">
       협동
     </span>
   );

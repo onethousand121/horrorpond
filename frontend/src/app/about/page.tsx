@@ -9,7 +9,7 @@ export default function AboutPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-10">
       <section className="space-y-4">
-        <h1 className="text-2xl font-bold">lurkpond 소개</h1>
+        <h1 className="font-pixel text-[22px]">lurkpond 소개</h1>
         <p className="leading-relaxed text-foreground/90">
           lurkpond는 인디 공포게임을 중심으로, 큐레이터가 직접 플레이하고 선별한 게임만 소개합니다. Steam
           데이터를 자동으로 수집하지만, 큐레이터가 검증하고 글을 붙인 게임만 사이트에 공개됩니다.

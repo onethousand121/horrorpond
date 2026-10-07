@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { connection } from "next/server";
 import { CuratorNote } from "@/components/CuratorNote";
@@ -20,18 +21,34 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-14">
-      <section className="space-y-5 pt-4">
-        <h1 className="text-3xl leading-tight font-bold sm:text-4xl">
-          {SITE_TAGLINE}을
-          <br />
-          <span className="text-accent">건져 올립니다</span>
-        </h1>
-        <p className="max-w-2xl text-muted">
-          큐레이터 {CURATOR.name}이 직접 플레이하고 고른 게임만 소개합니다. 점수 대신, 이 게임을 해야 하는 이유를
-          적었습니다.
-        </p>
-        <GenreChips genres={genres} />
+      <section className="space-y-6">
+        {/* 유튜브 배너와 같은 8bit 연못. 간판과 개구리가 있는 가운데 띠가 보이게 자른다 */}
+        <div className="relative -mx-4 overflow-hidden border-y border-border sm:mx-0 sm:rounded-2xl sm:border">
+          <div className="relative aspect-[16/9] sm:aspect-[21/8]">
+            <Image
+              src="/brand/pond-banner.webp"
+              alt={`${CURATOR.name} HORROR GAME, lurkpond: 밤의 연못과 컵 속 개구리`}
+              fill
+              priority
+              sizes="(min-width: 1152px) 1152px, 100vw"
+              className="object-cover object-[50%_55%]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+          </div>
+        </div>
+        <div className="space-y-4">
+          <h1 className="font-pixel text-[22px] leading-snug sm:text-[33px]">
+            {SITE_TAGLINE}을 <span className="whitespace-nowrap text-accent">건져 올립니다</span>
+          </h1>
+          <p className="max-w-2xl text-muted">
+            큐레이터 {CURATOR.name}이 직접 플레이하고 고른 게임만 소개합니다. 점수 대신, 이 게임을 해야 하는 이유를
+            적었습니다.
+          </p>
+          <GenreChips genres={genres} />
+        </div>
       </section>
+
+      <hr className="divider" />
 
       {featured ? (
         <FeaturedGame game={featured} label="새로 건져 올린 게임" />
@@ -42,7 +59,7 @@ export default async function HomePage() {
       {rest.length > 0 && (
         <section className="space-y-4">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-xl font-bold">최근 소개한 게임</h2>
+            <h2 className="font-pixel text-[22px]">최근 소개한 게임</h2>
             <Link href="/games" className="text-sm text-muted hover:text-accent">
               전체 보기 →
             </Link>
@@ -51,15 +68,17 @@ export default async function HomePage() {
         </section>
       )}
 
+      <hr className="divider" />
+
       <Link
         href="/coop"
-        className="flex items-center justify-between gap-4 rounded-2xl border border-sky-400/25 bg-gradient-to-r from-sky-400/10 to-transparent p-6 hover:border-sky-400/50"
+        className="glow-hover flex items-center justify-between gap-4 rounded-2xl border border-accent-2/30 bg-gradient-to-r from-accent-2/10 to-transparent p-6"
       >
         <span>
-          <span className="block text-lg font-bold">혼자는 무섭다면</span>
+          <span className="block font-pixel text-[22px] text-accent-2">혼자는 무섭다면</span>
           <span className="text-sm text-muted">친구와 함께 비명 지르기 좋은 협동 공포게임</span>
         </span>
-        <span className="text-sky-300">→</span>
+        <span className="text-accent-2">→</span>
       </Link>
 
       <CuratorNote />

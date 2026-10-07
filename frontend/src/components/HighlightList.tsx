@@ -21,11 +21,11 @@ export function HighlightList({ items, compact = false }: { items: string[]; com
 
   return (
     <section aria-label="장점 포인트" className="rounded-xl border border-accent/25 bg-accent/[0.06] p-5">
-      <h2 className="mb-3 text-xs font-bold tracking-widest text-accent">이 게임을 해야 하는 이유</h2>
+      <h2 className="mb-4 font-pixel text-[11px] text-accent">이 게임을 해야 하는 이유</h2>
       <ul className="space-y-2.5">
         {items.map((item, i) => (
           <li key={item} className="flex items-baseline gap-3 text-base font-medium">
-            <span className="w-5 shrink-0 text-sm font-bold text-accent tabular-nums" aria-hidden>
+            <span className="w-6 shrink-0 font-pixel text-[11px] text-accent" aria-hidden>
               {String(i + 1).padStart(2, "0")}
             </span>
             {item}

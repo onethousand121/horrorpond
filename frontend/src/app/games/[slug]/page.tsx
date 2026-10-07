@@ -94,7 +94,7 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[slug
           <HighlightList items={article.highlights} />
 
           <section aria-labelledby="article-title" className="space-y-4">
-            <h2 id="article-title" className="text-2xl font-bold">
+            <h2 id="article-title" className="font-pixel text-[22px] leading-snug">
               {article.title}
             </h2>
             <Markdown>{article.body}</Markdown>
@@ -102,7 +102,8 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[slug
 
           {(trailers.length > 0 || screenshots.length > 0) && (
             <section aria-label="영상과 스크린샷" className="space-y-4">
-              <h2 className="text-lg font-bold">영상과 스크린샷</h2>
+              <hr className="divider" />
+              <h2 className="font-pixel text-[22px]">영상과 스크린샷</h2>
               <TrailerPlayer trailers={trailers} poster={trailerPoster} title={game.title} />
               <MediaGallery screenshots={screenshots} title={game.title} />
             </section>
@@ -111,7 +112,7 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[slug
 
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
           <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 text-sm">
-            <h2 className="text-xs font-bold tracking-widest text-muted">게임 정보</h2>
+            <h2 className="font-pixel text-[11px] text-muted">게임 정보</h2>
             <dl className="space-y-2">
               {releaseDate && (
                 <div className="flex justify-between gap-4">
@@ -131,7 +132,7 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[slug
                 href={steamLink.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 font-bold text-accent-ink hover:brightness-110"
+                className="glow-hover flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 font-bold text-accent-ink"
               >
                 Steam에서 보기 ↗
               </a>

@@ -34,7 +34,7 @@ export default async function GenrePage({ params }: PageProps<"/genres/[slug]">)
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold">{genre.name}</h1>
+        <h1 className="font-pixel text-[22px]">{genre.name}</h1>
         {genre.description && <p className="text-muted">{genre.description}</p>}
       </header>
       <GenreChips genres={genres} activeSlug={genre.slug} />

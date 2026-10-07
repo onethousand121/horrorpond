@@ -12,7 +12,7 @@ const CARD_HIGHLIGHTS = 3;
  */
 export function GameCard({ game, eager = false }: { game: GameSummary; eager?: boolean }) {
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-surface transition hover:-translate-y-0.5 hover:border-accent/40">
+    <article className="glow-hover group relative flex flex-col overflow-hidden rounded-xl border border-border bg-surface hover:-translate-y-0.5">
       <div className="relative aspect-[460/215] bg-surface-2">
         {game.headerImageUrl && (
           <Image
