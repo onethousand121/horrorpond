@@ -160,12 +160,14 @@ class PublicGameApiTest {
         create(spec("soon").comingSoon(true).releaseDate(today.plusDays(30)));
         create(spec("sooner").comingSoon(true).releaseDate(today.plusDays(5)));
         create(spec("recent").releaseDate(today.minusDays(10)).reviewCount(50));
+        // 출시 예정으로 수집됐지만 출시일이 지난 게임 (다음 갱신 전)
+        create(spec("released-stale").comingSoon(true).releaseDate(today.minusDays(1)));
         create(spec("older").releaseDate(today.minusDays(200)).reviewCount(9000));
 
         mvc.perform(get("/api/games").param("release", "UPCOMING"))
                 .andExpect(jsonPath("$.content[*].slug", contains("sooner", "soon")));
         mvc.perform(get("/api/games").param("release", "RECENT"))
-                .andExpect(jsonPath("$.content[*].slug", contains("recent")));
+                .andExpect(jsonPath("$.content[*].slug", containsInAnyOrder("recent", "released-stale")));
         mvc.perform(get("/api/games").param("sort", "POPULAR"))
                 .andExpect(jsonPath("$.content[0].slug").value("older"))
                 .andExpect(jsonPath("$.content[1].slug").value("recent"));

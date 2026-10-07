@@ -78,10 +78,10 @@ public class SteamAppSeed implements Persistable<Integer> {
     }
 
     /**
-     * SteamSpy 태그로 발견했고 아직 판정 전인 seed만 판정한다. 수동 추가는 관리자가 원한 것이라 판정하지 않는다.
+     * 자동으로 발견했고(SteamSpy 태그, Steam 검색) 아직 판정 전인 seed만 판정한다. 수동 추가는 관리자가 원한 것이라 판정하지 않는다.
      */
     public boolean needsHorrorTagCheck() {
-        return discoveredBy == DiscoveredBy.STEAMSPY_TAG && horrorTag == HorrorTag.UNCHECKED;
+        return discoveredBy != DiscoveredBy.MANUAL && horrorTag == HorrorTag.UNCHECKED;
     }
 
     /**

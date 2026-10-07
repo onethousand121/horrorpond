@@ -33,6 +33,23 @@ public final class SteamMockServer {
         return STORE_BASE + "/api/appdetails?appids=" + appid + "&cc=kr&l=koreana";
     }
 
+    /**
+     * @param listParam "sort_by=Released_DESC" 또는 "filter=popularcomingsoon"
+     */
+    public static String steamSearchUrl(String listParam, int start) {
+        return STORE_BASE + "/search/results/?tags=1667&category1=998&" + listParam + "&infinite=1&start=" + start
+                + "&count=100&cc=kr";
+    }
+
+    public static String steamSearchBody(int... appids) {
+        StringBuilder html = new StringBuilder();
+        for (int appid : appids) {
+            html.append("<a href=\\\"https://store.steampowered.com/app/").append(appid)
+                    .append("\\\" data-ds-appid=\\\"").append(appid).append("\\\">x</a>");
+        }
+        return "{\"success\":1,\"results_html\":\"" + html + "\",\"total_count\":" + appids.length + "}";
+    }
+
     public static String steamSpyAppDetailsUrl(int appid) {
         return SPY_BASE + "/api.php?request=appdetails&appid=" + appid;
     }

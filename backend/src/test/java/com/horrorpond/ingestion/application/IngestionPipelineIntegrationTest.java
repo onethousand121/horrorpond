@@ -57,6 +57,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 @SpringBootTest
@@ -196,6 +197,42 @@ class IngestionPipelineIntegrationTest {
     }
 
     @Test
+    void steamSearchFindsNewGamesThatSteamSpyDoesNotListYet() {
+        expectSearch(new int[]{1262350, 739630}, new int[]{594330});
+        String spyBody = "{\"739630\":{\"appid\":739630},\"5060920\":{\"appid\":5060920}}";
+        SERVER.expect(once(), requestTo(SteamMockServer.steamSpyHorrorUrl()))
+                .andRespond(withSuccess(spyBody, MediaType.APPLICATION_JSON));
+
+        assertJob(discoveryService.run(TriggerType.MANUAL), JobType.DISCOVERY, JobStatus.SUCCEEDED, 4, 0);
+        SERVER.verify();
+
+        // 양쪽에 다 있는 appid는 검색(신작 우선순위)으로 들어간다
+        assertThat(seedRepository.findAll())
+                .extracting(SteamAppSeed::getAppid, SteamAppSeed::getDiscoveredBy)
+                .containsExactlyInAnyOrder(
+                        tuple(1262350, DiscoveredBy.STEAM_SEARCH), tuple(739630, DiscoveredBy.STEAM_SEARCH),
+                        tuple(594330, DiscoveredBy.STEAM_SEARCH), tuple(5060920, DiscoveredBy.STEAMSPY_TAG));
+        // 검색으로 발견한 seed도 SteamSpy 상위 태그로 공포 판정을 받는다
+        assertThat(seedRepository.findById(594330).orElseThrow().needsHorrorTagCheck()).isTrue();
+    }
+
+    @Test
+    void steamSearchFailureStillSavesSteamSpySeeds() {
+        SERVER.expect(ExpectedCount.times(3), requestTo(SteamMockServer.steamSearchUrl("sort_by=Released_DESC", 0)))
+                .andRespond(withServerError());
+        SERVER.expect(once(), requestTo(SteamMockServer.steamSpyHorrorUrl()))
+                .andRespond(withSuccess("{\"739630\":{\"appid\":739630}}", MediaType.APPLICATION_JSON));
+
+        Long jobId = discoveryService.run(TriggerType.MANUAL);
+        SERVER.verify();
+
+        IngestionJob job = jobRepository.findById(jobId).orElseThrow();
+        assertThat(job.getStatus()).isEqualTo(JobStatus.FAILED);
+        assertThat(job.getErrorMessage()).startsWith("added=1, Steam search:");
+        assertThat(seedRepository.findAll()).extracting(SteamAppSeed::getAppid).containsExactly(739630);
+    }
+
+    @Test
     void manualSeedsGetTagsButSkipHorrorCheck() {
         seedRepository.save(SteamAppSeed.discovered(739630, DiscoveredBy.MANUAL, clock.instant()));
         expectTags(739630, "Online Co-Op", "Investigation");
@@ -307,6 +344,9 @@ class IngestionPipelineIntegrationTest {
         saveSeed(100, DiscoveredBy.STEAMSPY_TAG, now.minus(Duration.ofDays(1)));
         saveSeed(300, DiscoveredBy.STEAMSPY_TAG, now.minus(Duration.ofDays(1)));
         saveSeed(200, DiscoveredBy.STEAMSPY_TAG, now.minus(Duration.ofDays(1)));
+        // STEAM_SEARCH PENDING: 수동 다음, SteamSpy보다 먼저 (appid 내림차순)
+        saveSeed(50, DiscoveredBy.STEAM_SEARCH, now);
+        saveSeed(60, DiscoveredBy.STEAM_SEARCH, now);
         // MANUAL PENDING: appid와 무관하게 가장 먼저, 발견 순서대로
         saveSeed(999999, DiscoveredBy.MANUAL, now.minus(Duration.ofHours(2)));
         saveSeed(10, DiscoveredBy.MANUAL, now.minus(Duration.ofHours(1)));
@@ -340,7 +380,7 @@ class IngestionPipelineIntegrationTest {
 
         assertThat(enrichmentService.selectTargets())
                 .extracting(SteamAppSeed::getAppid)
-                .containsExactly(999999, 10, 300, 200, 100, 400, 500);
+                .containsExactly(999999, 10, 60, 50, 300, 200, 100, 400, 500);
     }
 
     @Test
@@ -375,11 +415,19 @@ class IngestionPipelineIntegrationTest {
     }
 
     private void expectSteamSpy(int... appids) {
+        expectSearch(new int[0], new int[0]);
         String body = Arrays.stream(appids)
                 .mapToObj(appid -> "\"" + appid + "\":{\"appid\":" + appid + "}")
                 .collect(Collectors.joining(",", "{", "}"));
         SERVER.expect(once(), requestTo(SteamMockServer.steamSpyHorrorUrl()))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+    }
+
+    private void expectSearch(int[] newReleases, int[] upcoming) {
+        SERVER.expect(once(), requestTo(SteamMockServer.steamSearchUrl("sort_by=Released_DESC", 0)))
+                .andRespond(withSuccess(SteamMockServer.steamSearchBody(newReleases), MediaType.APPLICATION_JSON));
+        SERVER.expect(once(), requestTo(SteamMockServer.steamSearchUrl("filter=popularcomingsoon", 0)))
+                .andRespond(withSuccess(SteamMockServer.steamSearchBody(upcoming), MediaType.APPLICATION_JSON));
     }
 
     private void expectHorrorTags(int... appids) {

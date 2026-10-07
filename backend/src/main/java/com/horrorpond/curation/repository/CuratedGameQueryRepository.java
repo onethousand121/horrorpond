@@ -95,10 +95,12 @@ public class CuratedGameQueryRepository {
             where.and(article.id.isNotNull());
         }
         if (query.release() != null) {
+            // Steam 데이터는 주기적으로 갱신되므로, 출시일이 지났는데 아직 출시 예정으로 남은 게임은 최근 출시로 본다
             where.and(switch (query.release()) {
-                case UPCOMING -> game.comingSoon.isTrue();
-                case RECENT -> game.comingSoon.isFalse()
-                        .and(game.releaseDate.between(query.today().minusDays(ReleaseWindow.RECENT_DAYS), query.today()));
+                case UPCOMING -> game.comingSoon.isTrue()
+                        .and(game.releaseDate.isNull().or(game.releaseDate.after(query.today())));
+                case RECENT -> game.releaseDate.between(query.today().minusDays(ReleaseWindow.RECENT_DAYS),
+                        query.today());
             });
         }
         if (query.genre() != null) {

@@ -22,10 +22,10 @@ public class DiscoveryWriter {
     private final Clock clock;
 
     @Transactional
-    public void insertSeeds(List<Integer> appids) {
+    public void insertSeeds(List<Integer> appids, DiscoveredBy by) {
         Instant now = clock.instant();
         seedRepository.saveAll(appids.stream()
-                .map(appid -> SteamAppSeed.discovered(appid, DiscoveredBy.STEAMSPY_TAG, now))
+                .map(appid -> SteamAppSeed.discovered(appid, by, now))
                 .toList());
     }
 }

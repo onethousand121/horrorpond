@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CoopBadge, GenreBadge } from "@/components/Badges";
 import { HighlightList } from "@/components/HighlightList";
 import { SponsorBadge } from "@/components/SponsorBadge";
-import { formatCount, formatReleaseDate } from "@/lib/format";
+import { formatCount, formatReleaseDate, isUpcoming } from "@/lib/format";
 import type { GameSummary } from "@/lib/types";
 
 const CARD_HIGHLIGHTS = 3;
@@ -29,7 +29,7 @@ export function GameCard({ game, eager = false }: { game: GameSummary; eager?: b
           />
         )}
         <div className="absolute top-2 left-2 flex gap-1.5">
-          {game.comingSoon && (
+          {isUpcoming(game) && (
             <span className="rounded bg-background/85 px-1.5 py-0.5 font-pixel text-[11px] text-accent">출시 예정</span>
           )}
           {game.picked && (

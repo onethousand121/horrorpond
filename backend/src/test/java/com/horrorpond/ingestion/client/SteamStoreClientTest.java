@@ -70,6 +70,30 @@ class SteamStoreClientTest {
     }
 
     @Test
+    void searchPageReturnsSingleAppidsInOrderAndSkipsBundles() {
+        server.expect(once(), requestTo(BASE + "/search/results/?tags=1667&category1=998&sort_by=Released_DESC"
+                        + "&infinite=1&start=100&count=100&cc=kr"))
+                .andRespond(withSuccess("""
+                        {"success":1,"results_html":"<a data-ds-appid=\\"30\\">a</a>\
+                        <a data-ds-bundleid=\\"9\\" data-ds-appid=\\"1,2\\">b</a><a data-ds-appid=\\"10\\">c</a>",
+                        "total_count":3}""", MediaType.APPLICATION_JSON));
+
+        assertThat(client.fetchHorrorSearchPage(SteamSearchList.NEW_RELEASES, 100, 100)).containsExactly(30, 10);
+        server.verify();
+    }
+
+    @Test
+    void searchWithoutResultsHtmlIsTransient() {
+        server.expect(times(3), requestTo(BASE + "/search/results/?tags=1667&category1=998"
+                        + "&filter=popularcomingsoon&infinite=1&start=0&count=100&cc=kr"))
+                .andRespond(withSuccess("{\"success\":2}", MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> client.fetchHorrorSearchPage(SteamSearchList.POPULAR_UPCOMING, 0, 100))
+                .isInstanceOf(SteamTransientException.class);
+        server.verify();
+    }
+
+    @Test
     void reviewCountReadsTotalReviews() {
         server.expect(once(), requestTo(BASE + "/appreviews/" + APPID
                         + "?json=1&language=all&purchase_type=all&num_per_page=0"))

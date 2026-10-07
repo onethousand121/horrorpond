@@ -37,6 +37,15 @@ export function formatReleaseDate(game: {
   return game.comingSoon ? "출시 예정" : null;
 }
 
+/**
+ * 아직 출시 전인지. Steam 데이터는 주기적으로 갱신되므로, 출시 예정으로 남아 있어도 출시일이 지났으면 출시된 것으로 본다
+ * (백엔드 ReleaseWindow와 같은 규칙).
+ */
+export function isUpcoming(game: { comingSoon: boolean; releaseDate: string | null }): boolean {
+  if (!game.comingSoon) return false;
+  return !game.releaseDate || game.releaseDate > SEOUL_DATE.format(new Date());
+}
+
 export interface DeveloperGroup {
   name: string;
   slug: string;

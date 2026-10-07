@@ -69,9 +69,10 @@ public class EnrichmentService {
     /**
      * 우선순위 (공포게임이 아니라고 판정된 NOT_HORROR는 모두 제외):
      * 1) 수동 추가한 PENDING (관리자가 명시적으로 원한 것)
-     * 2) SteamSpy로 발견한 PENDING, appid 내림차순 (최신 게임 먼저)
-     * 3) 갱신 주기가 지난 OK (오래된 순)
-     * 4) 재시도 대기가 지난 FAILED (실패 횟수 제한 이내)
+     * 2) Steam 검색으로 발견한 PENDING (신작·출시 예정작), appid 내림차순
+     * 3) SteamSpy로 발견한 PENDING, appid 내림차순 (최신 게임 먼저)
+     * 4) 갱신 주기가 지난 OK (오래된 순)
+     * 5) 재시도 대기가 지난 FAILED (실패 횟수 제한 이내)
      */
     List<SteamAppSeed> selectTargets() {
         IngestionProperties.Enrichment config = properties.enrichment();
@@ -80,6 +81,9 @@ public class EnrichmentService {
         addAll(targets, config.maxPerRun(), remaining -> seedRepository
                 .findByFetchStatusAndDiscoveredByOrderByDiscoveredAtAscAppidAsc(
                         FetchStatus.PENDING, DiscoveredBy.MANUAL, remaining));
+        addAll(targets, config.maxPerRun(), remaining -> seedRepository
+                .findByFetchStatusAndDiscoveredByAndHorrorTagNotOrderByAppidDesc(
+                        FetchStatus.PENDING, DiscoveredBy.STEAM_SEARCH, HorrorTag.NOT_HORROR, remaining));
         addAll(targets, config.maxPerRun(), remaining -> seedRepository
                 .findByFetchStatusAndDiscoveredByAndHorrorTagNotOrderByAppidDesc(
                         FetchStatus.PENDING, DiscoveredBy.STEAMSPY_TAG, HorrorTag.NOT_HORROR, remaining));
