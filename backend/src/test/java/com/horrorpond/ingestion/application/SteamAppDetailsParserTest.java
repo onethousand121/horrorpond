@@ -2,6 +2,7 @@ package com.horrorpond.ingestion.application;
 
 import com.horrorpond.catalog.domain.MediaType;
 import com.horrorpond.catalog.domain.SteamGameData;
+import com.horrorpond.ingestion.client.AppDetailsResult;
 import com.horrorpond.support.Fixtures;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -100,6 +101,37 @@ class SteamAppDetailsParserTest {
         })).data();
 
         assertThat(data.media()).noneMatch(m -> m.type() == MediaType.TRAILER);
+    }
+
+    @Test
+    void reviewCountAndAdultFromFixture() {
+        SteamGameData signalis = parser.parse(fixtureData(1262350)).data();
+        assertThat(signalis.reviewCount()).isEqualTo(30987);
+        // 2(폭력), 5(일반 성인용)는 성인으로 보지 않는다
+        assertThat(signalis.adult()).isFalse();
+    }
+
+    @Test
+    void adultDescriptorMarksAdultAndMissingRecommendationsIsNull() {
+        SteamGameData data = parser.parse(modified(739630, d -> {
+            d.remove("recommendations");
+            ((ObjectNode) d.get("content_descriptors")).putArray("ids").add(1).add(4);
+        })).data();
+        assertThat(data.reviewCount()).isNull();
+        assertThat(data.adult()).isTrue();
+    }
+
+    @Test
+    void englishTextIsParsedWhenPresent() {
+        assertThat(parser.parse(fixtureData(739630)).english()).isNull();
+
+        String withEnglish = new AppDetailsResult.Found(fixtureData(739630)).withEnglish("""
+                {"name":"Phasmophobia","short_description":"Ghost <b>hunting</b>","type":"game",
+                "release_date":{"coming_soon":false,"date":"Sep 18, 2020"}}""").dataJson();
+
+        ParsedSteamApp.EnglishText english = parser.parse(withEnglish).english();
+        assertThat(english).isEqualTo(new ParsedSteamApp.EnglishText("Phasmophobia", "Ghost hunting", "Sep 18, 2020"));
+        assertThat(parser.parse(withEnglish).data().title()).as("한국어 데이터는 그대로").isEqualTo("Phasmophobia");
     }
 
     @Test

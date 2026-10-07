@@ -3,9 +3,9 @@ package com.horrorpond.curation.application;
 import com.horrorpond.catalog.domain.DeveloperRole;
 import com.horrorpond.catalog.domain.Game;
 import com.horrorpond.catalog.domain.GameDeveloper;
-import com.horrorpond.catalog.domain.Genre;
 import com.horrorpond.catalog.domain.MediaType;
 import com.horrorpond.catalog.domain.Store;
+import com.horrorpond.common.domain.Language;
 import com.horrorpond.curation.application.GameSummaryResponse.GenreSummary;
 import com.horrorpond.curation.domain.CurationArticle;
 
@@ -23,21 +23,23 @@ public record GameDetailResponse(
         String releaseDateText,
         boolean comingSoon,
         boolean coop,
+        Integer reviewCount,
         List<GenreSummary> genres,
         List<DeveloperCredit> developers,
         List<Media> media,
         List<StoreLinkResponse> storeLinks,
+        /** 재일 추천 글. 없으면 null */
         Article article
 ) {
 
-    static GameDetailResponse of(Game game, CurationArticle article) {
+    /**
+     * 제목·소개·출시일 텍스트는 요청 언어로 (영어가 없으면 한국어). 큐레이터 글은 한국어만 있다.
+     */
+    static GameDetailResponse of(Game game, List<GenreSummary> genres, CurationArticle article, Language language) {
         return new GameDetailResponse(
-                game.getSlug(), game.getTitle(), game.getShortDescription(), game.getHeaderImageUrl(),
-                game.getReleaseDate(), game.getReleaseDateText(), game.isComingSoon(), game.isCoop(),
-                game.getGenres().stream()
-                        .sorted(Comparator.comparingInt(Genre::getDisplayOrder).thenComparing(Genre::getSlug))
-                        .map(genre -> new GenreSummary(genre.getSlug(), genre.getName()))
-                        .toList(),
+                game.getSlug(), game.title(language), game.shortDescription(language), game.getHeaderImageUrl(),
+                game.getReleaseDate(), game.releaseDateText(language), game.isComingSoon(), game.isCoop(),
+                game.getReviewCount(), genres,
                 game.getDevelopers().stream()
                         .sorted(Comparator.comparing(GameDeveloper::getRole)
                                 .thenComparing(credit -> credit.getDeveloper().getName()))
@@ -49,7 +51,7 @@ public record GameDetailResponse(
                 game.getStoreLinks().stream()
                         .map(link -> new StoreLinkResponse(link.getStore(), link.getUrl()))
                         .toList(),
-                Article.from(article));
+                article == null ? null : Article.from(article));
     }
 
     public record DeveloperCredit(String name, String slug, DeveloperRole role) {

@@ -1,19 +1,24 @@
+import { getDictionary, type Locale } from "@/lib/i18n";
+
 /**
  * 큐레이터가 꼽은 장점 포인트. 사이트의 핵심 정보라 시각적으로 강조한다.
  * - compact: 카드용 작은 목록
  * - 기본: 상세 페이지용 강조 블록
  */
-export function HighlightList({ items, compact = false }: { items: string[]; compact?: boolean }) {
+export function HighlightList({ items, compact = false, locale = "ko" }: {
+  items: string[];
+  compact?: boolean;
+  locale?: Locale;
+}) {
   if (items.length === 0) return null;
+  const t = getDictionary(locale).detail;
 
   if (compact) {
     return (
-      <ul className="space-y-0.5 text-xs text-foreground/90">
+      <ul className="space-y-1 text-[13px] text-foreground/90">
         {items.map((item) => (
-          <li key={item} className="flex gap-1.5">
-            <span className="text-accent" aria-hidden>
-              ▸
-            </span>
+          <li key={item} className="flex gap-2">
+            <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
             {item}
           </li>
         ))}
@@ -22,13 +27,13 @@ export function HighlightList({ items, compact = false }: { items: string[]; com
   }
 
   return (
-    <section aria-label="장점 포인트" className="rounded-lg border border-accent/40 bg-accent/10 p-5">
-      <h2 className="mb-3 text-sm font-bold text-accent">이 게임의 장점</h2>
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {items.map((item) => (
-          <li key={item} className="flex gap-2 text-base font-medium">
-            <span className="text-accent" aria-hidden>
-              ✦
+    <section aria-label={t.highlightsLabel} className="rounded-xl border border-accent/25 bg-accent/[0.06] p-5">
+      <h2 className="mb-4 font-pixel text-[11px] text-accent">{t.highlightsTitle}</h2>
+      <ul className="space-y-2.5">
+        {items.map((item, i) => (
+          <li key={item} className="flex items-baseline gap-3 text-base font-medium">
+            <span className="w-6 shrink-0 font-pixel text-[11px] text-accent" aria-hidden>
+              {String(i + 1).padStart(2, "0")}
             </span>
             {item}
           </li>

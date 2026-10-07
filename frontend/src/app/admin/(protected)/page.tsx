@@ -4,14 +4,14 @@ import Link from "next/link";
 import { Pagination } from "@/components/Pagination";
 import { searchAdminGames } from "@/lib/admin/api";
 import type { GameStatus } from "@/lib/admin/types";
-import { formatDate } from "@/lib/format";
+import { formatCount, formatDate } from "@/lib/format";
 import { hideAction, unhideAction } from "./actions";
 import { ActionButton } from "./components/ActionButton";
-import { ArticleStatusBadge, GameStatusBadge } from "./components/StatusBadge";
+import { AdultBadge, ArticleStatusBadge, GameStatusBadge, VisibilityBadge } from "./components/StatusBadge";
 
 const TABS = [
-  { key: "candidate", label: "후보", status: "CANDIDATE" },
-  { key: "published", label: "공개", status: "PUBLISHED" },
+  { key: "candidate", label: "자동", status: "CANDIDATE" },
+  { key: "published", label: "고정 노출", status: "PUBLISHED" },
   { key: "hidden", label: "숨김", status: "HIDDEN" },
   { key: "all", label: "전체", status: undefined },
 ] as const satisfies readonly { key: string; label: string; status: GameStatus | undefined }[];
@@ -106,7 +106,9 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
                   <Link href={`/admin/games/${game.id}`} className="font-medium hover:text-accent">
                     {game.title}
                   </Link>
+                  <VisibilityBadge visible={game.publiclyVisible} />
                   <GameStatusBadge status={game.status} />
+                  {game.adult && <AdultBadge />}
                   <ArticleStatusBadge status={game.articleStatus} />
                   {game.sameTitleCount > 0 && (
                     <Link
@@ -126,7 +128,8 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
                   ) : (
                     <span>{game.source}</span>
                   )}
-                  {game.releaseDate && <span>출시 {formatDate(game.releaseDate)}</span>}
+                  {game.comingSoon ? <span>출시 예정</span> : game.releaseDate && <span>출시 {formatDate(game.releaseDate)}</span>}
+                  <span>리뷰 {game.reviewCount == null ? "-" : formatCount(game.reviewCount)}</span>
                   <span>/{game.slug}</span>
                 </div>
               </div>
@@ -139,7 +142,7 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
                     gameId={game.id}
                     label="숨기기"
                     variant="danger"
-                    confirmMessage={game.status === "PUBLISHED" ? `"${game.title}"을(를) 사이트에서 내릴까요?` : undefined}
+                    confirmMessage={game.publiclyVisible ? `"${game.title}"을(를) 사이트에서 내릴까요?` : undefined}
                   />
                 )}
                 <Link
@@ -154,7 +157,7 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
         </ul>
       )}
 
-      <Pagination page={result.page} totalPages={result.totalPages} hrefFor={(p) => href(tab, q, p)} />
+      <Pagination page={result.page} totalPages={result.totalPages} hrefFor={(p) => href(tab, q, p)} locale="ko" />
     </div>
   );
 }

@@ -27,7 +27,7 @@ public record IngestionProperties(
      * 한 번의 enrichment가 락 유지 시간 안에 끝나야 한다. 그렇지 않으면 실행 중에 락이 풀려
      * 다른 인스턴스가 같은 작업을 동시에 시작할 수 있다.
      */
-    @AssertTrue(message = "enrichment.max-per-run x (request-interval + steam-spy-request-interval)"
+    @AssertTrue(message = "enrichment.max-per-run x (2 x request-interval + steam-spy-request-interval)"
             + " must not exceed 80% of lock-at-most-for")
     public boolean isEnrichmentRunWithinLock() {
         return estimatedEnrichmentDuration().compareTo(runTimeBudget()) <= 0;
@@ -41,14 +41,15 @@ public record IngestionProperties(
     }
 
     /**
-     * 최악의 경우: 모든 아이템이 SteamSpy 태그 판정과 Steam appdetails를 둘 다 호출한다.
+     * 아이템마다 SteamSpy 태그 판정 + Steam appdetails(한국어, 영어)를 호출한다.
+     * 리뷰 수 보충(appreviews)은 일부 게임만 하므로 넣지 않고, 실행 중 예산 확인(runTimeBudget)이 막는다.
      */
     public Duration estimatedEnrichmentDuration() {
-        return requestInterval.plus(steamSpyRequestInterval).multipliedBy(enrichment.maxPerRun());
+        return requestInterval.multipliedBy(2).plus(steamSpyRequestInterval).multipliedBy(enrichment.maxPerRun());
     }
 
     public record Enrichment(
-            @DefaultValue("2000") int maxPerRun,
+            @DefaultValue("1200") int maxPerRun,
             @DefaultValue("7d") Duration refreshAfter,
             @DefaultValue("1d") Duration failedRetryAfter,
             @DefaultValue("3") int maxFailCount

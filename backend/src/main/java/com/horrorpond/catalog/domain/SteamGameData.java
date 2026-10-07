@@ -19,6 +19,10 @@ public record SteamGameData(
         String releaseDateText,
         boolean comingSoon,
         boolean coop,
+        /** Steam 리뷰 수 (appdetails recommendations.total). 없으면 null */
+        Integer reviewCount,
+        /** 성인 콘텐츠 (content_descriptors 3: Adult Only Sexual Content, 4: Frequent Nudity or Sexual Content) */
+        boolean adult,
         List<Media> media,
         List<Credit> developers
 ) {
@@ -36,7 +40,7 @@ public record SteamGameData(
      */
     public SteamGameData withDevelopers(List<Credit> credits) {
         return new SteamGameData(title, shortDescription, headerImageUrl, releaseDate, releaseDateText,
-                comingSoon, coop, media, credits);
+                comingSoon, coop, reviewCount, adult, media, credits);
     }
 
     public record Media(MediaType type, String url, String thumbnailUrl) {

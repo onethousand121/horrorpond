@@ -151,16 +151,23 @@ class AdminCurationApiTest {
     }
 
     @Test
-    void publishWithoutArticleIs409() throws Exception {
+    void publishWithoutArticlePinsGameOnly() throws Exception {
         Long id = steamCandidate(1, "No Article", "no-article-1");
+        mvc.perform(admin(get("/api/admin/games/{id}", id)))
+                .andExpect(jsonPath("$.publiclyVisible").value(false));
 
         mvc.perform(admin(post("/api/admin/games/{id}/publish", id)))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("INVALID_STATE"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.publiclyVisible").value(true))
+                .andExpect(jsonPath("$.hasArticle").value(false));
+        mvc.perform(get("/api/games/no-article-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.article").doesNotExist());
     }
 
     @Test
-    void publishWithoutHighlightsIs400AndNothingIsPublished() throws Exception {
+    void publishWithDraftWithoutHighlightsPinsGameAndKeepsDraft() throws Exception {
         Long id = steamCandidate(2, "Empty", "empty-2");
         mvc.perform(admin(put("/api/admin/games/{id}/article", id))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -168,10 +175,9 @@ class AdminCurationApiTest {
                 .andExpect(status().isOk());
 
         mvc.perform(admin(post("/api/admin/games/{id}/publish", id)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+                .andExpect(status().isOk());
         mvc.perform(admin(get("/api/admin/games").param("q", "Empty")))
-                .andExpect(jsonPath("$.content[0].status").value("CANDIDATE"))
+                .andExpect(jsonPath("$.content[0].status").value("PUBLISHED"))
                 .andExpect(jsonPath("$.content[0].articleStatus").value("DRAFT"));
     }
 
@@ -243,7 +249,7 @@ class AdminCurationApiTest {
     private Long steamCandidate(int appid, String title, String slug) {
         Game game = Game.candidateFromSteam(appid, title, slug);
         game.applySteamData(new SteamGameData(title, "desc", "https://img/" + appid, LocalDate.of(2020, 9, 18),
-                "2020년 9월 18일", false, false,
+                "2020년 9월 18일", false, false, null, false,
                 List.of(new SteamGameData.Media(com.horrorpond.catalog.domain.MediaType.SCREENSHOT,
                         "https://s/" + appid, null)),
                 List.of()));

@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
         hostname: "shared.akamai.steamstatic.com",
         pathname: "/store_item_assets/steam/apps/**",
       },
+      // 유튜브 영상 썸네일 (lib/youtube)
+      { protocol: "https", hostname: "i.ytimg.com", pathname: "/vi/**" },
     ],
     // Next.js 16부터 필수
     qualities: [75],

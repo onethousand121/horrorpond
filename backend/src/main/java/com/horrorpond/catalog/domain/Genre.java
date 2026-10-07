@@ -2,6 +2,7 @@ package com.horrorpond.catalog.domain;
 
 import com.horrorpond.common.domain.BaseTimeEntity;
 import com.horrorpond.common.domain.DomainValidationException;
+import com.horrorpond.common.domain.Language;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -12,6 +13,11 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Entity
@@ -36,6 +42,23 @@ public class Genre extends BaseTimeEntity {
     @Column(nullable = false)
     private int displayOrder;
 
+    /** 영어 이름·설명. 없으면 한국어 값을 쓴다 */
+    @Column(length = 50)
+    private String nameEn;
+
+    @Column(columnDefinition = "text")
+    private String descriptionEn;
+
+    /** 이 장르로 자동 분류할 SteamSpy 태그 (큐레이터가 장르를 직접 붙이지 않은 게임용) */
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(nullable = false, columnDefinition = "varchar(100)[]")
+    private List<String> steamTags = new ArrayList<>();
+
+    /** 게임의 SteamSpy 태그 중 하나라도 이 장르의 태그와 겹치면 이 장르로 본다 */
+    public boolean matchesAnyTag(List<String> gameTags) {
+        return gameTags.stream().anyMatch(steamTags::contains);
+    }
+
     public static Genre create(String name, String slug, String description, int displayOrder) {
         Genre genre = new Genre();
         genre.update(name, slug, description, displayOrder);
@@ -47,6 +70,19 @@ public class Genre extends BaseTimeEntity {
         this.slug = requireText(slug, "slug");
         this.description = description;
         this.displayOrder = displayOrder;
+    }
+
+    public void translate(String nameEn, String descriptionEn) {
+        this.nameEn = nameEn;
+        this.descriptionEn = descriptionEn;
+    }
+
+    public String name(Language language) {
+        return language.pick(name, nameEn);
+    }
+
+    public String description(Language language) {
+        return language.pick(description, descriptionEn);
     }
 
     private static String requireText(String value, String field) {

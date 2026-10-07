@@ -3,9 +3,11 @@
 import Image from "next/image";
 import { useState } from "react";
 import type { Media } from "@/lib/types";
+import { getDictionary, type Locale } from "@/lib/i18n";
 
 /** 스크린샷 썸네일 목록. 썸네일을 누르면 위쪽 큰 이미지가 바뀐다. */
-export function MediaGallery({ screenshots, title }: { screenshots: Media[]; title: string }) {
+export function MediaGallery({ screenshots, title, locale }: { screenshots: Media[]; title: string; locale: Locale }) {
+  const t = getDictionary(locale).media;
   const [selected, setSelected] = useState(0);
   if (screenshots.length === 0) return null;
 
@@ -16,7 +18,7 @@ export function MediaGallery({ screenshots, title }: { screenshots: Media[]; tit
       <div className="relative aspect-video overflow-hidden rounded-lg bg-surface">
         <Image
           src={current.url}
-          alt={`${title} 스크린샷 ${selected + 1}`}
+          alt={t.screenshot(title, selected + 1)}
           fill
           sizes="(min-width: 1152px) 1120px, 100vw"
           className="object-contain"
@@ -29,7 +31,7 @@ export function MediaGallery({ screenshots, title }: { screenshots: Media[]; tit
               <button
                 type="button"
                 onClick={() => setSelected(index)}
-                aria-label={`스크린샷 ${index + 1} 보기`}
+                aria-label={t.showScreenshot(index + 1)}
                 aria-pressed={index === selected}
                 className={`relative block h-[68px] w-[120px] overflow-hidden rounded border-2 ${
                   index === selected ? "border-accent" : "border-transparent opacity-70 hover:opacity-100"

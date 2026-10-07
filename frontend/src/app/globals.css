@@ -1,29 +1,70 @@
 @import "tailwindcss";
 
-/* 다크 테마 기본. 디자인은 최소한으로 두고 나중에 다듬는다. */
+/*
+ * 8bit 연못 세계관 (유튜브 배너·방송 화면과 같은 팔레트)
+ * - 바탕: 아주 짙은 녹청, 포인트: 민트(주) + 달빛 보라(보조)
+ * - 제목/장식은 픽셀 폰트(갈무리11), 본문은 Pretendard
+ */
 :root {
-  --background: #0b0b0d;
-  --surface: #151518;
-  --border: #26262b;
-  --foreground: #e8e8ea;
-  --muted: #9a9aa3;
-  --accent: #d64545;
+  --background: #0a1a1f;
+  --surface: #122a2e;
+  --surface-2: #18363b;
+  --border: rgba(168, 230, 201, 0.14);
+  --foreground: #e8f4f0;
+  --muted: #8fa5a8;
+  --accent: #a8e6c9;
+  --accent-2: #d4a5f0;
+  --accent-ink: #0a1a1f;
+  --danger: #e0444a;
   color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-border: var(--border);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
-  --font-sans: var(--font-noto-sans-kr), system-ui, sans-serif;
+  --color-accent-2: var(--accent-2);
+  --color-accent-ink: var(--accent-ink);
+  --color-danger: var(--danger);
+  --font-sans: "Pretendard Variable", Pretendard, system-ui, sans-serif;
+  /* 갈무리11은 11px 격자 픽셀 폰트: 11/22/33px처럼 11의 배수일 때 가장 선명하다 */
+  --font-pixel: var(--font-galmuri), "Pretendard Variable", sans-serif;
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(900px 420px at 85% -120px, rgba(212, 165, 240, 0.1), transparent 70%),
+    radial-gradient(1100px 500px at 15% -200px, rgba(168, 230, 201, 0.06), transparent 70%),
+    var(--background);
   color: var(--foreground);
+  /* 한국어는 단어(어절) 단위로 줄바꿈. 아주 긴 영문/URL만 강제로 끊는다 */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+/* 호버 시 민트 글로우 */
+.glow-hover {
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s,
+    transform 0.2s;
+}
+.glow-hover:hover {
+  border-color: rgba(168, 230, 201, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(168, 230, 201, 0.25),
+    0 0 28px rgba(168, 230, 201, 0.16);
+}
+
+/* 섹션 구분선: 가운데가 밝은 민트 반투명 */
+.divider {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(90deg, transparent, rgba(168, 230, 201, 0.35), transparent);
 }
 
 /* react-markdown 본문 (typography 플러그인 없이 최소 스타일) */
@@ -72,4 +113,14 @@ body {
 }
 .markdown strong {
   color: #fff;
+}
+
+/* 쇼케이스 이미지 전환 */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

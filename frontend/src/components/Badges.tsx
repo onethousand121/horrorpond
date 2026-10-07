@@ -1,20 +1,28 @@
 import Link from "next/link";
 import type { GenreSummary } from "@/lib/types";
+import { getDictionary, localePath, type Locale } from "@/lib/i18n";
 
-export function GenreBadge({ genre, linked = false }: { genre: GenreSummary; linked?: boolean }) {
-  const className = "rounded bg-surface px-1.5 py-0.5 text-xs text-muted";
+const BADGE = "rounded-full border border-border bg-surface-2/60 px-2 py-0.5 text-xs text-muted";
+
+export function GenreBadge({ genre, locale, linked = false }: {
+  genre: GenreSummary;
+  locale: Locale;
+  linked?: boolean;
+}) {
   if (!linked) {
-    return <span className={className}>{genre.name}</span>;
+    return <span className={BADGE}>{genre.name}</span>;
   }
   return (
-    <Link href={`/genres/${genre.slug}`} className={`${className} hover:text-foreground`}>
+    <Link href={localePath(locale, `/genres/${genre.slug}`)} className={`${BADGE} hover:border-accent/50 hover:text-foreground`}>
       {genre.name}
     </Link>
   );
 }
 
-export function CoopBadge() {
+export function CoopBadge({ locale }: { locale: Locale }) {
   return (
-    <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-xs font-medium text-sky-300">협동</span>
+    <span className="rounded-full border border-accent-2/35 bg-accent-2/10 px-2 py-0.5 text-xs font-medium text-accent-2">
+      {getDictionary(locale).badge.coop}
+    </span>
   );
 }

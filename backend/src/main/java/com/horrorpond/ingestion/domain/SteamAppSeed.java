@@ -14,9 +14,13 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.domain.Persistable;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -54,6 +58,11 @@ public class SteamAppSeed implements Persistable<Integer> {
 
     private Instant horrorTagCheckedAt;
 
+    /** SteamSpy 상위 태그(표가 많은 순). 아직 받지 않았으면 null */
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(columnDefinition = "varchar(100)[]")
+    private List<String> spyTags;
+
     @Transient
     @Getter(AccessLevel.NONE)
     private boolean newEntity = true;
@@ -69,10 +78,21 @@ public class SteamAppSeed implements Persistable<Integer> {
     }
 
     /**
-     * SteamSpy 태그로 발견했고 아직 판정 전인 seed만 판정한다. 수동 추가는 관리자가 원한 것이라 판정하지 않는다.
+     * 자동으로 발견했고(SteamSpy 태그, Steam 검색) 아직 판정 전인 seed만 판정한다. 수동 추가는 관리자가 원한 것이라 판정하지 않는다.
      */
     public boolean needsHorrorTagCheck() {
-        return discoveredBy == DiscoveredBy.STEAMSPY_TAG && horrorTag == HorrorTag.UNCHECKED;
+        return discoveredBy != DiscoveredBy.MANUAL && horrorTag == HorrorTag.UNCHECKED;
+    }
+
+    /**
+     * 태그는 공포 판정과 별개로 모든 seed가 한 번 받는다(장르 자동 분류용). 수동 추가 seed도 포함.
+     */
+    public boolean needsSpyTags() {
+        return spyTags == null;
+    }
+
+    public void recordSpyTags(List<String> tags) {
+        this.spyTags = new ArrayList<>(Objects.requireNonNull(tags, "tags"));
     }
 
     public void recordHorrorTag(HorrorTag result, Instant now) {

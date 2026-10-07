@@ -2,6 +2,7 @@ package com.horrorpond.catalog.domain;
 
 import com.horrorpond.common.domain.BaseTimeEntity;
 import com.horrorpond.common.domain.DomainStateException;
+import com.horrorpond.common.domain.Language;
 import com.horrorpond.common.domain.DomainValidationException;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -21,6 +22,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -68,6 +71,16 @@ public class Game extends BaseTimeEntity {
     @Column(length = 100)
     private String releaseDateText;
 
+    /** 영어 Steam 데이터 (l=english). 없으면 한국어 값을 쓴다 */
+    @Column(length = 300)
+    private String titleEn;
+
+    @Column(columnDefinition = "text")
+    private String shortDescriptionEn;
+
+    @Column(length = 100)
+    private String releaseDateTextEn;
+
     @Column(nullable = false)
     private boolean comingSoon;
 
@@ -76,6 +89,18 @@ public class Game extends BaseTimeEntity {
      */
     @Column(nullable = false)
     private boolean coop;
+
+    /** Steam 리뷰 수. 출시작 자동 노출의 품질 하한에 쓴다 */
+    private Integer reviewCount;
+
+    /** 성인 콘텐츠. 자동 노출에서 제외되고, 큐레이터가 공개(PUBLISHED)해야 보인다 */
+    @Column(nullable = false)
+    private boolean adult;
+
+    /** SteamSpy 상위 태그(표가 많은 순). 장르 자동 분류에 쓴다 */
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(nullable = false, columnDefinition = "varchar(100)[]")
+    private List<String> tags = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -137,9 +162,36 @@ public class Game extends BaseTimeEntity {
         this.releaseDateText = data.releaseDateText();
         this.comingSoon = data.comingSoon();
         this.coop = data.coop();
+        this.reviewCount = data.reviewCount();
+        this.adult = data.adult();
         replaceMedia(data.media());
         replaceDevelopers(data.developers());
         upsertStoreLink(Store.STEAM, STEAM_STORE_URL + externalId);
+    }
+
+    /**
+     * 영어 Steam 데이터. 수집 시 영어 응답을 못 받았으면 호출하지 않아 이전 값을 유지한다.
+     */
+    public void applyEnglishText(String title, String shortDescription, String releaseDateText) {
+        this.titleEn = title;
+        this.shortDescriptionEn = shortDescription;
+        this.releaseDateTextEn = releaseDateText;
+    }
+
+    public String title(Language language) {
+        return language.pick(title, titleEn);
+    }
+
+    public String shortDescription(Language language) {
+        return language.pick(shortDescription, shortDescriptionEn);
+    }
+
+    public String releaseDateText(Language language) {
+        return language.pick(releaseDateText, releaseDateTextEn);
+    }
+
+    public void applySteamTags(List<String> tags) {
+        this.tags = new ArrayList<>(tags == null ? List.of() : tags);
     }
 
     private void replaceMedia(List<SteamGameData.Media> items) {
@@ -213,11 +265,11 @@ public class Game extends BaseTimeEntity {
 
     // ===== 공개 =====
 
-    public void publish(boolean hasPublishedArticle, Instant now) {
+    /**
+     * 큐레이터가 직접 공개한다. 자동 노출 조건(리뷰 수, 성인 여부)과 무관하게 항상 노출된다.
+     */
+    public void publish(Instant now) {
         Objects.requireNonNull(now, "now");
-        if (!hasPublishedArticle) {
-            throw new DomainStateException("A published curation article is required to publish a game");
-        }
         this.status = GameStatus.PUBLISHED;
         if (this.publishedAt == null) {
             this.publishedAt = now;
@@ -226,6 +278,27 @@ public class Game extends BaseTimeEntity {
 
     public boolean isPublished() {
         return status == GameStatus.PUBLISHED;
+    }
+
+    /**
+     * 공개 사이트 노출 규칙 (CuratedGameQueryRepository의 목록 조건과 같아야 한다).
+     * - HIDDEN: 노출 안 함
+     * - PUBLISHED: 큐레이터가 공개한 게임. 항상 노출
+     * - CANDIDATE: 수집된 공포게임. {@link AutoExposure} 기준을 넘으면 자동 노출
+     */
+    public boolean isPubliclyVisible(AutoExposure rule, LocalDate today) {
+        return isPubliclyVisible(status, adult, comingSoon, reviewCount, releaseDate, rule, today);
+    }
+
+    /** 엔티티 없이 조회 결과(projection)로 판정할 때 쓴다 */
+    public static boolean isPubliclyVisible(GameStatus status, boolean adult, boolean comingSoon,
+                                            Integer reviewCount, LocalDate releaseDate, AutoExposure rule,
+                                            LocalDate today) {
+        return switch (status) {
+            case HIDDEN -> false;
+            case PUBLISHED -> true;
+            case CANDIDATE -> rule.allows(adult, comingSoon, reviewCount, releaseDate, today);
+        };
     }
 
     // ===== 컬렉션 조회 (읽기 전용) =====

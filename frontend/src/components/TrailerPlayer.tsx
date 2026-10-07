@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type Hls from "hls.js";
 import type { Media } from "@/lib/types";
+import { getDictionary, type Locale } from "@/lib/i18n";
 
 const HLS_MIME = "application/vnd.apple.mpegurl";
 
@@ -12,11 +13,13 @@ const HLS_MIME = "application/vnd.apple.mpegurl";
  * - 재생 버튼을 누르기 전에는 영상도 hls.js도 불러오지 않는다.
  * - 브라우저가 HLS를 기본 지원하면(Safari, 최신 Chrome 등) hls.js 없이 video.src로 재생한다.
  */
-export function TrailerPlayer({ trailers, poster, title }: {
+export function TrailerPlayer({ trailers, poster, title, locale }: {
   trailers: Media[];
   poster: string | null;
   title: string;
+  locale: Locale;
 }) {
+  const t = getDictionary(locale).media;
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [index, setIndex] = useState(0);
@@ -38,13 +41,13 @@ export function TrailerPlayer({ trailers, poster, title }: {
         const { default: HlsClass } = await import("hls.js");
         if (cancelled) return;
         if (!HlsClass.isSupported()) {
-          setError("이 브라우저에서는 트레일러를 재생할 수 없습니다.");
+          setError(t.unsupported);
           return;
         }
         const hls = new HlsClass();
         hlsRef.current = hls;
         hls.on(HlsClass.Events.ERROR, (_event, data) => {
-          if (data.fatal) setError("트레일러를 불러오지 못했습니다.");
+          if (data.fatal) setError(t.failed);
         });
         hls.loadSource(src);
         hls.attachMedia(target);
@@ -63,7 +66,7 @@ export function TrailerPlayer({ trailers, poster, title }: {
       video.removeAttribute("src");
       video.load();
     };
-  }, [started, current]);
+  }, [started, current, t]);
 
   if (!current) return null;
 
@@ -77,14 +80,14 @@ export function TrailerPlayer({ trailers, poster, title }: {
             playsInline
             poster={poster ?? undefined}
             className="h-full w-full"
-            aria-label={`${title} 트레일러`}
+            aria-label={t.trailer(title)}
           />
         ) : (
           <button
             type="button"
             onClick={() => setStarted(true)}
             className="group absolute inset-0 flex items-center justify-center"
-            aria-label={`${title} 트레일러 재생`}
+            aria-label={t.playTrailer(title)}
           >
             {poster && (
               // poster는 Steam 헤더 이미지(460x215). 재생 전 정적 표시만 하므로 일반 img로 충분하다.
@@ -113,7 +116,7 @@ export function TrailerPlayer({ trailers, poster, title }: {
                 i === index ? "border-accent text-foreground" : "border-border text-muted hover:text-foreground"
               }`}
             >
-              트레일러 {i + 1}
+              {t.trailerN(i + 1)}
             </button>
           ))}
         </div>

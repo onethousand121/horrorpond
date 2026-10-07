@@ -23,8 +23,13 @@ export interface AdminGame {
   headerImageUrl: string | null;
   /** yyyy-MM-dd */
   releaseDate: string | null;
+  comingSoon: boolean;
   coop: boolean;
+  reviewCount: number | null;
+  adult: boolean;
   status: GameStatus;
+  /** 지금 공개 사이트에 보이는지 (자동 노출 포함) */
+  publiclyVisible: boolean;
   hasArticle: boolean;
   articleStatus: ArticleStatus | null;
   /** 제목이 같은(대소문자 무시) 다른 게임 수 */
@@ -54,8 +59,13 @@ export interface AdminGameDetail {
   shortDescription: string | null;
   headerImageUrl: string | null;
   releaseDate: string | null;
+  comingSoon: boolean;
   coop: boolean;
+  reviewCount: number | null;
+  adult: boolean;
+  tags: string[];
   status: GameStatus;
+  publiclyVisible: boolean;
   genreSlugs: string[];
   steamUrl: string | null;
   article: AdminArticle | null;

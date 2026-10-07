@@ -29,7 +29,8 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * seed별 appdetails를 받아 원본 스냅샷으로 저장한다.
+ * seed별 appdetails를 받아 원본 스냅샷으로 저장한다. appdetails에 리뷰 수가 없으면 appreviews로 채우고,
+ * 영어 사이트용 텍스트(l=english)를 같은 스냅샷에 붙인다.
  * SteamSpy로 발견한 seed는 먼저 SteamSpy 상위 태그로 공포게임인지 판정하고, 아니면 Steam 호출 없이 제외한다.
  * HTTP 호출과 대기는 트랜잭션 밖에서 하고, 저장은 {@link EnrichmentItemWriter}가 1건씩 커밋한다.
  */
@@ -69,9 +70,10 @@ public class EnrichmentService {
     /**
      * 우선순위 (공포게임이 아니라고 판정된 NOT_HORROR는 모두 제외):
      * 1) 수동 추가한 PENDING (관리자가 명시적으로 원한 것)
-     * 2) SteamSpy로 발견한 PENDING, appid 내림차순 (최신 게임 먼저)
-     * 3) 갱신 주기가 지난 OK (오래된 순)
-     * 4) 재시도 대기가 지난 FAILED (실패 횟수 제한 이내)
+     * 2) Steam 검색으로 발견한 PENDING (신작·출시 예정작), appid 내림차순
+     * 3) SteamSpy로 발견한 PENDING, appid 내림차순 (최신 게임 먼저)
+     * 4) 갱신 주기가 지난 OK (오래된 순)
+     * 5) 재시도 대기가 지난 FAILED (실패 횟수 제한 이내)
      */
     List<SteamAppSeed> selectTargets() {
         IngestionProperties.Enrichment config = properties.enrichment();
@@ -80,6 +82,9 @@ public class EnrichmentService {
         addAll(targets, config.maxPerRun(), remaining -> seedRepository
                 .findByFetchStatusAndDiscoveredByOrderByDiscoveredAtAscAppidAsc(
                         FetchStatus.PENDING, DiscoveredBy.MANUAL, remaining));
+        addAll(targets, config.maxPerRun(), remaining -> seedRepository
+                .findByFetchStatusAndDiscoveredByAndHorrorTagNotOrderByAppidDesc(
+                        FetchStatus.PENDING, DiscoveredBy.STEAM_SEARCH, HorrorTag.NOT_HORROR, remaining));
         addAll(targets, config.maxPerRun(), remaining -> seedRepository
                 .findByFetchStatusAndDiscoveredByAndHorrorTagNotOrderByAppidDesc(
                         FetchStatus.PENDING, DiscoveredBy.STEAMSPY_TAG, HorrorTag.NOT_HORROR, remaining));
@@ -121,34 +126,44 @@ public class EnrichmentService {
             }
             SteamAppSeed seed = seeds.get(i);
             int appid = seed.getAppid();
-            if (seed.needsHorrorTagCheck()) {
-                HorrorTag horrorTag;
+            // SteamSpy 태그: 모든 seed가 한 번 받는다(장르 자동 분류). SteamSpy로 발견한 seed는 이 태그로 공포 판정도 한다
+            boolean checkHorror = seed.needsHorrorTagCheck();
+            if (checkHorror || seed.needsSpyTags()) {
+                List<String> tags;
                 try {
-                    horrorTag = HorrorTag.classify(steamSpyClient.fetchTopTags(appid));
+                    tags = steamSpyClient.fetchTopTags(appid);
                 } catch (SteamTransientException e) {
-                    // 판정 실패는 Steam 실패 횟수에 넣지 않는다. UNCHECKED로 남아 다음 실행에서 다시 판정한다.
-                    log.warn("SteamSpy tag check failed after retries: appid={}, {}", appid, e.getMessage());
-                    failed++;
-                    consecutiveTagCheckFailures++;
-                    if (consecutiveTagCheckFailures >= MAX_CONSECUTIVE_TAG_CHECK_FAILURES) {
-                        String reason = "SteamSpy tag check failed " + consecutiveTagCheckFailures
-                                + " times in a row (last appid=" + appid + ")";
-                        log.warn("Enrichment aborted: {}", reason);
-                        return new Outcome(processed, failed, reason);
+                    log.warn("SteamSpy tags failed after retries: appid={}, {}", appid, e.getMessage());
+                    if (!checkHorror) {
+                        tags = null; // 수동 추가 seed는 태그 없이 진행하고 다음 갱신 때 다시 받는다
+                    } else {
+                        // 판정 실패는 Steam 실패 횟수에 넣지 않는다. UNCHECKED로 남아 다음 실행에서 다시 판정한다.
+                        failed++;
+                        consecutiveTagCheckFailures++;
+                        if (consecutiveTagCheckFailures >= MAX_CONSECUTIVE_TAG_CHECK_FAILURES) {
+                            String reason = "SteamSpy tag check failed " + consecutiveTagCheckFailures
+                                    + " times in a row (last appid=" + appid + ")";
+                            log.warn("Enrichment aborted: {}", reason);
+                            return new Outcome(processed, failed, reason);
+                        }
+                        continue;
                     }
-                    continue;
                 }
-                consecutiveTagCheckFailures = 0;
-                itemWriter.recordHorrorTag(appid, horrorTag);
-                if (horrorTag == HorrorTag.NOT_HORROR) {
-                    excluded++;
-                    processed++;
-                    continue;
+                if (tags != null) {
+                    consecutiveTagCheckFailures = 0;
+                    HorrorTag horrorTag = checkHorror ? HorrorTag.classify(tags) : null;
+                    itemWriter.recordSpyTags(appid, tags, horrorTag);
+                    if (horrorTag == HorrorTag.NOT_HORROR) {
+                        excluded++;
+                        processed++;
+                        continue;
+                    }
                 }
             }
             while (true) {
                 try {
-                    AppDetailsResult result = storeClient.fetchAppDetails(appid);
+                    AppDetailsResult result = withEnglish(appid,
+                            withReviewCount(appid, storeClient.fetchAppDetails(appid)));
                     consecutiveRateLimits = 0;
                     itemWriter.write(appid, result);
                     processed++;
@@ -176,6 +191,39 @@ public class EnrichmentService {
         log.info("Enrichment finished: targets={}, processed={} (excluded as not horror={}), failed={}",
                 seeds.size(), processed, excluded, failed);
         return new Outcome(processed, failed, null);
+    }
+
+    /**
+     * 자동 노출 기준이 리뷰 수라, appdetails에 리뷰 수가 빠진 게임은 appreviews로 한 번 더 받는다.
+     * 실패하면 리뷰 수 없이 저장하고 다음 갱신 때 다시 받는다 (429는 호출한 쪽의 대기/재시도로 넘긴다).
+     */
+    private AppDetailsResult withReviewCount(int appid, AppDetailsResult result) {
+        if (!(result instanceof AppDetailsResult.Found found) || found.hasReviewCount()) {
+            return result;
+        }
+        try {
+            Integer reviewCount = storeClient.fetchReviewCount(appid);
+            return reviewCount == null ? found : found.withReviewCount(reviewCount);
+        } catch (SteamTransientException e) {
+            log.warn("appreviews failed after retries: appid={}, {}", appid, e.getMessage());
+            return found;
+        }
+    }
+
+    /**
+     * 영어 사이트용 텍스트. 실패하면 영어 없이 저장하고(정규화 때 이전 영어 값을 유지) 다음 갱신 때 다시 받는다.
+     */
+    private AppDetailsResult withEnglish(int appid, AppDetailsResult result) {
+        if (!(result instanceof AppDetailsResult.Found found)) {
+            return result;
+        }
+        try {
+            String english = storeClient.fetchEnglishText(appid);
+            return english == null ? found : found.withEnglish(english);
+        } catch (SteamTransientException e) {
+            log.warn("appdetails(english) failed after retries: appid={}, {}", appid, e.getMessage());
+            return found;
+        }
     }
 
     private record Outcome(int processed, int failed, String abortReason) {

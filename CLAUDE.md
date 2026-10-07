@@ -1,5 +1,7 @@
 ## Architecture Decisions (horrorpond MVP)
 - Frontend: Next.js App Router, ISR(revalidate 3600), 서버 컴포넌트에서만 백엔드 호출
+  다국어(ko/en): 라우트는 app/[lang], 한국어는 접두사 없는 주소(proxy가 /ko로 rewrite), 영어는 /en.
+  언어 선택 쿠키(NEXT_LOCALE) 우선, 첫 화면(/)만 브라우저 언어로 /en 이동. UI 문구는 lib/i18n 사전
   빌드는 백엔드에 의존하지 않음: 동적 경로는 generateStaticParams가 [] 반환,
   데이터를 쓰는 고정 경로는 connection()으로 요청 시 렌더링 + fetch 데이터 캐시(1h, 태그)
 - Backend: Spring Boot 4.1.x / Java 17, 모듈러 모놀리스
@@ -8,12 +10,18 @@
   (공개 사이트의 게임은 곧 큐레이션된 게임이며, Article 조합이 필요하므로 공개 게임 조회는 curation이 담당)
   ingestion은 catalog/curation 서비스를 직접 호출하지 않고 Repository 레벨로만 반영
 - DB: PostgreSQL 16, Flyway 마이그레이션. Redis 미사용(MVP)
-- 노출 정책: Game.status = CANDIDATE | PUBLISHED | HIDDEN. 공개 API는 PUBLISHED만 반환
-- 장르: 자체 택소노미(curator 관리). Steam genres/categories는 참고용 raw 데이터로만 보관
-- 수집: discovery(SteamSpy tag) → enrichment(appdetails, 1.5s throttle, 429→60s backoff)
+- 노출 정책(공포게임 허브): Game.status = CANDIDATE | PUBLISHED | HIDDEN. 규칙은 Game.isPubliclyVisible / ExposurePolicy 한 곳
+  HIDDEN 비노출, PUBLISHED(큐레이터 공개) 항상 노출, CANDIDATE(수집됨)는 성인 아님 AND (출시 예정 OR 출시 후 new-release-days(10)일 이내 OR 리뷰 ≥ min-reviews(10))면 자동 노출 (AutoExposure)
+  큐레이터 글은 선택(있으면 "재일 추천"). 장르 = 큐레이터 지정 장르 ∪ SteamSpy 태그 매핑(genre.steam_tags)
+- 장르: 자체 택소노미(curator 관리) + SteamSpy 태그 자동 매핑. Steam genres/categories는 참고용 raw 데이터로만 보관
+- 수집: discovery(Steam 스토어 검색: Horror 최신 출시 300 + 인기 출시 예정 200, SteamSpy tag 전체) → enrichment(appdetails, 1.5s throttle, 429→60s backoff)
         → raw_snapshot(JSONB) 저장 → normalize(별도 단계, 재실행 가능)
-  enrichment는 SteamSpy 발견 seed를 먼저 SteamSpy appdetails(1s 간격) 상위 태그로 판정해
-  Horror 계열 태그가 없으면 NOT_HORROR로 기록하고 Steam 호출에서 제외 (MANUAL seed는 판정 안 함)
+  enrichment 우선순위: MANUAL → STEAM_SEARCH(신작) → STEAMSPY_TAG → 갱신 → 재시도
+  enrichment는 자동 발견(SteamSpy/검색) seed를 먼저 SteamSpy appdetails(1s 간격) 상위 태그로 판정해
+  상위 10개 태그 안에 Horror 계열 태그가 없으면 NOT_HORROR로 기록하고 Steam 호출에서 제외 (MANUAL seed는 판정 안 함)
+  appdetails에 recommendations(리뷰 수)가 없으면 appreviews로 받아 같은 모양으로 채운다
+  영어 텍스트(이름·짧은 소개·출시일)는 appdetails(l=english, filters=basic,release_date)로 받아 같은 스냅샷의 english 키에 붙인다.
+  공개 API는 lang=ko|en (영어 값이 없으면 한국어). 큐레이터 글은 한국어만
 - 트리거: @Scheduled 일 1회 + POST /api/admin/ingestion/run (X-Admin-Key)
 - 관리 화면: Next.js /admin. Admin Key를 httpOnly 쿠키에 두고 서버에서만 백엔드 호출.
   변경 서버 액션은 updateTag("games")로 공개 페이지 캐시를 즉시 만료

@@ -72,9 +72,9 @@ class EnrichmentHorrorTagCheckTest {
         service.run(TriggerType.MANUAL);
 
         verify(storeClient, never()).fetchAppDetails(10);
-        verify(itemWriter, never()).recordHorrorTag(eq(10), any());
+        verify(itemWriter, never()).recordSpyTags(eq(10), any(), any());
         verify(itemWriter, never()).markFailed(10);
-        verify(itemWriter).recordHorrorTag(20, HorrorTag.HORROR);
+        verify(itemWriter).recordSpyTags(20, List.of("Horror"), HorrorTag.HORROR);
         verify(jobRecorder).succeed(JOB_ID, 1, 1);
     }
 
@@ -95,13 +95,65 @@ class EnrichmentHorrorTagCheckTest {
     }
 
     @Test
+    void missingReviewCountIsFilledFromAppReviews() {
+        when(steamSpyClient.fetchTopTags(anyInt())).thenReturn(List.of("Horror"));
+        when(storeClient.fetchAppDetails(10)).thenReturn(new AppDetailsResult.Found("{\"name\":\"New\"}"));
+        when(storeClient.fetchReviewCount(10)).thenReturn(1509);
+        when(storeClient.fetchAppDetails(20))
+                .thenReturn(new AppDetailsResult.Found("{\"name\":\"Old\",\"recommendations\":{\"total\":7}}"));
+
+        service.run(TriggerType.MANUAL);
+
+        verify(itemWriter).write(10,
+                new AppDetailsResult.Found("{\"name\":\"New\",\"recommendations\":{\"total\":1509}}"));
+        verify(storeClient, never()).fetchReviewCount(20);
+        verify(jobRecorder).succeed(JOB_ID, 2, 0);
+    }
+
+    @Test
+    void appReviewsFailureStillSavesAppDetails() {
+        when(steamSpyClient.fetchTopTags(anyInt())).thenReturn(List.of("Horror"));
+        when(storeClient.fetchAppDetails(anyInt())).thenReturn(new AppDetailsResult.Found("{\"name\":\"New\"}"));
+        when(storeClient.fetchReviewCount(anyInt())).thenThrow(new SteamTransientException("down"));
+
+        service.run(TriggerType.MANUAL);
+
+        verify(itemWriter).write(10, new AppDetailsResult.Found("{\"name\":\"New\"}"));
+        verify(itemWriter).write(20, new AppDetailsResult.Found("{\"name\":\"New\"}"));
+        verify(jobRecorder).succeed(JOB_ID, 2, 0);
+    }
+
+    @Test
+    void manualSeedGetsTagsWithoutHorrorCheckAndTagFailureDoesNotBlock() {
+        when(seedRepository.findByFetchStatusAndDiscoveredByAndHorrorTagNotOrderByAppidDesc(
+                eq(FetchStatus.PENDING), eq(DiscoveredBy.STEAMSPY_TAG), eq(HorrorTag.NOT_HORROR), any()))
+                .thenReturn(List.of());
+        when(seedRepository.findByFetchStatusAndDiscoveredByOrderByDiscoveredAtAscAppidAsc(
+                eq(FetchStatus.PENDING), eq(DiscoveredBy.MANUAL), any()))
+                .thenReturn(List.of(SteamAppSeed.discovered(30, DiscoveredBy.MANUAL, T0),
+                        SteamAppSeed.discovered(40, DiscoveredBy.MANUAL, T0)));
+        when(steamSpyClient.fetchTopTags(30)).thenReturn(List.of("Battle Royale"));
+        when(steamSpyClient.fetchTopTags(40)).thenThrow(new SteamTransientException("steamspy down"));
+        when(storeClient.fetchAppDetails(anyInt())).thenReturn(new AppDetailsResult.NotFound());
+
+        service.run(TriggerType.MANUAL);
+
+        // 수동 추가는 판정하지 않으므로 Horror 태그가 없어도 Steam까지 진행한다
+        verify(itemWriter).recordSpyTags(30, List.of("Battle Royale"), null);
+        verify(itemWriter, never()).recordSpyTags(eq(40), any(), any());
+        verify(storeClient).fetchAppDetails(30);
+        verify(storeClient).fetchAppDetails(40);
+        verify(jobRecorder).succeed(JOB_ID, 2, 0);
+    }
+
+    @Test
     void notHorrorIsRecordedAndSkipsSteam() {
         when(steamSpyClient.fetchTopTags(anyInt())).thenReturn(List.of("Battle Royale"));
 
         service.run(TriggerType.MANUAL);
 
-        verify(itemWriter).recordHorrorTag(10, HorrorTag.NOT_HORROR);
-        verify(itemWriter).recordHorrorTag(20, HorrorTag.NOT_HORROR);
+        verify(itemWriter).recordSpyTags(10, List.of("Battle Royale"), HorrorTag.NOT_HORROR);
+        verify(itemWriter).recordSpyTags(20, List.of("Battle Royale"), HorrorTag.NOT_HORROR);
         verify(storeClient, never()).fetchAppDetails(anyInt());
         verify(jobRecorder).succeed(JOB_ID, 2, 0);
     }

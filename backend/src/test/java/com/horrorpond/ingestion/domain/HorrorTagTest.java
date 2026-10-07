@@ -9,10 +9,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 class HorrorTagTest {
 
     @Test
-    void horrorAnywhereInTopTagsIsHorror() {
+    void horrorInTopTenTagsIsHorror() {
         // L4D2는 Horror가 9위
         assertThat(HorrorTag.classify(List.of("Zombies", "Co-op", "FPS", "Multiplayer", "Shooter", "Action",
                 "Online Co-Op", "Team-Based", "Horror"))).isEqualTo(HorrorTag.HORROR);
+    }
+
+    @Test
+    void horrorBelowTopTenIsNotHorror() {
+        // Undertale: Psychological Horror 18위, Horror 20위
+        assertThat(HorrorTag.classify(List.of("Great Soundtrack", "Story Rich", "Choices Matter", "Multiple Endings",
+                "Pixel Graphics", "Funny", "RPG", "Singleplayer", "Indie", "2D", "Comedy", "Replay Value",
+                "Bullet Hell", "Cute", "Memes", "Retro", "Dark", "Psychological Horror", "Dating Sim", "Horror")))
+                .isEqualTo(HorrorTag.NOT_HORROR);
     }
 
     @Test

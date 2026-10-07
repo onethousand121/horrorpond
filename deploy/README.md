@@ -109,7 +109,7 @@ curl -X POST https://<Public IP>.sslip.io/api/admin/ingestion/run \
 curl https://<Public IP>.sslip.io/api/admin/ingestion/jobs -H "X-Admin-Key: <ADMIN_API_KEY>"
 ```
 
-한 번에 최대 2000건을 처리하고(1시간 이상), 이후 매일 04:00(KST)에 자동으로 이어서 수집합니다. 클라우드 IP에서 Steam/SteamSpy 호출이 막히는지 이때 job 결과(`failedCount`, `errorMessage`)로 확인합니다.
+한 번에 최대 1200건을 처리하고(1시간 이상), 이후 매일 04:00(KST)에 자동으로 이어서 수집합니다. 클라우드 IP에서 Steam/SteamSpy 호출이 막히는지 이때 job 결과(`failedCount`, `errorMessage`)로 확인합니다.
 
 ## 운영
 
