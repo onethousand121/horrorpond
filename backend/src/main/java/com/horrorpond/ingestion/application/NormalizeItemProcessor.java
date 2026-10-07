@@ -8,7 +8,9 @@ import com.horrorpond.catalog.domain.SteamGameData;
 import com.horrorpond.catalog.repository.DeveloperRepository;
 import com.horrorpond.catalog.repository.GameRepository;
 import com.horrorpond.common.util.SlugGenerator;
+import com.horrorpond.ingestion.domain.SteamAppSeed;
 import com.horrorpond.ingestion.domain.SteamRawSnapshot;
+import com.horrorpond.ingestion.repository.SteamAppSeedRepository;
 import com.horrorpond.ingestion.repository.SteamRawSnapshotRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -28,6 +30,7 @@ public class NormalizeItemProcessor {
     private static final String DEVELOPER_SLUG_FALLBACK = "developer";
 
     private final SteamRawSnapshotRepository snapshotRepository;
+    private final SteamAppSeedRepository seedRepository;
     private final GameRepository gameRepository;
     private final DeveloperRepository developerRepository;
     private final SteamAppDetailsParser parser;
@@ -43,6 +46,9 @@ public class NormalizeItemProcessor {
                             uniqueSlug(SlugGenerator.forSteamCandidate(data.title(), appid),
                                     gameRepository::existsBySlug))));
             game.applySteamData(data.withDevelopers(credits(parsed)));
+            seedRepository.findById(appid)
+                    .map(SteamAppSeed::getSpyTags)
+                    .ifPresent(game::applySteamTags);
         }
         snapshot.markNormalized();
     }

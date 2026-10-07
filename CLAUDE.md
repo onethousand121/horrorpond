@@ -8,8 +8,10 @@
   (공개 사이트의 게임은 곧 큐레이션된 게임이며, Article 조합이 필요하므로 공개 게임 조회는 curation이 담당)
   ingestion은 catalog/curation 서비스를 직접 호출하지 않고 Repository 레벨로만 반영
 - DB: PostgreSQL 16, Flyway 마이그레이션. Redis 미사용(MVP)
-- 노출 정책: Game.status = CANDIDATE | PUBLISHED | HIDDEN. 공개 API는 PUBLISHED만 반환
-- 장르: 자체 택소노미(curator 관리). Steam genres/categories는 참고용 raw 데이터로만 보관
+- 노출 정책(공포게임 허브): Game.status = CANDIDATE | PUBLISHED | HIDDEN. 규칙은 Game.isPubliclyVisible / ExposurePolicy 한 곳
+  HIDDEN 비노출, PUBLISHED(큐레이터 공개) 항상 노출, CANDIDATE(수집됨)는 성인 아님 AND (출시 예정 OR 리뷰 ≥ min-reviews)면 자동 노출
+  큐레이터 글은 선택(있으면 "재일 추천"). 장르 = 큐레이터 지정 장르 ∪ SteamSpy 태그 매핑(genre.steam_tags)
+- 장르: 자체 택소노미(curator 관리) + SteamSpy 태그 자동 매핑. Steam genres/categories는 참고용 raw 데이터로만 보관
 - 수집: discovery(SteamSpy tag) → enrichment(appdetails, 1.5s throttle, 429→60s backoff)
         → raw_snapshot(JSONB) 저장 → normalize(별도 단계, 재실행 가능)
   enrichment는 SteamSpy 발견 seed를 먼저 SteamSpy appdetails(1s 간격) 상위 태그로 판정해

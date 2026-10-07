@@ -33,6 +33,12 @@ public class SteamAppDetailsParser {
      */
     static final Set<Integer> COOP_CATEGORY_IDS = Set.of(9, 38, 39, 48);
 
+    /**
+     * Steam content_descriptors 중 성인 콘텐츠: 3 Adult Only Sexual Content, 4 Frequent Nudity or Sexual Content.
+     * (1 Some Nudity, 2 Violence/Gore, 5 General Mature Content는 공포게임에 흔해서 성인으로 보지 않는다)
+     */
+    static final Set<Integer> ADULT_DESCRIPTOR_IDS = Set.of(3, 4);
+
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final Pattern HTML_TAG = Pattern.compile("<[^>]*>");
     // &nbsp;를 unescape하면  이 되는데 \s에 포함되지 않으므로 따로 넣는다
@@ -62,6 +68,8 @@ public class SteamAppDetailsParser {
                 releaseDateText,
                 release.path("coming_soon").asBoolean(false),
                 isCoop(root),
+                reviewCount(root),
+                isAdult(root),
                 media(root),
                 List.of());
         return new ParsedSteamApp(type, data, names(root, "developers"), names(root, "publishers"));
@@ -110,6 +118,20 @@ public class SteamAppDetailsParser {
             }
         }
         return media;
+    }
+
+    private static Integer reviewCount(JsonNode root) {
+        JsonNode total = root.path("recommendations").get("total");
+        return total != null && total.isNumber() ? total.asInt() : null;
+    }
+
+    private static boolean isAdult(JsonNode root) {
+        for (JsonNode id : root.path("content_descriptors").path("ids")) {
+            if (id.isNumber() && ADULT_DESCRIPTOR_IDS.contains(id.asInt())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isCoop(JsonNode root) {

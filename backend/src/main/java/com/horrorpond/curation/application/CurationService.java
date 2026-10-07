@@ -37,16 +37,17 @@ public class CurationService {
     private final GameRepository gameRepository;
     private final GenreRepository genreRepository;
     private final CurationArticleRepository articleRepository;
+    private final ExposurePolicy exposurePolicy;
 
     @Transactional(readOnly = true)
     public Page<AdminGameResponse> search(GameStatus status, String titleQuery, Pageable pageable) {
-        return adminGameQueryRepository.search(status, titleQuery, pageable).map(AdminGameResponse::from);
+        return adminGameQueryRepository.search(status, titleQuery, pageable).map(row -> AdminGameResponse.from(row, exposurePolicy));
     }
 
     @Transactional(readOnly = true)
     public AdminGameDetailResponse getDetail(Long gameId) {
         Game game = findGame(gameId);
-        return AdminGameDetailResponse.of(game, articleRepository.findByGameId(gameId).orElse(null));
+        return AdminGameDetailResponse.of(game, articleRepository.findByGameId(gameId).orElse(null), exposurePolicy);
     }
 
     /**
@@ -67,7 +68,7 @@ public class CurationService {
         if (coop != null) {
             game.changeCoop(coop);
         }
-        return AdminGameResponse.of(game, articleRepository.findByGameId(gameId).orElse(null));
+        return AdminGameResponse.of(game, articleRepository.findByGameId(gameId).orElse(null), exposurePolicy);
     }
 
     /**
@@ -93,13 +94,13 @@ public class CurationService {
     public AdminGameResponse hide(Long gameId) {
         Game game = findGame(gameId);
         game.hide();
-        return AdminGameResponse.of(game, articleRepository.findByGameId(gameId).orElse(null));
+        return AdminGameResponse.of(game, articleRepository.findByGameId(gameId).orElse(null), exposurePolicy);
     }
 
     public AdminGameResponse unhide(Long gameId) {
         Game game = findGame(gameId);
         game.unhide();
-        return AdminGameResponse.of(game, articleRepository.findByGameId(gameId).orElse(null));
+        return AdminGameResponse.of(game, articleRepository.findByGameId(gameId).orElse(null), exposurePolicy);
     }
 
     private Game findGame(Long gameId) {

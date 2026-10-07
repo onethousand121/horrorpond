@@ -121,29 +121,38 @@ public class EnrichmentService {
             }
             SteamAppSeed seed = seeds.get(i);
             int appid = seed.getAppid();
-            if (seed.needsHorrorTagCheck()) {
-                HorrorTag horrorTag;
+            // SteamSpy 태그: 모든 seed가 한 번 받는다(장르 자동 분류). SteamSpy로 발견한 seed는 이 태그로 공포 판정도 한다
+            boolean checkHorror = seed.needsHorrorTagCheck();
+            if (checkHorror || seed.needsSpyTags()) {
+                List<String> tags;
                 try {
-                    horrorTag = HorrorTag.classify(steamSpyClient.fetchTopTags(appid));
+                    tags = steamSpyClient.fetchTopTags(appid);
                 } catch (SteamTransientException e) {
-                    // 판정 실패는 Steam 실패 횟수에 넣지 않는다. UNCHECKED로 남아 다음 실행에서 다시 판정한다.
-                    log.warn("SteamSpy tag check failed after retries: appid={}, {}", appid, e.getMessage());
-                    failed++;
-                    consecutiveTagCheckFailures++;
-                    if (consecutiveTagCheckFailures >= MAX_CONSECUTIVE_TAG_CHECK_FAILURES) {
-                        String reason = "SteamSpy tag check failed " + consecutiveTagCheckFailures
-                                + " times in a row (last appid=" + appid + ")";
-                        log.warn("Enrichment aborted: {}", reason);
-                        return new Outcome(processed, failed, reason);
+                    log.warn("SteamSpy tags failed after retries: appid={}, {}", appid, e.getMessage());
+                    if (!checkHorror) {
+                        tags = null; // 수동 추가 seed는 태그 없이 진행하고 다음 갱신 때 다시 받는다
+                    } else {
+                        // 판정 실패는 Steam 실패 횟수에 넣지 않는다. UNCHECKED로 남아 다음 실행에서 다시 판정한다.
+                        failed++;
+                        consecutiveTagCheckFailures++;
+                        if (consecutiveTagCheckFailures >= MAX_CONSECUTIVE_TAG_CHECK_FAILURES) {
+                            String reason = "SteamSpy tag check failed " + consecutiveTagCheckFailures
+                                    + " times in a row (last appid=" + appid + ")";
+                            log.warn("Enrichment aborted: {}", reason);
+                            return new Outcome(processed, failed, reason);
+                        }
+                        continue;
                     }
-                    continue;
                 }
-                consecutiveTagCheckFailures = 0;
-                itemWriter.recordHorrorTag(appid, horrorTag);
-                if (horrorTag == HorrorTag.NOT_HORROR) {
-                    excluded++;
-                    processed++;
-                    continue;
+                if (tags != null) {
+                    consecutiveTagCheckFailures = 0;
+                    HorrorTag horrorTag = checkHorror ? HorrorTag.classify(tags) : null;
+                    itemWriter.recordSpyTags(appid, tags, horrorTag);
+                    if (horrorTag == HorrorTag.NOT_HORROR) {
+                        excluded++;
+                        processed++;
+                        continue;
+                    }
                 }
             }
             while (true) {

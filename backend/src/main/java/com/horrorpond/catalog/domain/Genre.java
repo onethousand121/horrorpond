@@ -12,6 +12,11 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Entity
@@ -35,6 +40,16 @@ public class Genre extends BaseTimeEntity {
 
     @Column(nullable = false)
     private int displayOrder;
+
+    /** 이 장르로 자동 분류할 SteamSpy 태그 (큐레이터가 장르를 직접 붙이지 않은 게임용) */
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(nullable = false, columnDefinition = "varchar(100)[]")
+    private List<String> steamTags = new ArrayList<>();
+
+    /** 게임의 SteamSpy 태그 중 하나라도 이 장르의 태그와 겹치면 이 장르로 본다 */
+    public boolean matchesAnyTag(List<String> gameTags) {
+        return gameTags.stream().anyMatch(steamTags::contains);
+    }
 
     public static Genre create(String name, String slug, String description, int displayOrder) {
         Genre genre = new Genre();

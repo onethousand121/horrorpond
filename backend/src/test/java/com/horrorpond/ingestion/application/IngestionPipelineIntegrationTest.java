@@ -150,6 +150,9 @@ class IngestionPipelineIntegrationTest {
             assertThat(phasmo.getTitle()).isEqualTo("Phasmophobia");
             assertThat(phasmo.getSlug()).isEqualTo("phasmophobia-739630");
             assertThat(phasmo.getMedia()).hasSize(7 + 48);
+            assertThat(phasmo.getTags()).containsExactly("Horror", "Online Co-Op", "Psychological Horror");
+            assertThat(phasmo.getReviewCount()).isEqualTo(684837);
+            assertThat(phasmo.isAdult()).isFalse();
             assertThat(phasmo.getDevelopers())
                     .extracting(gd -> gd.getDeveloper().getName(), GameDeveloper::getRole)
                     .containsExactlyInAnyOrder(tuple("Kinetic Games", DeveloperRole.DEVELOPER),
@@ -193,13 +196,18 @@ class IngestionPipelineIntegrationTest {
     }
 
     @Test
-    void manualSeedsSkipHorrorTagCheck() {
+    void manualSeedsGetTagsButSkipHorrorCheck() {
         seedRepository.save(SteamAppSeed.discovered(739630, DiscoveredBy.MANUAL, clock.instant()));
+        expectTags(739630, "Online Co-Op", "Investigation");
         expectAppDetails(739630);
 
         assertJob(enrichmentService.run(TriggerType.MANUAL), JobType.ENRICHMENT, JobStatus.SUCCEEDED, 1, 0);
         SERVER.verify();
-        assertThat(seedRepository.findById(739630).orElseThrow().getHorrorTag()).isEqualTo(HorrorTag.UNCHECKED);
+        SteamAppSeed seed = seedRepository.findById(739630).orElseThrow();
+        // Horror 태그가 없어도 수동 추가라 판정하지 않고 수집한다
+        assertThat(seed.getHorrorTag()).isEqualTo(HorrorTag.UNCHECKED);
+        assertThat(seed.getSpyTags()).containsExactly("Online Co-Op", "Investigation");
+        assertThat(seed.getFetchStatus()).isEqualTo(FetchStatus.OK);
     }
 
     @Test
@@ -242,7 +250,7 @@ class IngestionPipelineIntegrationTest {
             assertThat(game.isCoop()).as("fixture에 9/38 협동 카테고리").isTrue();
             game.changeSlug("phasmophobia");
             game.replaceGenres(Set.of(genreRepository.findById(genreId).orElseThrow()));
-            game.publish(true, clock.instant());
+            game.publish(clock.instant());
         });
 
         String singlePlayerOnly = SteamAppDetailsParserTest.modified(739630, d ->
@@ -263,6 +271,7 @@ class IngestionPipelineIntegrationTest {
     @Test
     void rateLimitWaitsThenRetriesSameAppid() {
         seedRepository.save(SteamAppSeed.discovered(739630, DiscoveredBy.MANUAL, clock.instant()));
+        expectHorrorTags(739630);
         SERVER.expect(once(), requestTo(SteamMockServer.appDetailsUrl(739630)))
                 .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS));
         expectAppDetails(739630);
@@ -276,6 +285,7 @@ class IngestionPipelineIntegrationTest {
     @Test
     void threeConsecutiveRateLimitsFailTheJob() {
         seedRepository.save(SteamAppSeed.discovered(739630, DiscoveredBy.MANUAL, clock.instant()));
+        expectHorrorTags(739630);
         SERVER.expect(ExpectedCount.times(3),
                         requestTo(SteamMockServer.appDetailsUrl(739630)))
                 .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS));

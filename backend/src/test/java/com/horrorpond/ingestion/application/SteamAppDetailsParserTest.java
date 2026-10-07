@@ -103,6 +103,24 @@ class SteamAppDetailsParserTest {
     }
 
     @Test
+    void reviewCountAndAdultFromFixture() {
+        SteamGameData signalis = parser.parse(fixtureData(1262350)).data();
+        assertThat(signalis.reviewCount()).isEqualTo(30987);
+        // 2(폭력), 5(일반 성인용)는 성인으로 보지 않는다
+        assertThat(signalis.adult()).isFalse();
+    }
+
+    @Test
+    void adultDescriptorMarksAdultAndMissingRecommendationsIsNull() {
+        SteamGameData data = parser.parse(modified(739630, d -> {
+            d.remove("recommendations");
+            ((ObjectNode) d.get("content_descriptors")).putArray("ids").add(1).add(4);
+        })).data();
+        assertThat(data.reviewCount()).isNull();
+        assertThat(data.adult()).isTrue();
+    }
+
+    @Test
     void coopFromFixtureCategories() {
         // 739630: 9 협동, 38 온라인 협동 / 1262350, 594330: 싱글 플레이어만
         assertThat(parser.parse(fixtureData(739630)).data().coop()).isTrue();

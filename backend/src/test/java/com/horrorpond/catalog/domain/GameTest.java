@@ -22,7 +22,7 @@ class GameTest {
         Genre genre = Genre.create("Psychological", "psychological", null, 0);
         game.replaceGenres(Set.of(genre));
         game.changeSlug("outlast");
-        game.publish(true, T1);
+        game.publish(T1);
 
         Developer dev = Developer.create("Red Barrels", "red-barrels");
         game.applySteamData(steamData("Outlast", dev));
@@ -63,7 +63,7 @@ class GameTest {
         game.applySteamData(steamData("Title", dev));
         GameDeveloper originalCredit = game.getDevelopers().get(0);
 
-        game.applySteamData(new SteamGameData("Title", null, null, null, null, true, false,
+        game.applySteamData(new SteamGameData("Title", null, null, null, null, true, false, null, false,
                 List.of(new SteamGameData.Media(MediaType.TRAILER, "https://v/2", null)),
                 List.of(new SteamGameData.Credit(dev, DeveloperRole.DEVELOPER),
                         new SteamGameData.Credit(publisher, DeveloperRole.PUBLISHER))));
@@ -94,22 +94,42 @@ class GameTest {
     }
 
     @Test
-    void publishWithoutPublishedArticleFails() {
-        Game game = Game.manual("Manual", "manual");
+    void candidatesAreAutoExposedWhenNotAdultAndUpcomingOrReviewed() {
+        // (상태, 성인, 출시예정, 리뷰 수) → 노출 여부, 기준 리뷰 10
+        assertThat(Game.isPubliclyVisible(GameStatus.CANDIDATE, false, false, 10, 10)).isTrue();
+        assertThat(Game.isPubliclyVisible(GameStatus.CANDIDATE, false, false, 9, 10)).isFalse();
+        assertThat(Game.isPubliclyVisible(GameStatus.CANDIDATE, false, false, null, 10)).isFalse();
+        assertThat(Game.isPubliclyVisible(GameStatus.CANDIDATE, false, true, null, 10)).as("출시 예정").isTrue();
+        assertThat(Game.isPubliclyVisible(GameStatus.CANDIDATE, true, false, 99999, 10)).as("성인").isFalse();
+        assertThat(Game.isPubliclyVisible(GameStatus.CANDIDATE, true, true, null, 10)).as("성인 출시 예정").isFalse();
+    }
 
-        assertThatThrownBy(() -> game.publish(false, T1))
-                .isInstanceOf(DomainStateException.class);
-        assertThat(game.getStatus()).isEqualTo(GameStatus.CANDIDATE);
-        assertThat(game.getPublishedAt()).isNull();
+    @Test
+    void publishedIsAlwaysVisibleAndHiddenNever() {
+        assertThat(Game.isPubliclyVisible(GameStatus.PUBLISHED, true, false, null, 10)).isTrue();
+        assertThat(Game.isPubliclyVisible(GameStatus.HIDDEN, false, true, 99999, 10)).isFalse();
+    }
+
+    @Test
+    void applySteamDataSetsReviewCountAndAdult() {
+        Game game = Game.candidateFromSteam(1, "Title", "title-1");
+        game.applySteamData(new SteamGameData("Title", null, null, null, null, false, false, 42, true, List.of(),
+                List.of()));
+        game.applySteamTags(List.of("Horror", "Psychological Horror"));
+
+        assertThat(game.getReviewCount()).isEqualTo(42);
+        assertThat(game.isAdult()).isTrue();
+        assertThat(game.getTags()).containsExactly("Horror", "Psychological Horror");
+        assertThat(game.isPubliclyVisible(10)).isFalse();
     }
 
     @Test
     void republishKeepsFirstPublishedAt() {
         Game game = Game.manual("Manual", "manual");
-        game.publish(true, T1);
+        game.publish(T1);
         game.hide();
 
-        game.publish(true, T2);
+        game.publish(T2);
 
         assertThat(game.getStatus()).isEqualTo(GameStatus.PUBLISHED);
         assertThat(game.getPublishedAt()).isEqualTo(T1);
@@ -128,7 +148,7 @@ class GameTest {
 
     private static SteamGameData steamData(String title, Developer dev) {
         return new SteamGameData(title, "desc", "https://img/header.jpg",
-                LocalDate.of(2013, 9, 4), "4 Sep, 2013", false, true,
+                LocalDate.of(2013, 9, 4), "4 Sep, 2013", false, true, 1234, false,
                 List.of(new SteamGameData.Media(MediaType.SCREENSHOT, "https://s/1", "https://t/1"),
                         new SteamGameData.Media(MediaType.TRAILER, "https://v/1", null)),
                 List.of(new SteamGameData.Credit(dev, DeveloperRole.DEVELOPER)));

@@ -17,6 +17,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -42,9 +43,16 @@ public class EnrichmentItemWriter {
         }
     }
 
+    /**
+     * @param horrorTag 공포 판정을 하지 않은 seed(수동 추가)면 null
+     */
     @Transactional
-    public void recordHorrorTag(int appid, HorrorTag result) {
-        seedRepository.findById(appid).orElseThrow().recordHorrorTag(result, clock.instant());
+    public void recordSpyTags(int appid, List<String> tags, HorrorTag horrorTag) {
+        SteamAppSeed seed = seedRepository.findById(appid).orElseThrow();
+        seed.recordSpyTags(tags);
+        if (horrorTag != null) {
+            seed.recordHorrorTag(horrorTag, clock.instant());
+        }
     }
 
     @Transactional

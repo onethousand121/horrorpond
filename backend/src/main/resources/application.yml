@@ -22,6 +22,11 @@ spring:
 server:
   shutdown: graceful
 
+curation:
+  auto-exposure:
+    # 수집된 공포게임(CANDIDATE) 중 출시작은 Steam 리뷰가 이 수 이상이어야 자동 노출된다 (출시 예정작은 바로 노출)
+    min-reviews: 10
+
 ingestion:
   # ShedLock 락 유지 시간. SchedulingConfig(@EnableSchedulerLock)와 수동 트리거가 함께 쓴다
   lock-at-most-for: PT2H

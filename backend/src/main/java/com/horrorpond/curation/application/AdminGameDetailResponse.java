@@ -23,14 +23,20 @@ public record AdminGameDetailResponse(
         String shortDescription,
         String headerImageUrl,
         LocalDate releaseDate,
+        boolean comingSoon,
         boolean coop,
+        Integer reviewCount,
+        boolean adult,
+        List<String> tags,
         GameStatus status,
+        /** 지금 공개 사이트에 보이는지 (자동 노출 포함) */
+        boolean publiclyVisible,
         List<String> genreSlugs,
         String steamUrl,
         AdminArticleResponse article
 ) {
 
-    static AdminGameDetailResponse of(Game game, CurationArticle article) {
+    static AdminGameDetailResponse of(Game game, CurationArticle article, ExposurePolicy policy) {
         List<String> genreSlugs = game.getGenres().stream().map(Genre::getSlug).sorted().toList();
         String steamUrl = game.getStoreLinks().stream()
                 .filter(link -> link.getStore() == Store.STEAM)
@@ -39,7 +45,8 @@ public record AdminGameDetailResponse(
                 .orElse(null);
         return new AdminGameDetailResponse(game.getId(), game.getSource(), game.getExternalId(), game.getSlug(),
                 game.getTitle(), game.getShortDescription(), game.getHeaderImageUrl(), game.getReleaseDate(),
-                game.isCoop(), game.getStatus(), genreSlugs, steamUrl,
+                game.isComingSoon(), game.isCoop(), game.getReviewCount(), game.isAdult(), List.copyOf(game.getTags()),
+                game.getStatus(), policy.isVisible(game), genreSlugs, steamUrl,
                 article == null ? null : AdminArticleResponse.from(article));
     }
 }
