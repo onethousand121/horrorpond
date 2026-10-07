@@ -1,5 +1,6 @@
 package com.horrorpond.curation.application;
 
+import com.horrorpond.common.domain.Language;
 import com.horrorpond.curation.repository.CuratedGameQueryRepository.CuratedGameRow;
 
 import java.time.LocalDate;
@@ -31,11 +32,15 @@ public record GameSummaryResponse(
     static final int MAX_HIGHLIGHTS = 3;
     static final int MAX_TAGS = 5;
 
-    static GameSummaryResponse of(CuratedGameRow row, List<GenreSummary> genres) {
+    /**
+     * 제목·소개·출시일 텍스트는 요청 언어로 (영어가 없으면 한국어). 큐레이터 글은 한국어만 있다.
+     */
+    static GameSummaryResponse of(CuratedGameRow row, List<GenreSummary> genres, Language language) {
         List<String> highlights = row.highlights() == null ? List.of() : row.highlights();
         List<String> tags = row.tags() == null ? List.of() : row.tags();
-        return new GameSummaryResponse(row.slug(), row.title(), row.headerImageUrl(), row.releaseDate(),
-                row.releaseDateText(), row.shortDescription(), row.comingSoon(), row.coop(), row.reviewCount(),
+        return new GameSummaryResponse(row.slug(), language.pick(row.title(), row.titleEn()), row.headerImageUrl(),
+                row.releaseDate(), language.pick(row.releaseDateText(), row.releaseDateTextEn()),
+                language.pick(row.shortDescription(), row.shortDescriptionEn()), row.comingSoon(), row.coop(), row.reviewCount(),
                 List.copyOf(tags.subList(0, Math.min(MAX_TAGS, tags.size()))), genres, row.picked(),
                 row.oneLiner(),
                 List.copyOf(highlights.subList(0, Math.min(MAX_HIGHLIGHTS, highlights.size()))),

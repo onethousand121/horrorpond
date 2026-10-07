@@ -64,6 +64,37 @@ public class SteamStoreClient {
     }
 
     /**
+     * 영어 사이트용 텍스트만 가볍게 받는다 (이름·소개·출시일).
+     *
+     * @return 응답의 data 노드 JSON. success=false면 null
+     */
+    @Retryable(includes = SteamTransientException.class, maxRetries = 2, delay = 2000, multiplier = 2)
+    public String fetchEnglishText(int appid) {
+        pacer.acquire();
+        String body;
+        try {
+            body = restClient.get()
+                    .uri(uri -> uri.path("/api/appdetails")
+                            .queryParam("appids", appid)
+                            .queryParam("l", "english")
+                            .queryParam("filters", "basic,release_date")
+                            .build())
+                    .retrieve()
+                    .onStatus(SteamStoreClient::isRateLimited, (request, response) -> {
+                        throw new SteamRateLimitedException(appid, response.getStatusCode().value());
+                    })
+                    .onStatus(HttpStatusCode::isError, (request, response) -> {
+                        throw new SteamTransientException(
+                                "appdetails(english) appid=" + appid + " responded " + response.getStatusCode().value());
+                    })
+                    .body(String.class);
+        } catch (ResourceAccessException e) {
+            throw new SteamTransientException("appdetails(english) appid=" + appid + " I/O failure", e);
+        }
+        return parse(appid, body) instanceof AppDetailsResult.Found found ? found.dataJson() : null;
+    }
+
+    /**
      * 전체 리뷰 수 (언어·구매 경로 무관). appdetails에 recommendations가 없을 때만 쓴다.
      *
      * @return 리뷰 수. 응답에 값이 없으면 null

@@ -5,6 +5,7 @@ import com.horrorpond.catalog.domain.Genre;
 import com.horrorpond.catalog.domain.QGame;
 import com.horrorpond.catalog.repository.GameRepository;
 import com.horrorpond.catalog.repository.GenreRepository;
+import com.horrorpond.common.domain.Language;
 import com.horrorpond.common.error.NotFoundException;
 import com.horrorpond.curation.domain.CurationArticle;
 import com.horrorpond.curation.repository.CuratedGameQueryRepository;
@@ -48,7 +49,7 @@ public class PublicGameQueryService {
      * @param search 제목 검색어 (부분 일치, 대소문자 무시). 비어 있으면 무시
      */
     public Page<GameSummaryResponse> list(String search, String genreSlug, Boolean coop, ReleaseWindow release, boolean picked,
-                                          CuratedGameSort sort, Pageable pageable) {
+                                          CuratedGameSort sort, Language language, Pageable pageable) {
         List<Genre> genres = genreRepository.findAllByOrderByDisplayOrderAsc();
         GenreFilter genreFilter = genreSlug == null || genreSlug.isBlank() ? null : genres.stream()
                 .filter(genre -> genre.getSlug().equals(genreSlug))
@@ -64,13 +65,13 @@ public class PublicGameQueryService {
                 rows.map(CuratedGameRow::id).getContent());
         GenreResolver resolver = new GenreResolver(genres);
         return rows.map(row -> GameSummaryResponse.of(row,
-                resolver.resolve(curatorGenres.getOrDefault(row.id(), List.of()), row.tags())));
+                resolver.resolve(curatorGenres.getOrDefault(row.id(), List.of()), row.tags(), language), language));
     }
 
     /**
      * 컬렉션(미디어/개발사/장르/상점 링크)은 default_batch_fetch_size로 읽어 개수와 무관하게 쿼리 수가 일정하다.
      */
-    public GameDetailResponse detail(String slug) {
+    public GameDetailResponse detail(String slug, Language language) {
         Game game = gameRepository.findBySlug(slug)
                 .filter(exposurePolicy::isVisible)
                 .orElseThrow(() -> new NotFoundException("Game not found: " + slug));
@@ -79,6 +80,7 @@ public class PublicGameQueryService {
                 .orElse(null);
         GenreResolver resolver = new GenreResolver(genreRepository.findAllByOrderByDisplayOrderAsc());
         List<String> curatorSlugs = game.getGenres().stream().map(Genre::getSlug).toList();
-        return GameDetailResponse.of(game, resolver.resolve(curatorSlugs, game.getTags()), article);
+        return GameDetailResponse.of(game, resolver.resolve(curatorSlugs, game.getTags(), language), article,
+                language);
     }
 }

@@ -9,6 +9,7 @@ import com.horrorpond.catalog.domain.Genre;
 import com.horrorpond.catalog.repository.DeveloperRepository;
 import com.horrorpond.catalog.repository.GameRepository;
 import com.horrorpond.catalog.repository.GenreRepository;
+import com.horrorpond.common.domain.Language;
 import com.horrorpond.ingestion.client.Sleeper;
 import com.horrorpond.ingestion.domain.DiscoveredBy;
 import com.horrorpond.ingestion.domain.FetchStatus;
@@ -40,12 +41,15 @@ import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -63,6 +67,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class IngestionPipelineIntegrationTest {
+
+    private static final JsonMapper JSON = JsonMapper.builder().build();
 
     private static final Duration RATE_LIMIT_WAIT = Duration.ofSeconds(60);
     private static final MockRestServiceServer SERVER = SteamMockServer.SERVER;
@@ -230,6 +236,29 @@ class IngestionPipelineIntegrationTest {
         assertThat(job.getStatus()).isEqualTo(JobStatus.FAILED);
         assertThat(job.getErrorMessage()).startsWith("added=1, Steam search:");
         assertThat(seedRepository.findAll()).extracting(SteamAppSeed::getAppid).containsExactly(739630);
+    }
+
+    @Test
+    void englishTextIsStoredAndNamesTheSlug() {
+        seedRepository.save(SteamAppSeed.discovered(739630, DiscoveredBy.MANUAL, clock.instant()));
+        expectTags(739630, "Horror");
+        String korean = Fixtures.appDetails(739630).replace("\"name\":\"Phasmophobia\"", "\"name\":\"파스모포비아\"");
+        SERVER.expect(once(), requestTo(SteamMockServer.appDetailsUrl(739630)))
+                .andRespond(withSuccess(korean, MediaType.APPLICATION_JSON));
+        expectEnglish(739630, "Phasmophobia", "Ghost hunting <b>co-op</b>", "Sep 18, 2020");
+
+        enrichmentService.run(TriggerType.MANUAL);
+        normalizeService.run(TriggerType.MANUAL);
+        SERVER.verify();
+
+        tx.executeWithoutResult(status -> {
+            Game game = steamGame(739630);
+            assertThat(game.getTitle()).isEqualTo("파스모포비아");
+            assertThat(game.getSlug()).as("한국어 이름 대신 영어 이름으로 주소를 만든다").isEqualTo("phasmophobia-739630");
+            assertThat(game.title(Language.EN)).isEqualTo("Phasmophobia");
+            assertThat(game.shortDescription(Language.EN)).isEqualTo("Ghost hunting co-op");
+            assertThat(game.releaseDateText(Language.EN)).isEqualTo("Sep 18, 2020");
+        });
     }
 
     @Test
@@ -446,9 +475,23 @@ class IngestionPipelineIntegrationTest {
 
     private void expectAppDetails(int... appids) {
         for (int appid : appids) {
+            String body = Fixtures.appDetails(appid);
             SERVER.expect(once(), requestTo(SteamMockServer.appDetailsUrl(appid)))
-                    .andRespond(withSuccess(Fixtures.appDetails(appid), MediaType.APPLICATION_JSON));
+                    .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+            JsonNode data = JSON.readTree(body).path(String.valueOf(appid)).path("data");
+            if (data.isObject()) {
+                // 영어 응답은 이름은 같고 소개만 영어인 것으로 흉내 낸다
+                expectEnglish(appid, data.path("name").asString(), "English description " + appid, "Sep 18, 2020");
+            }
         }
+    }
+
+    private void expectEnglish(int appid, String name, String shortDescription, String releaseDate) {
+        String body = JSON.writeValueAsString(Map.of(String.valueOf(appid), Map.of("success", true, "data",
+                Map.of("name", name, "short_description", shortDescription, "release_date",
+                        Map.of("coming_soon", false, "date", releaseDate)))));
+        SERVER.expect(once(), requestTo(SteamMockServer.appDetailsEnglishUrl(appid)))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
     }
 
     private Game steamGame(int appid) {

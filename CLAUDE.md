@@ -1,5 +1,7 @@
 ## Architecture Decisions (horrorpond MVP)
 - Frontend: Next.js App Router, ISR(revalidate 3600), 서버 컴포넌트에서만 백엔드 호출
+  다국어(ko/en): 라우트는 app/[lang], 한국어는 접두사 없는 주소(proxy가 /ko로 rewrite), 영어는 /en.
+  언어 선택 쿠키(NEXT_LOCALE) 우선, 첫 화면(/)만 브라우저 언어로 /en 이동. UI 문구는 lib/i18n 사전
   빌드는 백엔드에 의존하지 않음: 동적 경로는 generateStaticParams가 [] 반환,
   데이터를 쓰는 고정 경로는 connection()으로 요청 시 렌더링 + fetch 데이터 캐시(1h, 태그)
 - Backend: Spring Boot 4.1.x / Java 17, 모듈러 모놀리스
@@ -18,6 +20,8 @@
   enrichment는 자동 발견(SteamSpy/검색) seed를 먼저 SteamSpy appdetails(1s 간격) 상위 태그로 판정해
   상위 10개 태그 안에 Horror 계열 태그가 없으면 NOT_HORROR로 기록하고 Steam 호출에서 제외 (MANUAL seed는 판정 안 함)
   appdetails에 recommendations(리뷰 수)가 없으면 appreviews로 받아 같은 모양으로 채운다
+  영어 텍스트(이름·짧은 소개·출시일)는 appdetails(l=english, filters=basic,release_date)로 받아 같은 스냅샷의 english 키에 붙인다.
+  공개 API는 lang=ko|en (영어 값이 없으면 한국어). 큐레이터 글은 한국어만
 - 트리거: @Scheduled 일 1회 + POST /api/admin/ingestion/run (X-Admin-Key)
 - 관리 화면: Next.js /admin. Admin Key를 httpOnly 쿠키에 두고 서버에서만 백엔드 호출.
   변경 서버 액션은 updateTag("games")로 공개 페이지 캐시를 즉시 만료

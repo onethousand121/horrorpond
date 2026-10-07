@@ -29,7 +29,8 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * seed별 appdetails를 받아 원본 스냅샷으로 저장한다. appdetails에 리뷰 수가 없으면 appreviews로 채운다.
+ * seed별 appdetails를 받아 원본 스냅샷으로 저장한다. appdetails에 리뷰 수가 없으면 appreviews로 채우고,
+ * 영어 사이트용 텍스트(l=english)를 같은 스냅샷에 붙인다.
  * SteamSpy로 발견한 seed는 먼저 SteamSpy 상위 태그로 공포게임인지 판정하고, 아니면 Steam 호출 없이 제외한다.
  * HTTP 호출과 대기는 트랜잭션 밖에서 하고, 저장은 {@link EnrichmentItemWriter}가 1건씩 커밋한다.
  */
@@ -161,7 +162,8 @@ public class EnrichmentService {
             }
             while (true) {
                 try {
-                    AppDetailsResult result = withReviewCount(appid, storeClient.fetchAppDetails(appid));
+                    AppDetailsResult result = withEnglish(appid,
+                            withReviewCount(appid, storeClient.fetchAppDetails(appid)));
                     consecutiveRateLimits = 0;
                     itemWriter.write(appid, result);
                     processed++;
@@ -204,6 +206,22 @@ public class EnrichmentService {
             return reviewCount == null ? found : found.withReviewCount(reviewCount);
         } catch (SteamTransientException e) {
             log.warn("appreviews failed after retries: appid={}, {}", appid, e.getMessage());
+            return found;
+        }
+    }
+
+    /**
+     * 영어 사이트용 텍스트. 실패하면 영어 없이 저장하고(정규화 때 이전 영어 값을 유지) 다음 갱신 때 다시 받는다.
+     */
+    private AppDetailsResult withEnglish(int appid, AppDetailsResult result) {
+        if (!(result instanceof AppDetailsResult.Found found)) {
+            return result;
+        }
+        try {
+            String english = storeClient.fetchEnglishText(appid);
+            return english == null ? found : found.withEnglish(english);
+        } catch (SteamTransientException e) {
+            log.warn("appdetails(english) failed after retries: appid={}, {}", appid, e.getMessage());
             return found;
         }
     }

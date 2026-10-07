@@ -2,6 +2,7 @@ package com.horrorpond.catalog.domain;
 
 import com.horrorpond.common.domain.BaseTimeEntity;
 import com.horrorpond.common.domain.DomainValidationException;
+import com.horrorpond.common.domain.Language;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -41,6 +42,13 @@ public class Genre extends BaseTimeEntity {
     @Column(nullable = false)
     private int displayOrder;
 
+    /** 영어 이름·설명. 없으면 한국어 값을 쓴다 */
+    @Column(length = 50)
+    private String nameEn;
+
+    @Column(columnDefinition = "text")
+    private String descriptionEn;
+
     /** 이 장르로 자동 분류할 SteamSpy 태그 (큐레이터가 장르를 직접 붙이지 않은 게임용) */
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(nullable = false, columnDefinition = "varchar(100)[]")
@@ -62,6 +70,19 @@ public class Genre extends BaseTimeEntity {
         this.slug = requireText(slug, "slug");
         this.description = description;
         this.displayOrder = displayOrder;
+    }
+
+    public void translate(String nameEn, String descriptionEn) {
+        this.nameEn = nameEn;
+        this.descriptionEn = descriptionEn;
+    }
+
+    public String name(Language language) {
+        return language.pick(name, nameEn);
+    }
+
+    public String description(Language language) {
+        return language.pick(description, descriptionEn);
     }
 
     private static String requireText(String value, String field) {

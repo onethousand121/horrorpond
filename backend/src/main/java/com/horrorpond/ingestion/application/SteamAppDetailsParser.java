@@ -2,6 +2,7 @@ package com.horrorpond.ingestion.application;
 
 import com.horrorpond.catalog.domain.MediaType;
 import com.horrorpond.catalog.domain.SteamGameData;
+import com.horrorpond.ingestion.client.AppDetailsResult;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.HtmlUtils;
 import tools.jackson.databind.JsonNode;
@@ -56,7 +57,7 @@ public class SteamAppDetailsParser {
         JsonNode root = JSON.readTree(dataJson);
         String type = text(root, "type");
         if (!TYPE_GAME.equals(type)) {
-            return new ParsedSteamApp(type, null, List.of(), List.of());
+            return new ParsedSteamApp(type, null, List.of(), List.of(), null);
         }
         JsonNode release = root.path("release_date");
         String releaseDateText = text(release, "date");
@@ -72,7 +73,16 @@ public class SteamAppDetailsParser {
                 isAdult(root),
                 media(root),
                 List.of());
-        return new ParsedSteamApp(type, data, names(root, "developers"), names(root, "publishers"));
+        return new ParsedSteamApp(type, data, names(root, "developers"), names(root, "publishers"),
+                english(root.get(AppDetailsResult.Found.ENGLISH)));
+    }
+
+    private static ParsedSteamApp.EnglishText english(JsonNode english) {
+        if (english == null || !english.isObject()) {
+            return null;
+        }
+        return new ParsedSteamApp.EnglishText(text(english, "name"),
+                cleanDescription(text(english, "short_description")), text(english, "release_date"));
     }
 
     static LocalDate parseReleaseDate(String text) {

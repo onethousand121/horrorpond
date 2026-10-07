@@ -45,8 +45,9 @@ public class CuratedGameQueryRepository {
         BooleanBuilder where = where(query);
         List<CuratedGameRow> rows = queryFactory
                 .select(Projections.constructor(CuratedGameRow.class,
-                        game.id, game.slug, game.title, game.headerImageUrl, game.releaseDate,
-                        game.releaseDateText, game.shortDescription, game.comingSoon, game.coop, game.reviewCount, game.tags,
+                        game.id, game.slug, game.title, game.titleEn, game.headerImageUrl, game.releaseDate,
+                        game.releaseDateText, game.releaseDateTextEn, game.shortDescription, game.shortDescriptionEn,
+                        game.comingSoon, game.coop, game.reviewCount, game.tags,
                         article.id.isNotNull(), article.oneLiner, article.highlights, article.sponsored.coalesce(false)))
                 .from(game)
                 .leftJoin(article).on(article.gameId.eq(game.id), article.status.eq(ArticleStatus.PUBLISHED))
@@ -86,7 +87,10 @@ public class CuratedGameQueryRepository {
     private static BooleanBuilder where(PublicGameQuery query) {
         BooleanBuilder where = new BooleanBuilder(query.visibility());
         if (query.search() != null) {
-            where.and(game.title.likeIgnoreCase("%" + escapeLike(query.search()) + "%", LIKE_ESCAPE));
+            // 언어와 상관없이 한국어·영어 제목 둘 다에서 찾는다
+            String pattern = "%" + escapeLike(query.search()) + "%";
+            where.and(game.title.likeIgnoreCase(pattern, LIKE_ESCAPE)
+                    .or(game.titleEn.likeIgnoreCase(pattern, LIKE_ESCAPE)));
         }
         if (query.coop() != null) {
             where.and(game.coop.eq(query.coop()));
@@ -166,10 +170,13 @@ public class CuratedGameQueryRepository {
             Long id,
             String slug,
             String title,
+            String titleEn,
             String headerImageUrl,
             LocalDate releaseDate,
             String releaseDateText,
+            String releaseDateTextEn,
             String shortDescription,
+            String shortDescriptionEn,
             boolean comingSoon,
             boolean coop,
             Integer reviewCount,

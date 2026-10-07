@@ -1,6 +1,7 @@
 package com.horrorpond.curation.application;
 
 import com.horrorpond.catalog.domain.Genre;
+import com.horrorpond.common.domain.Language;
 import com.horrorpond.curation.application.GameSummaryResponse.GenreSummary;
 
 import java.util.Collection;
@@ -20,10 +21,10 @@ final class GenreResolver {
         this.genres = genresInOrder;
     }
 
-    List<GenreSummary> resolve(Collection<String> curatorSlugs, List<String> tags) {
+    List<GenreSummary> resolve(Collection<String> curatorSlugs, List<String> tags, Language language) {
         return genres.stream()
                 .filter(genre -> curatorSlugs.contains(genre.getSlug()) || genre.matchesAnyTag(tags))
-                .map(genre -> new GenreSummary(genre.getSlug(), genre.getName()))
+                .map(genre -> new GenreSummary(genre.getSlug(), genre.name(language)))
                 .toList();
     }
 }

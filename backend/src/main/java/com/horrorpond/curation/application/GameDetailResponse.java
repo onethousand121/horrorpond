@@ -5,6 +5,7 @@ import com.horrorpond.catalog.domain.Game;
 import com.horrorpond.catalog.domain.GameDeveloper;
 import com.horrorpond.catalog.domain.MediaType;
 import com.horrorpond.catalog.domain.Store;
+import com.horrorpond.common.domain.Language;
 import com.horrorpond.curation.application.GameSummaryResponse.GenreSummary;
 import com.horrorpond.curation.domain.CurationArticle;
 
@@ -31,10 +32,13 @@ public record GameDetailResponse(
         Article article
 ) {
 
-    static GameDetailResponse of(Game game, List<GenreSummary> genres, CurationArticle article) {
+    /**
+     * 제목·소개·출시일 텍스트는 요청 언어로 (영어가 없으면 한국어). 큐레이터 글은 한국어만 있다.
+     */
+    static GameDetailResponse of(Game game, List<GenreSummary> genres, CurationArticle article, Language language) {
         return new GameDetailResponse(
-                game.getSlug(), game.getTitle(), game.getShortDescription(), game.getHeaderImageUrl(),
-                game.getReleaseDate(), game.getReleaseDateText(), game.isComingSoon(), game.isCoop(),
+                game.getSlug(), game.title(language), game.shortDescription(language), game.getHeaderImageUrl(),
+                game.getReleaseDate(), game.releaseDateText(language), game.isComingSoon(), game.isCoop(),
                 game.getReviewCount(), genres,
                 game.getDevelopers().stream()
                         .sorted(Comparator.comparing(GameDeveloper::getRole)

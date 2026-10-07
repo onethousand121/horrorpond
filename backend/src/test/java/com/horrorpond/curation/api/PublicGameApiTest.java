@@ -192,6 +192,33 @@ class PublicGameApiTest {
     }
 
     @Test
+    void englishFallsBackToKoreanAndSearchMatchesBothTitles() throws Exception {
+        create(spec("translated").englishTitle("Silent Pond").genres("psychological"));
+        create(spec("korean-only").genres("psychological"));
+
+        mvc.perform(get("/api/games").param("lang", "en").param("sort", "RELEASE"))
+                .andExpect(jsonPath("$.content[?(@.slug == 'translated')].title", contains("Silent Pond")))
+                .andExpect(jsonPath("$.content[?(@.slug == 'translated')].shortDescription",
+                        contains("English description translated")))
+                .andExpect(jsonPath("$.content[?(@.slug == 'translated')].releaseDateText", contains("Oct 1, 2026")))
+                .andExpect(jsonPath("$.content[?(@.slug == 'korean-only')].title", contains("Title korean-only")))
+                .andExpect(jsonPath("$.content[0].genres[0].name").value("Psychological"));
+        mvc.perform(get("/api/games").param("lang", "ko"))
+                .andExpect(jsonPath("$.content[?(@.slug == 'translated')].title", contains("Title translated")))
+                .andExpect(jsonPath("$.content[0].genres[0].name").value("심리 공포"));
+        mvc.perform(get("/api/games/translated").param("lang", "en"))
+                .andExpect(jsonPath("$.title").value("Silent Pond"))
+                .andExpect(jsonPath("$.genres[0].name").value("Psychological"));
+        mvc.perform(get("/api/genres").param("lang", "en"))
+                .andExpect(jsonPath("$[0].name").value("Psychological"));
+        // 검색은 언어와 상관없이 한국어·영어 제목 모두에서
+        mvc.perform(get("/api/games").param("q", "silent"))
+                .andExpect(jsonPath("$.content[*].slug", contains("translated")));
+        mvc.perform(get("/api/games").param("lang", "fr"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void summaryHasDescriptionAndTopFiveTags() throws Exception {
         create(spec("tagged").tags("Horror", "Co-op", "Psychological Horror", "Dark", "Atmospheric", "Indie"));
 
@@ -365,6 +392,9 @@ class PublicGameApiTest {
                     spec.releaseDate == null ? "Coming soon" : spec.releaseDate.toString(), spec.comingSoon, spec.coop,
                     spec.reviewCount, spec.adult, media, credits));
             game.applySteamTags(spec.tags);
+            if (spec.englishTitle != null) {
+                game.applyEnglishText(spec.englishTitle, "English description " + spec.slug, "Oct 1, 2026");
+            }
             game.replaceGenres(new HashSet<>(spec.genreSlugs.stream()
                     .map(slug -> genreRepository.findBySlug(slug).orElseThrow())
                     .toList()));
@@ -412,6 +442,7 @@ class PublicGameApiTest {
         private boolean adult;
         private boolean comingSoon;
         private List<String> tags = List.of();
+        private String englishTitle;
 
         GameSpec(String slug) {
             this.slug = slug;
@@ -442,5 +473,7 @@ class PublicGameApiTest {
         GameSpec comingSoon(boolean value) { comingSoon = value; return this; }
 
         GameSpec tags(String... values) { tags = List.of(values); return this; }
+
+        GameSpec englishTitle(String value) { englishTitle = value; return this; }
     }
 }

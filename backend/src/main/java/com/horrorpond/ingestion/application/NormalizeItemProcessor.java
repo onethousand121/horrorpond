@@ -41,11 +41,18 @@ public class NormalizeItemProcessor {
         ParsedSteamApp parsed = parser.parse(snapshot.getPayload());
         if (parsed.isGame()) {
             SteamGameData data = parsed.data();
+            // 주소는 영어 이름이 있으면 그걸로 만든다 (한국어 이름은 slug로 바꿀 수 없어 appid만 남는다)
+            String slugSource = parsed.english() != null && parsed.english().title() != null
+                    ? parsed.english().title() : data.title();
             Game game = gameRepository.findBySourceAndExternalId(GameSource.STEAM, String.valueOf(appid))
                     .orElseGet(() -> gameRepository.save(Game.candidateFromSteam(appid, data.title(),
-                            uniqueSlug(SlugGenerator.forSteamCandidate(data.title(), appid),
+                            uniqueSlug(SlugGenerator.forSteamCandidate(slugSource, appid),
                                     gameRepository::existsBySlug))));
             game.applySteamData(data.withDevelopers(credits(parsed)));
+            if (parsed.english() != null) {
+                game.applyEnglishText(parsed.english().title(), parsed.english().shortDescription(),
+                        parsed.english().releaseDateText());
+            }
             seedRepository.findById(appid)
                     .map(SteamAppSeed::getSpyTags)
                     .ifPresent(game::applySteamTags);

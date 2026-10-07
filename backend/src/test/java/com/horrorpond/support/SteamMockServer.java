@@ -33,6 +33,10 @@ public final class SteamMockServer {
         return STORE_BASE + "/api/appdetails?appids=" + appid + "&cc=kr&l=koreana";
     }
 
+    public static String appDetailsEnglishUrl(int appid) {
+        return STORE_BASE + "/api/appdetails?appids=" + appid + "&l=english&filters=basic,release_date";
+    }
+
     /**
      * @param listParam "sort_by=Released_DESC" 또는 "filter=popularcomingsoon"
      */

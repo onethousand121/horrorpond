@@ -2,6 +2,7 @@ package com.horrorpond.catalog.domain;
 
 import com.horrorpond.common.domain.BaseTimeEntity;
 import com.horrorpond.common.domain.DomainStateException;
+import com.horrorpond.common.domain.Language;
 import com.horrorpond.common.domain.DomainValidationException;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -69,6 +70,16 @@ public class Game extends BaseTimeEntity {
 
     @Column(length = 100)
     private String releaseDateText;
+
+    /** 영어 Steam 데이터 (l=english). 없으면 한국어 값을 쓴다 */
+    @Column(length = 300)
+    private String titleEn;
+
+    @Column(columnDefinition = "text")
+    private String shortDescriptionEn;
+
+    @Column(length = 100)
+    private String releaseDateTextEn;
 
     @Column(nullable = false)
     private boolean comingSoon;
@@ -156,6 +167,27 @@ public class Game extends BaseTimeEntity {
         replaceMedia(data.media());
         replaceDevelopers(data.developers());
         upsertStoreLink(Store.STEAM, STEAM_STORE_URL + externalId);
+    }
+
+    /**
+     * 영어 Steam 데이터. 수집 시 영어 응답을 못 받았으면 호출하지 않아 이전 값을 유지한다.
+     */
+    public void applyEnglishText(String title, String shortDescription, String releaseDateText) {
+        this.titleEn = title;
+        this.shortDescriptionEn = shortDescription;
+        this.releaseDateTextEn = releaseDateText;
+    }
+
+    public String title(Language language) {
+        return language.pick(title, titleEn);
+    }
+
+    public String shortDescription(Language language) {
+        return language.pick(shortDescription, shortDescriptionEn);
+    }
+
+    public String releaseDateText(Language language) {
+        return language.pick(releaseDateText, releaseDateTextEn);
     }
 
     public void applySteamTags(List<String> tags) {
