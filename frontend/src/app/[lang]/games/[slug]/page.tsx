@@ -9,7 +9,7 @@ import { SponsorBadge } from "@/components/SponsorBadge";
 import { TrailerPlayer } from "@/components/TrailerPlayer";
 import { getGame } from "@/lib/api";
 import { formatCount, formatReleaseDate, groupDevelopers } from "@/lib/format";
-import { CURATOR } from "@/lib/site";
+import { getDictionary, isLocale, localePath } from "@/lib/i18n";
 
 // ISR: 빌드 때는 만들지 않고(빈 배열) 첫 방문 때 정적 생성 후 1시간마다 갱신.
 // 없는 slug는 notFound()로 실제 404 상태 코드를 돌려준다.
@@ -19,15 +19,19 @@ export async function generateStaticParams() {
   return [];
 }
 
-export async function generateMetadata({ params }: PageProps<"/games/[slug]">): Promise<Metadata> {
-  const { slug } = await params;
-  const game = await getGame(slug);
+export async function generateMetadata({ params }: PageProps<"/[lang]/games/[slug]">): Promise<Metadata> {
+  const { lang, slug } = await params;
+  if (!isLocale(lang)) return {};
+  const game = await getGame(slug, lang);
   if (!game) return {};
   const description = game.article?.oneLiner ?? game.shortDescription ?? undefined;
   return {
     title: game.title,
     description,
-    alternates: { canonical: `/games/${game.slug}` },
+    alternates: {
+      canonical: localePath(lang, `/games/${game.slug}`),
+      languages: { ko: `/games/${game.slug}`, en: `/en/games/${game.slug}` },
+    },
     openGraph: {
       title: game.title,
       description,
@@ -37,16 +41,19 @@ export async function generateMetadata({ params }: PageProps<"/games/[slug]">): 
   };
 }
 
-export default async function GameDetailPage({ params }: PageProps<"/games/[slug]">) {
-  const { slug } = await params;
-  const game = await getGame(slug);
+export default async function GameDetailPage({ params }: PageProps<"/[lang]/games/[slug]">) {
+  const { lang, slug } = await params;
+  if (!isLocale(lang)) notFound();
+  const game = await getGame(slug, lang);
   if (!game) notFound();
+  const dict = getDictionary(lang);
+  const t = dict.detail;
 
   const { article } = game;
   const trailers = game.media.filter((m) => m.type === "TRAILER");
   const screenshots = game.media.filter((m) => m.type === "SCREENSHOT");
-  const developers = groupDevelopers(game.developers);
-  const releaseDate = formatReleaseDate(game);
+  const developers = groupDevelopers(game.developers, lang);
+  const releaseDate = formatReleaseDate(game, lang);
   const steamLink = game.storeLinks.find((link) => link.store === "STEAM");
 
   // 같은 그림이 두 번 보이지 않게: 헤더 이미지(상단 히어로)와 첫 스크린샷(갤러리 큰 화면)을 피해 포스터를 고른다
@@ -70,9 +77,9 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[slug
         </div>
         <div className="relative -mt-10 space-y-3 px-4 sm:-mt-28 sm:px-8">
           <div className="flex flex-wrap gap-1.5">
-            {game.coop && <CoopBadge />}
+            {game.coop && <CoopBadge locale={lang} />}
             {game.genres.map((genre) => (
-              <GenreBadge key={genre.slug} genre={genre} linked />
+              <GenreBadge key={genre.slug} genre={genre} locale={lang} linked />
             ))}
           </div>
           <h1 className="text-3xl font-bold drop-shadow sm:text-5xl">{game.title}</h1>
@@ -83,20 +90,21 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[slug
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-10">
           {article ? (
-            <section aria-label={`${CURATOR.name} 추천`} className="space-y-6">
+            <section aria-label={t.pickLabel} className="space-y-6">
               <p className="inline-block rounded bg-accent-2/90 px-2 py-0.5 font-pixel text-[11px] text-accent-ink">
-                {CURATOR.name} 추천
+                {t.pickLabel}
               </p>
+              {t.articleKoreanOnly && <p className="text-sm text-muted">{t.articleKoreanOnly}</p>}
               {article.sponsored && (
                 <aside
-                  aria-label="협찬 고지"
+                  aria-label={t.sponsorNotice}
                   className="flex gap-3 rounded-xl border border-amber-500/50 bg-amber-500/10 p-4 text-sm text-amber-100"
                 >
-                  <SponsorBadge />
+                  <SponsorBadge locale={lang} />
                   <p className="whitespace-pre-line">{article.sponsorDisclosure}</p>
                 </aside>
               )}
-              <HighlightList items={article.highlights} />
+              <HighlightList items={article.highlights} locale={lang} />
               <div className="space-y-4">
                 <h2 id="article-title" className="font-pixel text-[22px] leading-snug">
                   {article.title}
@@ -109,37 +117,37 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[slug
             </section>
           ) : (
             game.shortDescription && (
-              <section aria-label="게임 소개" className="space-y-2">
-                <h2 className="font-pixel text-[11px] text-muted">게임 소개 (Steam)</h2>
+              <section aria-label={t.about} className="space-y-2">
+                <h2 className="font-pixel text-[11px] text-muted">{t.aboutSteam}</h2>
                 <p className="leading-relaxed text-foreground/90">{game.shortDescription}</p>
               </section>
             )
           )}
 
           {(trailers.length > 0 || screenshots.length > 0) && (
-            <section aria-label="영상과 스크린샷" className="space-y-4">
+            <section aria-label={t.media} className="space-y-4">
               <hr className="divider" />
-              <h2 className="font-pixel text-[22px]">영상과 스크린샷</h2>
-              <TrailerPlayer trailers={trailers} poster={trailerPoster} title={game.title} />
-              <MediaGallery screenshots={screenshots} title={game.title} />
+              <h2 className="font-pixel text-[22px]">{t.media}</h2>
+              <TrailerPlayer trailers={trailers} poster={trailerPoster} title={game.title} locale={lang} />
+              <MediaGallery screenshots={screenshots} title={game.title} locale={lang} />
             </section>
           )}
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
           <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 text-sm">
-            <h2 className="font-pixel text-[11px] text-muted">게임 정보</h2>
+            <h2 className="font-pixel text-[11px] text-muted">{t.info}</h2>
             <dl className="space-y-2">
               {releaseDate && (
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted">출시일</dt>
+                  <dt className="text-muted">{t.releaseDate}</dt>
                   <dd>{releaseDate}</dd>
                 </div>
               )}
               {game.reviewCount != null && game.reviewCount > 0 && (
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted">Steam 리뷰</dt>
-                  <dd>{formatCount(game.reviewCount)}개</dd>
+                  <dt className="text-muted">{t.steamReviews}</dt>
+                  <dd>{t.reviewCount(formatCount(game.reviewCount, lang))}</dd>
                 </div>
               )}
               {developers.map((dev) => (
@@ -156,7 +164,7 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[slug
                 rel="noopener noreferrer"
                 className="glow-hover flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 font-bold text-accent-ink"
               >
-                Steam에서 보기 ↗
+                {t.viewOnSteam}
               </a>
             )}
           </section>

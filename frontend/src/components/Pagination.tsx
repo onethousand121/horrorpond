@@ -1,23 +1,26 @@
 import Link from "next/link";
+import { getDictionary, type Locale } from "@/lib/i18n";
 
 /**
  * page는 0부터 시작하는 백엔드 기준, 화면과 URL(?page=N)은 1부터 보여준다.
  */
-export function Pagination({ page, totalPages, hrefFor }: {
+export function Pagination({ page, totalPages, hrefFor, locale }: {
   page: number;
   totalPages: number;
   hrefFor: (page: number) => string;
+  locale: Locale;
 }) {
   if (totalPages <= 1) return null;
+  const t = getDictionary(locale).pagination;
 
   const pages = visiblePages(page, totalPages);
   const linkClass = "rounded border border-border px-3 py-1.5 text-sm hover:border-foreground/40";
 
   return (
-    <nav aria-label="페이지" className="mt-10 flex flex-wrap items-center justify-center gap-2">
+    <nav aria-label={t.label} className="mt-10 flex flex-wrap items-center justify-center gap-2">
       {page > 0 && (
         <Link href={hrefFor(page - 1)} className={linkClass} rel="prev">
-          이전
+          {t.prev}
         </Link>
       )}
       {pages.map((p, i) =>
@@ -38,7 +41,7 @@ export function Pagination({ page, totalPages, hrefFor }: {
       )}
       {page < totalPages - 1 && (
         <Link href={hrefFor(page + 1)} className={linkClass} rel="next">
-          다음
+          {t.next}
         </Link>
       )}
     </nav>

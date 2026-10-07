@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { connection } from "next/server";
 import { getGames, getGenres, MAX_PAGE_SIZE } from "@/lib/api";
+import { localePath } from "@/lib/i18n";
 import type { GameSummary } from "@/lib/types";
 
 // 요청 시 렌더링: 고정 경로는 빌드 때 사전 렌더링되므로, connection()으로 빌드가 백엔드에 의존하지 않게 한다.
@@ -21,9 +22,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   await connection();
   const [genres, games] = await Promise.all([getGenres(), allPublishedGames()]);
 
-  return [
-    ...["/", "/games", "/coop", "/about"].map((path) => ({ url: `${SITE_URL}${path}` })),
-    ...genres.map((genre) => ({ url: `${SITE_URL}/genres/${genre.slug}` })),
-    ...games.map((game) => ({ url: `${SITE_URL}/games/${game.slug}` })),
+  const paths = [
+    ...["/", "/games", "/coop", "/about"],
+    ...genres.map((genre) => `/genres/${genre.slug}`),
+    ...games.map((game) => `/games/${game.slug}`),
   ];
+  // 한국어 주소마다 영어 주소를 hreflang으로 연결한다
+  return paths.map((path) => ({
+    url: `${SITE_URL}${path}`,
+    alternates: {
+      languages: { ko: `${SITE_URL}${path}`, en: `${SITE_URL}${localePath("en", path)}` },
+    },
+  }));
 }

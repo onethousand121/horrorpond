@@ -157,7 +157,7 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
         </ul>
       )}
 
-      <Pagination page={result.page} totalPages={result.totalPages} hrefFor={(p) => href(tab, q, p)} />
+      <Pagination page={result.page} totalPages={result.totalPages} hrefFor={(p) => href(tab, q, p)} locale="ko" />
     </div>
   );
 }

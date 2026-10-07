@@ -1,5 +1,6 @@
 import "server-only";
 
+import { DEFAULT_LOCALE, type Locale } from "./i18n";
 import type { GameDetail, GameSort, GameSummary, Genre, PageResponse, ReleaseWindow } from "./types";
 
 /**
@@ -45,12 +46,20 @@ async function apiFetch(path: string, tags: string[]): Promise<Response> {
   });
 }
 
+/** 백엔드 기본 언어는 한국어라, 영어일 때만 lang을 붙인다 (한국어 캐시 키는 그대로) */
+function withLang(path: string, lang: Locale | undefined): string {
+  if (!lang || lang === DEFAULT_LOCALE) return path;
+  return `${path}?lang=${lang}`;
+}
+
 async function failure(res: Response, path: string): Promise<ApiError> {
   const body = await res.text().catch(() => "");
   return new ApiError(res.status, path, `API ${res.status} ${path}: ${body.slice(0, 200)}`);
 }
 
 export interface GetGamesParams {
+  /** 제목·소개·장르 이름 언어 (기본 한국어) */
+  lang?: Locale;
   /** 제목 검색 (최대 100자) */
   q?: string;
   genre?: string;
@@ -74,6 +83,8 @@ export async function getGames(params: GetGamesParams = {}): Promise<PageRespons
   query.set("page", String(params.page ?? 0));
   query.set("size", String(params.size ?? DEFAULT_PAGE_SIZE));
 
+  if (params.lang && params.lang !== DEFAULT_LOCALE) query.set("lang", params.lang);
+
   const path = `/api/games?${query}`;
   const res = await apiFetch(path, [CACHE_TAGS.games]);
   if (!res.ok) throw await failure(res, path);
@@ -81,16 +92,16 @@ export async function getGames(params: GetGamesParams = {}): Promise<PageRespons
 }
 
 /** 공개되지 않았거나 없는 게임이면 null. 그 외 오류(5xx 등)는 throw. */
-export async function getGame(slug: string): Promise<GameDetail | null> {
-  const path = `/api/games/${encodeURIComponent(slug)}`;
+export async function getGame(slug: string, lang?: Locale): Promise<GameDetail | null> {
+  const path = withLang(`/api/games/${encodeURIComponent(slug)}`, lang);
   const res = await apiFetch(path, [CACHE_TAGS.games, CACHE_TAGS.game(slug)]);
   if (res.status === 404) return null;
   if (!res.ok) throw await failure(res, path);
   return res.json();
 }
 
-export async function getGenres(): Promise<Genre[]> {
-  const path = "/api/genres";
+export async function getGenres(lang?: Locale): Promise<Genre[]> {
+  const path = withLang("/api/genres", lang);
   const res = await apiFetch(path, [CACHE_TAGS.genres]);
   if (!res.ok) throw await failure(res, path);
   return res.json();

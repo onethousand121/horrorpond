@@ -1,9 +1,10 @@
 import Image from "next/image";
 import { formatRelative } from "@/lib/format";
 import type { YoutubeVideo } from "@/lib/youtube";
+import type { Locale } from "@/lib/i18n";
 
 /** 채널 최신 영상. 쇼츠는 세로 비율 대신 같은 카드에 "Shorts" 표시만 붙인다. */
-export function VideoRow({ videos }: { videos: YoutubeVideo[] }) {
+export function VideoRow({ videos, locale }: { videos: YoutubeVideo[]; locale: Locale }) {
   return (
     <div className="-mx-4 flex snap-x scroll-px-4 gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:scroll-px-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
       {videos.map((video) => (
@@ -24,7 +25,7 @@ export function VideoRow({ videos }: { videos: YoutubeVideo[] }) {
           </div>
           <div className="space-y-1 p-3">
             <p className="line-clamp-2 text-sm leading-snug font-medium group-hover:text-accent">{video.title}</p>
-            <p className="text-xs text-muted">{formatRelative(video.publishedAt)}</p>
+            <p className="text-xs text-muted">{formatRelative(video.publishedAt, locale)}</p>
           </div>
         </a>
       ))}
