@@ -51,6 +51,8 @@ async function failure(res: Response, path: string): Promise<ApiError> {
 }
 
 export interface GetGamesParams {
+  /** 제목 검색 (최대 100자) */
+  q?: string;
   genre?: string;
   coop?: boolean;
   release?: ReleaseWindow;
@@ -63,6 +65,7 @@ export interface GetGamesParams {
 
 export async function getGames(params: GetGamesParams = {}): Promise<PageResponse<GameSummary>> {
   const query = new URLSearchParams();
+  if (params.q) query.set("q", params.q);
   if (params.genre) query.set("genre", params.genre);
   if (params.coop !== undefined) query.set("coop", String(params.coop));
   if (params.release) query.set("release", params.release);

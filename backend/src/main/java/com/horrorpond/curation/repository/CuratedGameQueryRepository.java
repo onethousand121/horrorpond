@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 public class CuratedGameQueryRepository {
 
     private static final QGame game = QGame.game;
+    private static final char LIKE_ESCAPE = '!';
     private static final QCurationArticle article = QCurationArticle.curationArticle;
 
     private final JPAQueryFactory queryFactory;
@@ -45,7 +46,7 @@ public class CuratedGameQueryRepository {
         List<CuratedGameRow> rows = queryFactory
                 .select(Projections.constructor(CuratedGameRow.class,
                         game.id, game.slug, game.title, game.headerImageUrl, game.releaseDate,
-                        game.releaseDateText, game.comingSoon, game.coop, game.reviewCount, game.tags,
+                        game.releaseDateText, game.shortDescription, game.comingSoon, game.coop, game.reviewCount, game.tags,
                         article.id.isNotNull(), article.oneLiner, article.highlights, article.sponsored.coalesce(false)))
                 .from(game)
                 .leftJoin(article).on(article.gameId.eq(game.id), article.status.eq(ArticleStatus.PUBLISHED))
@@ -84,6 +85,9 @@ public class CuratedGameQueryRepository {
 
     private static BooleanBuilder where(PublicGameQuery query) {
         BooleanBuilder where = new BooleanBuilder(query.visibility());
+        if (query.search() != null) {
+            where.and(game.title.likeIgnoreCase("%" + escapeLike(query.search()) + "%", LIKE_ESCAPE));
+        }
         if (query.coop() != null) {
             where.and(game.coop.eq(query.coop()));
         }
@@ -101,6 +105,11 @@ public class CuratedGameQueryRepository {
             where.and(inGenre(query.genre()));
         }
         return where;
+    }
+
+    /** 검색어의 %, _ 를 글자 그대로 찾도록 이스케이프한다. */
+    static String escapeLike(String value) {
+        return value.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 
     /**
@@ -138,12 +147,13 @@ public class CuratedGameQueryRepository {
 
     /**
      * @param visibility 노출 조건 (ExposurePolicy)
+     * @param search     제목 검색어. 없으면 null
      * @param genre      장르 필터. 없으면 null
      * @param release    출시 시점 필터. 없으면 null
      * @param today      RECENT 계산 기준일
      * @param picked     true면 재일 추천(공개된 글이 있는 게임)만
      */
-    public record PublicGameQuery(Predicate visibility, GenreFilter genre, Boolean coop, ReleaseWindow release,
+    public record PublicGameQuery(Predicate visibility, String search, GenreFilter genre, Boolean coop, ReleaseWindow release,
                                   LocalDate today, boolean picked, CuratedGameSort sort) {
     }
 
@@ -157,6 +167,7 @@ public class CuratedGameQueryRepository {
             String headerImageUrl,
             LocalDate releaseDate,
             String releaseDateText,
+            String shortDescription,
             boolean comingSoon,
             boolean coop,
             Integer reviewCount,

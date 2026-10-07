@@ -114,3 +114,13 @@ body {
 .markdown strong {
   color: #fff;
 }
+
+/* 쇼케이스 이미지 전환 */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

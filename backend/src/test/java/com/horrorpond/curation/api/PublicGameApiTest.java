@@ -172,6 +172,34 @@ class PublicGameApiTest {
     }
 
     @Test
+    void searchMatchesTitleCaseInsensitivelyAndEscapesWildcards() throws Exception {
+        create(spec("outlast"));
+        create(spec("outlast-trials"));
+        create(spec("phasmo"));
+        create(spec("hidden-outlast").gameStatus(GameStatus.HIDDEN));
+
+        mvc.perform(get("/api/games").param("q", " OUTLAST "))
+                .andExpect(jsonPath("$.content[*].slug", containsInAnyOrder("outlast", "outlast-trials")));
+        // 제목은 "Title <slug>". % 와 _ 는 와일드카드가 아니라 글자 그대로 찾는다
+        mvc.perform(get("/api/games").param("q", "%"))
+                .andExpect(jsonPath("$.content", hasSize(0)));
+        mvc.perform(get("/api/games").param("q", "title_"))
+                .andExpect(jsonPath("$.content", hasSize(0)));
+        mvc.perform(get("/api/games").param("q", "x".repeat(101)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void summaryHasDescriptionAndTopFiveTags() throws Exception {
+        create(spec("tagged").tags("Horror", "Co-op", "Psychological Horror", "Dark", "Atmospheric", "Indie"));
+
+        mvc.perform(get("/api/games"))
+                .andExpect(jsonPath("$.content[0].shortDescription").value("Description tagged"))
+                .andExpect(jsonPath("$.content[0].tags[*]",
+                        contains("Horror", "Co-op", "Psychological Horror", "Dark", "Atmospheric")));
+    }
+
+    @Test
     void genreFilterUsesExistsWithoutDuplicates() throws Exception {
         create(spec("a").genres("psychological"));
         create(spec("b").genres("psychological", "survival", "occult"));

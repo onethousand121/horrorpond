@@ -30,8 +30,14 @@ function parsePage(value: string | string[] | undefined): number {
   return Number.isInteger(page) && page >= 1 ? page : 1;
 }
 
-function href(view: ViewKey, page: number): string {
+/** 검색어: 앞뒤 공백 제거, 백엔드 제한(100자)에 맞춰 자른다 */
+function parseSearch(value: string | string[] | undefined): string {
+  return (Array.isArray(value) ? value[0] : (value ?? "")).trim().slice(0, 100);
+}
+
+function href(view: ViewKey, page: number, q: string): string {
   const params = new URLSearchParams();
+  if (q) params.set("q", q);
   if (view !== "popular") params.set("view", view);
   if (page > 1) params.set("page", String(page));
   const query = params.toString();
@@ -43,21 +49,22 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
   const query = await searchParams;
   const view = parseView(query.view);
   const page = parsePage(query.page);
+  const q = parseSearch(query.q);
   const params = VIEWS.find((v) => v.key === view)!.params;
 
-  const games = await getGames({ ...params, page: page - 1 });
+  const games = await getGames({ ...params, q: q || undefined, page: page - 1 });
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-baseline justify-between gap-4">
         <h1 className="font-pixel text-[22px]">
-          공포게임 <span className="font-sans text-base font-normal text-muted">{games.totalElements}</span>
+          {q ? `'${q}' 검색 결과` : "공포게임"} <span className="font-sans text-base font-normal text-muted">{games.totalElements}</span>
         </h1>
         <nav aria-label="보기" className="flex flex-wrap gap-1.5 text-sm">
           {VIEWS.map((v) => (
             <Link
               key={v.key}
-              href={href(v.key, 1)}
+              href={href(v.key, 1, q)}
               aria-current={v.key === view ? "page" : undefined}
               className={`rounded-full border px-3 py-1 ${
                 v.key === view
@@ -70,8 +77,8 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
           ))}
         </nav>
       </div>
-      <GameGrid games={games.content} />
-      <Pagination page={page - 1} totalPages={games.totalPages} hrefFor={(p) => href(view, p + 1)} />
+      <GameGrid games={games.content} emptyMessage={q ? "검색 결과가 없습니다." : undefined} />
+      <Pagination page={page - 1} totalPages={games.totalPages} hrefFor={(p) => href(view, p + 1, q)} />
     </div>
   );
 }

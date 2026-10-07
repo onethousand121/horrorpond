@@ -29,6 +29,16 @@ export async function getLatestVideos(limit: number): Promise<YoutubeVideo[]> {
   }
 }
 
+/**
+ * 최근 영상이 있을 때만 돌려준다. 가장 최근 영상이 maxAgeDays보다 오래됐으면 빈 배열
+ * (오래된 영상이 첫 화면을 차지하지 않게).
+ */
+export async function getFreshVideos(limit: number, maxAgeDays: number): Promise<YoutubeVideo[]> {
+  const videos = await getLatestVideos(limit);
+  const freshSince = Date.now() - maxAgeDays * 24 * 60 * 60 * 1000;
+  return videos.length > 0 && Date.parse(videos[0].publishedAt) >= freshSince ? videos : [];
+}
+
 /** RSS 구조가 단순해서 XML 파서 없이 필요한 태그만 뽑는다. */
 export function parseFeed(xml: string): YoutubeVideo[] {
   const videos: YoutubeVideo[] = [];

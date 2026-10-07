@@ -16,7 +16,7 @@ const CARD_GENRES = 2;
 export function GameCard({ game, eager = false }: { game: GameSummary; eager?: boolean }) {
   const release = formatReleaseDate(game);
   return (
-    <article className="glow-hover group relative flex flex-col overflow-hidden rounded-xl border border-border bg-surface hover:-translate-y-0.5">
+    <article className="glow-hover group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface hover:-translate-y-0.5">
       <div className="relative aspect-[460/215] bg-surface-2">
         {game.headerImageUrl && (
           <Image

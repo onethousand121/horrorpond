@@ -44,7 +44,10 @@ public class PublicGameQueryService {
     private final ExposurePolicy exposurePolicy;
     private final Clock clock;
 
-    public Page<GameSummaryResponse> list(String genreSlug, Boolean coop, ReleaseWindow release, boolean picked,
+    /**
+     * @param search 제목 검색어 (부분 일치, 대소문자 무시). 비어 있으면 무시
+     */
+    public Page<GameSummaryResponse> list(String search, String genreSlug, Boolean coop, ReleaseWindow release, boolean picked,
                                           CuratedGameSort sort, Pageable pageable) {
         List<Genre> genres = genreRepository.findAllByOrderByDisplayOrderAsc();
         GenreFilter genreFilter = genreSlug == null || genreSlug.isBlank() ? null : genres.stream()
@@ -52,7 +55,8 @@ public class PublicGameQueryService {
                 .findFirst()
                 .map(genre -> new GenreFilter(genre.getSlug(), genre.getSteamTags()))
                 .orElse(new GenreFilter(genreSlug, List.of()));
-        PublicGameQuery query = new PublicGameQuery(exposurePolicy.visible(QGame.game), genreFilter, coop, release,
+        PublicGameQuery query = new PublicGameQuery(exposurePolicy.visible(QGame.game),
+                search == null || search.isBlank() ? null : search.strip(), genreFilter, coop, release,
                 LocalDate.now(clock.withZone(SITE_ZONE)), picked, sort);
 
         Page<CuratedGameRow> rows = curatedGameQueryRepository.findVisible(query, pageable);

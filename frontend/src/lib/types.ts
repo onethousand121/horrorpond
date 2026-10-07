@@ -44,10 +44,14 @@ export interface GameSummary {
   releaseDate: string | null;
   /** Steam 원문 (예: "2027년 4분기") */
   releaseDateText: string | null;
+  /** Steam 짧은 소개 */
+  shortDescription: string | null;
   comingSoon: boolean;
   coop: boolean;
   /** Steam 리뷰 수 */
   reviewCount: number | null;
+  /** SteamSpy 상위 태그 (영문, 표 많은 순, 최대 5개) */
+  tags: string[];
   genres: GenreSummary[];
   /** 재일 추천(공개된 글이 있음). false면 oneLiner는 null, highlights는 빈 배열 */
   picked: boolean;

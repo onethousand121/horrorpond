@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { SearchBox } from "@/components/SearchBox";
 import { CURATOR, SITE_INDEXING, SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 import "./globals.css";
 
@@ -43,11 +44,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col font-sans">
         <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
             <Link href="/" aria-label={`${SITE_NAME} 홈`}>
               <Logo />
             </Link>
-            <nav className="flex gap-5 font-pixel text-[11px] text-muted">
+            <SearchBox className="order-last w-full sm:order-none sm:ml-auto sm:w-64" />
+            <nav className="ml-auto flex gap-5 font-pixel text-[11px] text-muted sm:ml-0">
               {NAV.map((item) => (
                 <Link key={item.href} href={item.href} className="hover:text-accent">
                   {item.label}
