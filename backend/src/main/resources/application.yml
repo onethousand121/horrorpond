@@ -24,8 +24,10 @@ server:
 
 curation:
   auto-exposure:
-    # 수집된 공포게임(CANDIDATE) 중 출시작은 Steam 리뷰가 이 수 이상이어야 자동 노출된다 (출시 예정작은 바로 노출)
+    # 수집된 공포게임(CANDIDATE) 자동 노출: 출시 예정작은 바로, 출시 후 new-release-days일 동안은 리뷰와 상관없이,
+    # 그 뒤로는 Steam 리뷰가 min-reviews개 이상일 때 노출한다
     min-reviews: 10
+    new-release-days: 10
 
 ingestion:
   # ShedLock 락 유지 시간. SchedulingConfig(@EnableSchedulerLock)와 수동 트리거가 함께 쓴다

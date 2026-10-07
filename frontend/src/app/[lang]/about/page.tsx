@@ -21,7 +21,7 @@ const CONTENT: Record<Locale, { title: string; intro: string; points: string[]; 
     intro:
       "lurkpond는 Steam의 공포게임을 한곳에서 모아 보는 사이트입니다. 새로 올라온 공포게임과 출시 예정작을 매일 자동으로 수집해 보여주고, 운영자 류재일이 직접 플레이한 게임에는 영상과 추천 이유를 덧붙입니다.",
     points: [
-      "출시 예정작은 바로, 출시된 게임은 Steam 리뷰가 어느 정도 쌓이면 목록에 올라옵니다.",
+      "출시 예정작과 출시 후 10일 이내 신작은 바로, 그 뒤로는 Steam 리뷰가 어느 정도 쌓인 게임이 목록에 남습니다.",
       "심리 공포, 아날로그 호러 같은 서브장르는 Steam 태그를 바탕으로 자동 분류합니다.",
       "\"재일 추천\" 표시는 직접 플레이하고 추천하는 게임입니다.",
       "협찬을 받은 글은 항상 협찬 표시와 고지 문구를 함께 보여줍니다.",
@@ -36,7 +36,7 @@ const CONTENT: Record<Locale, { title: string; intro: string; points: string[]; 
     intro:
       "lurkpond gathers horror games on Steam in one place. New releases and upcoming games are collected automatically every day, and games played by Jaeil, the Korean horror game YouTuber behind the site, come with videos and recommendations.",
     points: [
-      "Upcoming games appear right away; released games appear once they have a few Steam reviews.",
+      "Upcoming games and releases from the last 10 days appear right away; after that, games stay listed once they have a few Steam reviews.",
       "Subgenres such as psychological or analog horror are sorted automatically from Steam tags.",
       "\"Jaeil's Pick\" marks games he has played and recommends.",
       "Sponsored write-ups always carry a sponsorship badge and disclosure.",

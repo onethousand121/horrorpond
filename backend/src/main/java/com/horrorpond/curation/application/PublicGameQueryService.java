@@ -21,9 +21,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Clock;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
@@ -35,15 +32,11 @@ import java.util.Map;
 @Transactional(readOnly = true)
 public class PublicGameQueryService {
 
-    /** "최근 출시" 계산 기준 (사이트 사용자 기준 날짜) */
-    private static final ZoneId SITE_ZONE = ZoneId.of("Asia/Seoul");
-
     private final CuratedGameQueryRepository curatedGameQueryRepository;
     private final GameRepository gameRepository;
     private final GenreRepository genreRepository;
     private final CurationArticleRepository articleRepository;
     private final ExposurePolicy exposurePolicy;
-    private final Clock clock;
 
     /**
      * @param search 제목 검색어 (부분 일치, 대소문자 무시). 비어 있으면 무시
@@ -58,7 +51,7 @@ public class PublicGameQueryService {
                 .orElse(new GenreFilter(genreSlug, List.of()));
         PublicGameQuery query = new PublicGameQuery(exposurePolicy.visible(QGame.game),
                 search == null || search.isBlank() ? null : search.strip(), genreFilter, coop, release,
-                LocalDate.now(clock.withZone(SITE_ZONE)), picked, sort);
+                exposurePolicy.today(), picked, sort);
 
         Page<CuratedGameRow> rows = curatedGameQueryRepository.findVisible(query, pageable);
         Map<Long, List<String>> curatorGenres = curatedGameQueryRepository.findCuratorGenreSlugs(

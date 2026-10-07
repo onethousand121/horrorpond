@@ -93,21 +93,34 @@ class GameTest {
         assertThat(steam.isCoop()).isFalse();
     }
 
+    private static final AutoExposure RULE = new AutoExposure(10, 10);
+    private static final LocalDate TODAY = LocalDate.of(2026, 10, 8);
+
     @Test
-    void candidatesAreAutoExposedWhenNotAdultAndUpcomingOrReviewed() {
-        // (상태, 성인, 출시예정, 리뷰 수) → 노출 여부, 기준 리뷰 10
-        assertThat(Game.isPubliclyVisible(GameStatus.CANDIDATE, false, false, 10, 10)).isTrue();
-        assertThat(Game.isPubliclyVisible(GameStatus.CANDIDATE, false, false, 9, 10)).isFalse();
-        assertThat(Game.isPubliclyVisible(GameStatus.CANDIDATE, false, false, null, 10)).isFalse();
-        assertThat(Game.isPubliclyVisible(GameStatus.CANDIDATE, false, true, null, 10)).as("출시 예정").isTrue();
-        assertThat(Game.isPubliclyVisible(GameStatus.CANDIDATE, true, false, 99999, 10)).as("성인").isFalse();
-        assertThat(Game.isPubliclyVisible(GameStatus.CANDIDATE, true, true, null, 10)).as("성인 출시 예정").isFalse();
+    void candidatesAreAutoExposedWhenNotAdultAndUpcomingNewOrReviewed() {
+        // (상태, 성인, 출시예정, 리뷰 수, 출시일) → 노출 여부. 기준: 리뷰 10, 출시 후 10일
+        LocalDate old = TODAY.minusDays(30);
+        assertThat(visible(false, false, 10, old)).isTrue();
+        assertThat(visible(false, false, 9, old)).isFalse();
+        assertThat(visible(false, false, null, null)).isFalse();
+        assertThat(visible(false, true, null, null)).as("출시 예정").isTrue();
+        assertThat(visible(false, false, null, TODAY)).as("오늘 출시").isTrue();
+        assertThat(visible(false, false, 0, TODAY.minusDays(10))).as("출시 10일째").isTrue();
+        assertThat(visible(false, false, 0, TODAY.minusDays(11))).as("출시 11일째").isFalse();
+        assertThat(visible(false, false, null, TODAY.plusDays(1))).as("출시일이 미래인데 출시 예정이 아님").isFalse();
+        assertThat(visible(true, false, 99999, old)).as("성인").isFalse();
+        assertThat(visible(true, true, null, null)).as("성인 출시 예정").isFalse();
+        assertThat(visible(true, false, null, TODAY)).as("성인 신작").isFalse();
+    }
+
+    private static boolean visible(boolean adult, boolean comingSoon, Integer reviews, LocalDate releaseDate) {
+        return Game.isPubliclyVisible(GameStatus.CANDIDATE, adult, comingSoon, reviews, releaseDate, RULE, TODAY);
     }
 
     @Test
     void publishedIsAlwaysVisibleAndHiddenNever() {
-        assertThat(Game.isPubliclyVisible(GameStatus.PUBLISHED, true, false, null, 10)).isTrue();
-        assertThat(Game.isPubliclyVisible(GameStatus.HIDDEN, false, true, 99999, 10)).isFalse();
+        assertThat(Game.isPubliclyVisible(GameStatus.PUBLISHED, true, false, null, null, RULE, TODAY)).isTrue();
+        assertThat(Game.isPubliclyVisible(GameStatus.HIDDEN, false, true, 99999, TODAY, RULE, TODAY)).isFalse();
     }
 
     @Test
@@ -120,7 +133,7 @@ class GameTest {
         assertThat(game.getReviewCount()).isEqualTo(42);
         assertThat(game.isAdult()).isTrue();
         assertThat(game.getTags()).containsExactly("Horror", "Psychological Horror");
-        assertThat(game.isPubliclyVisible(10)).isFalse();
+        assertThat(game.isPubliclyVisible(RULE, TODAY)).isFalse();
     }
 
     @Test

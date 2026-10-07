@@ -155,6 +155,20 @@ class PublicGameApiTest {
     }
 
     @Test
+    void newReleasesWithoutReviewsAreVisibleForTenDays() throws Exception {
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+        create(spec("day-ten").gameStatus(GameStatus.CANDIDATE).releaseDate(today.minusDays(10)));
+        create(spec("day-eleven").gameStatus(GameStatus.CANDIDATE).releaseDate(today.minusDays(11)));
+        create(spec("day-eleven-reviewed").gameStatus(GameStatus.CANDIDATE).releaseDate(today.minusDays(11))
+                .reviewCount(10));
+
+        mvc.perform(get("/api/games"))
+                .andExpect(jsonPath("$.content[*].slug", containsInAnyOrder("day-ten", "day-eleven-reviewed")));
+        mvc.perform(get("/api/games/day-ten")).andExpect(status().isOk());
+        mvc.perform(get("/api/games/day-eleven")).andExpect(status().isNotFound());
+    }
+
+    @Test
     void releaseWindowsAndPopularSort() throws Exception {
         LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
         create(spec("soon").comingSoon(true).releaseDate(today.plusDays(30)));

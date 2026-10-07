@@ -35,7 +35,8 @@ public record AdminGameResponse(
     static AdminGameResponse from(AdminGameRow row, ExposurePolicy policy) {
         return new AdminGameResponse(row.id(), row.source(), row.externalId(), row.slug(), row.title(),
                 row.headerImageUrl(), row.releaseDate(), row.comingSoon(), row.coop(), row.reviewCount(), row.adult(),
-                row.status(), policy.isVisible(row.status(), row.adult(), row.comingSoon(), row.reviewCount()),
+                row.status(), policy.isVisible(row.status(), row.adult(), row.comingSoon(), row.reviewCount(),
+                        row.releaseDate()),
                 row.articleStatus() != null, row.articleStatus(), row.sameTitleCount());
     }
 

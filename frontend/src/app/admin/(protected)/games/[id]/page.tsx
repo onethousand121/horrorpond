@@ -36,7 +36,7 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
       ? "숨김 상태입니다."
       : game.adult
         ? "성인 콘텐츠라 자동 노출되지 않습니다. 보여주려면 고정 노출하세요."
-        : "Steam 리뷰가 적어 자동 노출 기준(10개)에 못 미칩니다. 보여주려면 고정 노출하세요.";
+        : "출시 10일이 지났고 Steam 리뷰가 자동 노출 기준(10개)에 못 미칩니다. 보여주려면 고정 노출하세요.";
 
   return (
     <div className="space-y-8">
@@ -106,7 +106,8 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
           )}
         </div>
         <p className="text-xs text-muted">
-          수집된 공포게임은 성인 콘텐츠가 아니고 출시 예정이거나 리뷰가 10개 이상이면 자동으로 노출됩니다.
+          수집된 공포게임은 성인 콘텐츠가 아니면 출시 예정, 출시 후 10일 이내, 또는 리뷰 10개 이상일 때 자동으로
+          노출됩니다.
           고정 노출은 이 기준과 상관없이 항상 보여줍니다. 장점 포인트가 있는 글이 있으면 &quot;{"재일 추천"}&quot;으로
           함께 공개됩니다. 모든 변경은 사이트에 바로 반영됩니다.
         </p>

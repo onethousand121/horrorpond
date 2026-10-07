@@ -284,19 +284,20 @@ public class Game extends BaseTimeEntity {
      * 공개 사이트 노출 규칙 (CuratedGameQueryRepository의 목록 조건과 같아야 한다).
      * - HIDDEN: 노출 안 함
      * - PUBLISHED: 큐레이터가 공개한 게임. 항상 노출
-     * - CANDIDATE: 수집된 공포게임. 성인 콘텐츠가 아니고 (출시 예정이거나 리뷰가 minReviews 이상)이면 자동 노출
+     * - CANDIDATE: 수집된 공포게임. {@link AutoExposure} 기준을 넘으면 자동 노출
      */
-    public boolean isPubliclyVisible(int minReviews) {
-        return isPubliclyVisible(status, adult, comingSoon, reviewCount, minReviews);
+    public boolean isPubliclyVisible(AutoExposure rule, LocalDate today) {
+        return isPubliclyVisible(status, adult, comingSoon, reviewCount, releaseDate, rule, today);
     }
 
     /** 엔티티 없이 조회 결과(projection)로 판정할 때 쓴다 */
     public static boolean isPubliclyVisible(GameStatus status, boolean adult, boolean comingSoon,
-                                            Integer reviewCount, int minReviews) {
+                                            Integer reviewCount, LocalDate releaseDate, AutoExposure rule,
+                                            LocalDate today) {
         return switch (status) {
             case HIDDEN -> false;
             case PUBLISHED -> true;
-            case CANDIDATE -> !adult && (comingSoon || (reviewCount != null && reviewCount >= minReviews));
+            case CANDIDATE -> rule.allows(adult, comingSoon, reviewCount, releaseDate, today);
         };
     }
 
