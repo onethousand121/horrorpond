@@ -241,6 +241,77 @@ class AdminCurationApiTest {
     }
 
     @Test
+    void playVideosAndAchievementsAreReplacedAsWholeLists() throws Exception {
+        Long id = steamCandidate(1, "Guided", "guided-1");
+        mvc.perform(admin(post("/api/admin/games/{id}/publish", id))).andExpect(status().isOk());
+        // 기본은 비어 있다
+        mvc.perform(get("/api/games/guided-1"))
+                .andExpect(jsonPath("$.playVideos", hasSize(0)))
+                .andExpect(jsonPath("$.achievements", hasSize(0)));
+
+        mvc.perform(admin(put("/api/admin/games/{id}/videos", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"videos":[{"url":"https://youtu.be/dQw4w9WgXcQ","title":" 1화 "},
+                                           {"url":"https://www.youtube.com/watch?v=aBcDeFgHiJk","title":""}]}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].youtubeId", contains("dQw4w9WgXcQ", "aBcDeFgHiJk")));
+        mvc.perform(admin(put("/api/admin/games/{id}/achievements", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"achievements":[{"name":"Survivor","description":"Finish without dying","videoUrl":"https://youtu.be/dQw4w9WgXcQ"},
+                                                 {"name":"Explorer","description":"","videoUrl":""}]}"""))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/api/games/guided-1"))
+                .andExpect(jsonPath("$.playVideos[0].title").value("1화"))
+                .andExpect(jsonPath("$.playVideos[1].title").doesNotExist())
+                .andExpect(jsonPath("$.achievements[*].name", contains("Survivor", "Explorer")))
+                .andExpect(jsonPath("$.achievements[0].youtubeId").value("dQw4w9WgXcQ"))
+                .andExpect(jsonPath("$.achievements[1].youtubeId").doesNotExist())
+                .andExpect(jsonPath("$.achievements[1].description").doesNotExist());
+        mvc.perform(get("/api/games"))
+                .andExpect(jsonPath("$.content[0].hasPlayVideo").value(true));
+        mvc.perform(admin(get("/api/admin/games/{id}", id)))
+                .andExpect(jsonPath("$.playVideos", hasSize(2)))
+                .andExpect(jsonPath("$.achievements", hasSize(2)));
+
+        // 잘못된 주소가 하나라도 있으면 400이고 기존 목록은 그대로
+        mvc.perform(admin(put("/api/admin/games/{id}/videos", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"videos\":[{\"url\":\"https://vimeo.com/1\"}]}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(admin(put("/api/admin/games/{id}/achievements", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"achievements\":[{\"name\":\" \"}]}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/games/guided-1"))
+                .andExpect(jsonPath("$.playVideos", hasSize(2)))
+                .andExpect(jsonPath("$.achievements", hasSize(2)));
+
+        // 빈 목록이면 모두 지워져 사이트에서 사라진다
+        mvc.perform(admin(put("/api/admin/games/{id}/videos", id))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"videos\":[]}"))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/games/guided-1")).andExpect(jsonPath("$.playVideos", hasSize(0)));
+        mvc.perform(get("/api/games")).andExpect(jsonPath("$.content[0].hasPlayVideo").value(false));
+    }
+
+    @Test
+    void tooManyPlayVideosIs400AndUnknownGameIs404() throws Exception {
+        Long id = steamCandidate(1, "Many", "many-1");
+        String eleven = java.util.stream.IntStream.range(0, 11)
+                .mapToObj(i -> "{\"url\":\"dQw4w9WgXcQ\"}")
+                .collect(java.util.stream.Collectors.joining(",", "{\"videos\":[", "]}"));
+        mvc.perform(admin(put("/api/admin/games/{id}/videos", id))
+                        .contentType(MediaType.APPLICATION_JSON).content(eleven))
+                .andExpect(status().isBadRequest());
+        mvc.perform(admin(put("/api/admin/games/{id}/videos", 999999))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"videos\":[]}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void unknownGameIs404AndMissingKeyIs403() throws Exception {
         mvc.perform(admin(post("/api/admin/games/{id}/publish", 9999))).andExpect(status().isNotFound());
         mvc.perform(get("/api/admin/games")).andExpect(status().isForbidden());

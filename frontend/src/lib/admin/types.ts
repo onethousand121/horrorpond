@@ -1,5 +1,6 @@
 // 관리자 API 응답 DTO와 1:1로 맞춘 타입.
 // 출처: backend curation/application/{AdminGameResponse, AdminGameDetailResponse, AdminArticleResponse}
+import type { AchievementGuide, PlayVideo } from "@/lib/types";
 
 export type GameSource = "STEAM" | "ITCH" | "MANUAL";
 export type GameStatus = "CANDIDATE" | "PUBLISHED" | "HIDDEN";
@@ -69,7 +70,18 @@ export interface AdminGameDetail {
   genreSlugs: string[];
   steamUrl: string | null;
   article: AdminArticle | null;
+  playVideos: PlayVideo[];
+  achievements: AchievementGuide[];
 }
+
+/** 백엔드 PlayVideo / AchievementGuide 제약 (서버가 최종 검증한다) */
+export const GUIDE_LIMITS = {
+  playVideos: 10,
+  videoTitle: 200,
+  achievements: 100,
+  achievementName: 200,
+  achievementDescription: 500,
+} as const;
 
 /** 서버 액션 결과. 폼 아래에 메시지로 보여준다. */
 export interface ActionResult {

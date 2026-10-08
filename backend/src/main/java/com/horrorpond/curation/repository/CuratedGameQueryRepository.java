@@ -4,6 +4,7 @@ import com.horrorpond.catalog.domain.QGame;
 import com.horrorpond.catalog.domain.QGenre;
 import com.horrorpond.curation.domain.ArticleStatus;
 import com.horrorpond.curation.domain.QCurationArticle;
+import com.horrorpond.curation.domain.QPlayVideo;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.OrderSpecifier;
@@ -38,6 +39,7 @@ public class CuratedGameQueryRepository {
     private static final QGame game = QGame.game;
     private static final char LIKE_ESCAPE = '!';
     private static final QCurationArticle article = QCurationArticle.curationArticle;
+    private static final QPlayVideo playVideo = QPlayVideo.playVideo;
 
     private final JPAQueryFactory queryFactory;
 
@@ -48,7 +50,8 @@ public class CuratedGameQueryRepository {
                         game.id, game.slug, game.title, game.titleEn, game.headerImageUrl, game.releaseDate,
                         game.releaseDateText, game.releaseDateTextEn, game.shortDescription, game.shortDescriptionEn,
                         game.comingSoon, game.coop, game.reviewCount, game.tags,
-                        article.id.isNotNull(), article.oneLiner, article.highlights, article.sponsored.coalesce(false)))
+                        article.id.isNotNull(), article.oneLiner, article.highlights, article.sponsored.coalesce(false),
+                        JPAExpressions.selectOne().from(playVideo).where(playVideo.gameId.eq(game.id)).exists()))
                 .from(game)
                 .leftJoin(article).on(article.gameId.eq(game.id), article.status.eq(ArticleStatus.PUBLISHED))
                 .where(where)
@@ -197,7 +200,8 @@ public class CuratedGameQueryRepository {
             boolean picked,
             String oneLiner,
             List<String> highlights,
-            boolean sponsored
+            boolean sponsored,
+            boolean hasPlayVideo
     ) {
     }
 }

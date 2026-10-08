@@ -38,6 +38,7 @@ public class CurationService {
     private final GenreRepository genreRepository;
     private final CurationArticleRepository articleRepository;
     private final ExposurePolicy exposurePolicy;
+    private final GameGuideService gameGuideService;
 
     @Transactional(readOnly = true)
     public Page<AdminGameResponse> search(GameStatus status, String titleQuery, Pageable pageable) {
@@ -47,7 +48,8 @@ public class CurationService {
     @Transactional(readOnly = true)
     public AdminGameDetailResponse getDetail(Long gameId) {
         Game game = findGame(gameId);
-        return AdminGameDetailResponse.of(game, articleRepository.findByGameId(gameId).orElse(null), exposurePolicy);
+        return AdminGameDetailResponse.of(game, articleRepository.findByGameId(gameId).orElse(null), exposurePolicy,
+                gameGuideService.playVideos(gameId), gameGuideService.achievements(gameId));
     }
 
     /**

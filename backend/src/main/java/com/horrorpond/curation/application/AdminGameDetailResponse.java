@@ -6,6 +6,8 @@ import com.horrorpond.catalog.domain.GameStatus;
 import com.horrorpond.catalog.domain.Genre;
 import com.horrorpond.catalog.domain.Store;
 import com.horrorpond.catalog.domain.StoreLink;
+import com.horrorpond.curation.application.GameGuideResponses.AchievementGuideResponse;
+import com.horrorpond.curation.application.GameGuideResponses.PlayVideoResponse;
 import com.horrorpond.curation.domain.CurationArticle;
 
 import java.time.LocalDate;
@@ -33,10 +35,14 @@ public record AdminGameDetailResponse(
         boolean publiclyVisible,
         List<String> genreSlugs,
         String steamUrl,
-        AdminArticleResponse article
+        AdminArticleResponse article,
+        List<PlayVideoResponse> playVideos,
+        List<AchievementGuideResponse> achievements
 ) {
 
-    static AdminGameDetailResponse of(Game game, CurationArticle article, ExposurePolicy policy) {
+    static AdminGameDetailResponse of(Game game, CurationArticle article, ExposurePolicy policy,
+                                      List<PlayVideoResponse> playVideos,
+                                      List<AchievementGuideResponse> achievements) {
         List<String> genreSlugs = game.getGenres().stream().map(Genre::getSlug).sorted().toList();
         String steamUrl = game.getStoreLinks().stream()
                 .filter(link -> link.getStore() == Store.STEAM)
@@ -47,6 +53,6 @@ public record AdminGameDetailResponse(
                 game.getTitle(), game.getShortDescription(), game.getHeaderImageUrl(), game.getReleaseDate(),
                 game.isComingSoon(), game.isCoop(), game.getReviewCount(), game.isAdult(), List.copyOf(game.getTags()),
                 game.getStatus(), policy.isVisible(game), genreSlugs, steamUrl,
-                article == null ? null : AdminArticleResponse.from(article));
+                article == null ? null : AdminArticleResponse.from(article), playVideos, achievements);
     }
 }

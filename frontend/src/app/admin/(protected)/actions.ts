@@ -5,6 +5,8 @@ import {
   AdminApiError,
   hideGame,
   publishGame,
+  replaceAchievements,
+  replacePlayVideos,
   unhideGame,
   updateCuration,
   upsertArticle,
@@ -69,6 +71,54 @@ export async function saveArticleAction(_prev: ActionResult | null, formData: Fo
       }),
     "글을 저장했습니다.",
   );
+}
+
+/**
+ * 플레이 영상 목록 전체 저장. 제목을 비워 두면 유튜브 oEmbed(키 불필요)로 영상 제목을 채운다.
+ * 폼은 행마다 videoUrl / videoTitle을 같은 순서로 보낸다. 주소가 빈 행은 버린다.
+ */
+export async function savePlayVideosAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const id = gameId(formData);
+  const urls = formData.getAll("videoUrl").map((v) => String(v).trim());
+  const titles = formData.getAll("videoTitle").map((v) => String(v).trim());
+  const rows = urls.map((url, i) => ({ url, title: titles[i] ?? "" })).filter((row) => row.url);
+  const videos = await Promise.all(
+    rows.map(async (row) => ({ url: row.url, title: row.title || (await youtubeTitle(row.url)) })),
+  );
+  return run(() => replacePlayVideos(id, videos), `플레이 영상 ${videos.length}개를 저장했습니다.`);
+}
+
+/**
+ * 업적 공략 목록 전체 저장. 이름이 빈 행은 버린다.
+ */
+export async function saveAchievementsAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const id = gameId(formData);
+  const names = formData.getAll("achievementName").map((v) => String(v).trim());
+  const descriptions = formData.getAll("achievementDescription").map((v) => String(v).trim());
+  const videoUrls = formData.getAll("achievementVideoUrl").map((v) => String(v).trim());
+  const achievements = names
+    .map((name, i) => ({ name, description: descriptions[i] ?? "", videoUrl: videoUrls[i] ?? "" }))
+    .filter((row) => row.name);
+  return run(() => replaceAchievements(id, achievements), `업적 ${achievements.length}개를 저장했습니다.`);
+}
+
+/** 유튜브 영상 제목. 실패하면 빈 문자열(제목 없이 저장) */
+async function youtubeTitle(url: string): Promise<string> {
+  try {
+    // 영상 ID만 넣은 경우도 oEmbed가 알아보도록 주소로 바꾼다
+    const target = /^[A-Za-z0-9_-]{11}$/.test(url) ? `https://www.youtube.com/watch?v=${url}` : url;
+    const res = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(target)}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return "";
+    const data: unknown = await res.json();
+    return typeof data === "object" && data !== null && "title" in data && typeof data.title === "string"
+      ? data.title.slice(0, 200)
+      : "";
+  } catch {
+    return "";
+  }
 }
 
 export async function publishAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {

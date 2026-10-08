@@ -106,3 +106,14 @@ export function hideGame(id: number) {
 export function unhideGame(id: number) {
   return adminFetch<AdminGame>(`/api/admin/games/${id}/unhide`, { method: "POST" });
 }
+
+export function replacePlayVideos(id: number, videos: { url: string; title: string }[]) {
+  return adminFetch<unknown>(`/api/admin/games/${id}/videos`, { method: "PUT", body: { videos } });
+}
+
+export function replaceAchievements(
+  id: number,
+  achievements: { name: string; description: string; videoUrl: string }[],
+) {
+  return adminFetch<unknown>(`/api/admin/games/${id}/achievements`, { method: "PUT", body: { achievements } });
+}

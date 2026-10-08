@@ -10,6 +10,7 @@ import java.util.List;
  * @param picked     재일 추천(공개된 큐레이션 글이 있는 게임). 아니면 oneLiner는 null, highlights는 빈 목록
  * @param reviewCount Steam 리뷰 수. 없으면 null
  * @param tags        SteamSpy 상위 태그 (표 많은 순, 최대 5개)
+ * @param hasPlayVideo 플레이 영상이 하나 이상 있으면 true
  */
 public record GameSummaryResponse(
         String slug,
@@ -26,7 +27,8 @@ public record GameSummaryResponse(
         boolean picked,
         String oneLiner,
         List<String> highlights,
-        boolean sponsored
+        boolean sponsored,
+        boolean hasPlayVideo
 ) {
 
     static final int MAX_HIGHLIGHTS = 3;
@@ -44,7 +46,7 @@ public record GameSummaryResponse(
                 List.copyOf(tags.subList(0, Math.min(MAX_TAGS, tags.size()))), genres, row.picked(),
                 row.oneLiner(),
                 List.copyOf(highlights.subList(0, Math.min(MAX_HIGHLIGHTS, highlights.size()))),
-                row.sponsored());
+                row.sponsored(), row.hasPlayVideo());
     }
 
     public record GenreSummary(String slug, String name) {
