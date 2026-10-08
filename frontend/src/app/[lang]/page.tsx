@@ -64,18 +64,21 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         </p>
         <ul aria-label={t.statsLabel} className="flex flex-wrap gap-x-5 gap-y-1 font-pixel text-[11px] text-muted">
           {[
-            { label: t.statThisWeek, value: stats.releasedThisWeek, href: "/games?view=recent" },
-            { label: t.statUpcoming, value: stats.upcoming, href: "/games?view=upcoming" },
-            { label: t.statTotal, value: stats.total, href: "/games" },
-          ].map(({ label: [before, after], value, href }) => (
-            <li key={href}>
-              <Link href={localePath(lang, href)} className="hover:text-foreground">
-                {before}
-                <strong className="text-[13px] font-normal text-accent">{value.toLocaleString(dict.htmlLang)}</strong>
-                {after}
-              </Link>
-            </li>
-          ))}
+            // 오늘 출시는 최근 출시순 맨 앞, 내일 출시는 출시 예정(가까운 순) 맨 앞에 나온다
+            { label: t.statToday, value: stats.releasedToday, href: "/games?view=recent" },
+            { label: t.statTomorrow, value: stats.releasingTomorrow, href: "/games?view=upcoming" },
+          ]
+            // 백엔드보다 프론트가 먼저 배포되는 동안 예전 응답이면 숫자를 숨긴다
+            .filter(({ value }) => typeof value === "number")
+            .map(({ label: [before, after], value, href }) => (
+              <li key={href}>
+                <Link href={localePath(lang, href)} className="hover:text-foreground">
+                  {before}
+                  <strong className="text-[13px] font-normal text-accent">{value.toLocaleString(dict.htmlLang)}</strong>
+                  {after}
+                </Link>
+              </li>
+            ))}
         </ul>
         <nav aria-label={t.quickFilters} className="flex flex-wrap gap-2">
           <Link

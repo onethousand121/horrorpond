@@ -123,8 +123,8 @@ public class CuratedGameQueryRepository {
                         .and(game.releaseDate.isNull().or(game.releaseDate.after(query.today())));
                 case RECENT -> game.releaseDate.between(query.today().minusDays(ReleaseWindow.RECENT_DAYS),
                         query.today());
-                case THIS_WEEK -> game.releaseDate.between(query.today().minusDays(ReleaseWindow.WEEK_DAYS - 1),
-                        query.today());
+                case TODAY -> game.releaseDate.eq(query.today());
+                case TOMORROW -> game.releaseDate.eq(query.today().plusDays(1));
             });
         }
         if (query.genre() != null) {

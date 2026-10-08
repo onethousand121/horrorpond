@@ -63,7 +63,7 @@ public class PublicGameQueryService {
     }
 
     public HubStatsResponse stats() {
-        return new HubStatsResponse(count(null), count(ReleaseWindow.UPCOMING), count(ReleaseWindow.THIS_WEEK));
+        return new HubStatsResponse(count(ReleaseWindow.TODAY), count(ReleaseWindow.TOMORROW));
     }
 
     private long count(ReleaseWindow release) {
