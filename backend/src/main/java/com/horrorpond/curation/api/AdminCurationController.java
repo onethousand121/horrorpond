@@ -6,6 +6,9 @@ import com.horrorpond.curation.application.AdminArticleResponse;
 import com.horrorpond.curation.application.AdminGameDetailResponse;
 import com.horrorpond.curation.application.AdminGameResponse;
 import com.horrorpond.curation.application.CurationService;
+import com.horrorpond.curation.application.GameGuideResponses.AchievementGuideResponse;
+import com.horrorpond.curation.application.GameGuideResponses.PlayVideoResponse;
+import com.horrorpond.curation.application.GameGuideService;
 import com.horrorpond.curation.application.PublishingService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -37,6 +40,7 @@ public class AdminCurationController {
 
     private final CurationService curationService;
     private final PublishingService publishingService;
+    private final GameGuideService gameGuideService;
 
     /**
      * 검토 대기열. status를 생략하면 전체, q는 제목 부분일치(대소문자 무시).
@@ -67,6 +71,28 @@ public class AdminCurationController {
                 request.sponsorDisclosure()));
     }
 
+    /**
+     * 플레이 영상 목록 전체를 바꾼다 (순서 = 목록 순서, 빈 목록이면 모두 삭제).
+     */
+    @PutMapping("/{id}/videos")
+    public List<PlayVideoResponse> replacePlayVideos(@PathVariable Long id,
+                                                     @Valid @RequestBody PlayVideosRequest request) {
+        return gameGuideService.replacePlayVideos(id, request.videos().stream()
+                .map(video -> new GameGuideService.PlayVideoCommand(video.url(), video.title()))
+                .toList());
+    }
+
+    /**
+     * 업적 공략 목록 전체를 바꾼다 (순서 = 목록 순서, 빈 목록이면 모두 삭제).
+     */
+    @PutMapping("/{id}/achievements")
+    public List<AchievementGuideResponse> replaceAchievements(@PathVariable Long id,
+                                                              @Valid @RequestBody AchievementsRequest request) {
+        return gameGuideService.replaceAchievements(id, request.achievements().stream()
+                .map(a -> new GameGuideService.AchievementCommand(a.name(), a.description(), a.videoUrl()))
+                .toList());
+    }
+
     @PostMapping("/{id}/publish")
     public AdminGameResponse publish(@PathVariable Long id) {
         return publishingService.publish(id);
@@ -87,6 +113,20 @@ public class AdminCurationController {
                     message = "must be lowercase letters, digits and single hyphens") String slug,
             @NotNull List<@NotBlank String> genreSlugs,
             Boolean coop) {
+    }
+
+    /** 주소 형식·길이·개수는 도메인(PlayVideo, YoutubeVideoId)이 검증한다 */
+    public record PlayVideosRequest(@NotNull List<@NotNull PlayVideoItem> videos) {
+    }
+
+    public record PlayVideoItem(String url, String title) {
+    }
+
+    /** 이름 필수·길이·개수는 도메인(AchievementGuide)이 검증한다 */
+    public record AchievementsRequest(@NotNull List<@NotNull AchievementItem> achievements) {
+    }
+
+    public record AchievementItem(String name, String description, String videoUrl) {
     }
 
     /**

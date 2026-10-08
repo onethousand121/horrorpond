@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { AchievementGuides } from "@/components/AchievementGuides";
 import { CoopBadge, GenreBadge } from "@/components/Badges";
 import { HighlightList } from "@/components/HighlightList";
 import { Markdown } from "@/components/Markdown";
 import { MediaGallery } from "@/components/MediaGallery";
+import { PlayVideos } from "@/components/PlayVideos";
 import { SponsorBadge } from "@/components/SponsorBadge";
 import { TrailerPlayer } from "@/components/TrailerPlayer";
 import { getGame } from "@/lib/api";
@@ -122,6 +124,28 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
                 <p className="leading-relaxed text-foreground/90">{game.shortDescription}</p>
               </section>
             )
+          )}
+
+          {/* 플레이 영상·업적 공략은 있을 때만 보인다 */}
+          {game.playVideos.length > 0 && (
+            <section aria-label={dict.guide.playVideos} className="space-y-4">
+              <hr className="divider" />
+              <h2 className="font-pixel text-[22px]">{dict.guide.playVideos}</h2>
+              <PlayVideos videos={game.playVideos} locale={lang} />
+            </section>
+          )}
+
+          {game.achievements.length > 0 && (
+            <section aria-label={dict.guide.achievements} className="space-y-4">
+              <hr className="divider" />
+              <h2 className="flex items-baseline gap-3 font-pixel text-[22px]">
+                {dict.guide.achievements}
+                <span className="font-sans text-sm font-normal text-muted">
+                  {dict.guide.achievementCount(game.achievements.length)}
+                </span>
+              </h2>
+              <AchievementGuides achievements={game.achievements} locale={lang} />
+            </section>
           )}
 
           {(trailers.length > 0 || screenshots.length > 0) && (

@@ -75,6 +75,16 @@ const ko = {
     upcoming: "출시 예정",
     reviews: "리뷰",
     steamReviews: "Steam 리뷰",
+    playVideo: "플레이 영상",
+  },
+  guide: {
+    playVideos: "플레이 영상",
+    playVideoN: (n: number) => `플레이 영상 ${n}`,
+    achievements: "업적 공략",
+    achievementCount: (n: number) => `업적 ${n}개`,
+    hasGuideVideo: "공략 영상",
+    play: (title: string) => `${title} 재생`,
+    chooseVideo: "영상 선택",
   },
   badge: { coop: "협동", sponsored: "협찬" },
   games: {
@@ -175,6 +185,16 @@ const en: Dictionary = {
     upcoming: "Coming soon",
     reviews: "Reviews",
     steamReviews: "Steam reviews",
+    playVideo: "Gameplay",
+  },
+  guide: {
+    playVideos: "Gameplay videos",
+    playVideoN: (n: number) => `Gameplay video ${n}`,
+    achievements: "Achievement guides",
+    achievementCount: (n: number) => `${n} achievements`,
+    hasGuideVideo: "Guide video",
+    play: (title: string) => `Play ${title}`,
+    chooseVideo: "Choose a video",
   },
   badge: { coop: "Co-op", sponsored: "Sponsored" },
   games: {

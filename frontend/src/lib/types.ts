@@ -66,6 +66,8 @@ export interface GameSummary {
   /** 최대 3개 */
   highlights: string[];
   sponsored: boolean;
+  /** 플레이 영상이 하나 이상 있다 */
+  hasPlayVideo: boolean;
 }
 
 export interface DeveloperCredit {
@@ -115,4 +117,22 @@ export interface GameDetail {
   storeLinks: StoreLink[];
   /** 재일 추천 글. 없으면 null */
   article: Article | null;
+  /** 플레이 영상. 없으면 빈 배열 (사이트에서 영역을 숨긴다) */
+  playVideos: PlayVideo[];
+  /** 업적 공략. 없으면 빈 배열 (사이트에서 영역을 숨긴다) */
+  achievements: AchievementGuide[];
+}
+
+/** 백엔드 GameGuideResponses.PlayVideoResponse */
+export interface PlayVideo {
+  youtubeId: string;
+  title: string | null;
+}
+
+/** 백엔드 GameGuideResponses.AchievementGuideResponse */
+export interface AchievementGuide {
+  name: string;
+  description: string | null;
+  /** 공략 영상. 없으면 null */
+  youtubeId: string | null;
 }

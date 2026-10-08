@@ -9,6 +9,7 @@ import { hideAction, publishAction, unhideAction } from "../../actions";
 import { ActionButton } from "../../components/ActionButton";
 import { ArticleForm } from "../../components/ArticleForm";
 import { CurationForm } from "../../components/CurationForm";
+import { AchievementForm, PlayVideoForm } from "../../components/GuideForms";
 import { AdultBadge, ArticleStatusBadge, GameStatusBadge, VisibilityBadge } from "../../components/StatusBadge";
 
 function parseId(id: string): number | null {
@@ -121,6 +122,19 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
       <section className="space-y-3">
         <h2 className="font-semibold">큐레이션 글</h2>
         <ArticleForm gameId={game.id} article={article} />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-semibold">플레이 영상</h2>
+        <p className="text-sm text-muted">없으면 사이트에 이 영역이 보이지 않습니다. 있으면 게임 카드에 &quot;플레이 영상&quot; 표시가 붙습니다.</p>
+        {/* 저장 후 서버 값(가져온 유튜브 제목 등)으로 다시 그리도록 내용이 바뀌면 새로 마운트한다 */}
+        <PlayVideoForm key={JSON.stringify(game.playVideos)} gameId={game.id} videos={game.playVideos} />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-semibold">업적 공략</h2>
+        <p className="text-sm text-muted">없으면 사이트에 이 영역이 보이지 않습니다.</p>
+        <AchievementForm key={JSON.stringify(game.achievements)} gameId={game.id} achievements={game.achievements} />
       </section>
     </div>
   );

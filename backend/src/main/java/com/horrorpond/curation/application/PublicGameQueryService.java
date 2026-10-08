@@ -37,6 +37,7 @@ public class PublicGameQueryService {
     private final GenreRepository genreRepository;
     private final CurationArticleRepository articleRepository;
     private final ExposurePolicy exposurePolicy;
+    private final GameGuideService gameGuideService;
 
     /**
      * @param search 제목 검색어 (부분 일치, 대소문자 무시). 비어 있으면 무시
@@ -83,6 +84,6 @@ public class PublicGameQueryService {
         GenreResolver resolver = new GenreResolver(genreRepository.findAllByOrderByDisplayOrderAsc());
         List<String> curatorSlugs = game.getGenres().stream().map(Genre::getSlug).toList();
         return GameDetailResponse.of(game, resolver.resolve(curatorSlugs, game.getTags(), language), article,
-                language);
+                language, gameGuideService.playVideos(game.getId()), gameGuideService.achievements(game.getId()));
     }
 }

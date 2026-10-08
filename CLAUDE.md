@@ -12,7 +12,8 @@
 - DB: PostgreSQL 16, Flyway 마이그레이션. Redis 미사용(MVP)
 - 노출 정책(공포게임 허브): Game.status = CANDIDATE | PUBLISHED | HIDDEN. 규칙은 Game.isPubliclyVisible / ExposurePolicy 한 곳
   HIDDEN 비노출, PUBLISHED(큐레이터 공개) 항상 노출, CANDIDATE(수집됨)는 성인 아님 AND (출시 예정 OR 출시 후 new-release-days(10)일 이내 OR 리뷰 ≥ min-reviews(10))면 자동 노출 (AutoExposure)
-  큐레이터 글은 선택(있으면 "재일 추천"). 장르 = 큐레이터 지정 장르 ∪ SteamSpy 태그 매핑(genre.steam_tags)
+  큐레이터 글은 선택(있으면 "재일 추천"). 플레이 영상(play_video)·업적 공략(achievement_guide)도 선택이며 없으면 사이트에서 영역을 숨긴다
+  (관리 화면에서 목록 전체를 한 번에 저장, 유튜브 주소는 YoutubeVideoId가 검증). 장르 = 큐레이터 지정 장르 ∪ SteamSpy 태그 매핑(genre.steam_tags)
 - 장르: 자체 택소노미(curator 관리) + SteamSpy 태그 자동 매핑. Steam genres/categories는 참고용 raw 데이터로만 보관
 - 수집: discovery(Steam 스토어 검색: Horror 최신 출시 300 + 인기 출시 예정 200, SteamSpy tag 전체) → enrichment(appdetails, 1.5s throttle, 429→60s backoff)
         → raw_snapshot(JSONB) 저장 → normalize(별도 단계, 재실행 가능)

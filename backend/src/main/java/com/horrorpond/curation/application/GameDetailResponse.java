@@ -6,6 +6,8 @@ import com.horrorpond.catalog.domain.GameDeveloper;
 import com.horrorpond.catalog.domain.MediaType;
 import com.horrorpond.catalog.domain.Store;
 import com.horrorpond.common.domain.Language;
+import com.horrorpond.curation.application.GameGuideResponses.AchievementGuideResponse;
+import com.horrorpond.curation.application.GameGuideResponses.PlayVideoResponse;
 import com.horrorpond.curation.application.GameSummaryResponse.GenreSummary;
 import com.horrorpond.curation.domain.CurationArticle;
 
@@ -29,13 +31,18 @@ public record GameDetailResponse(
         List<Media> media,
         List<StoreLinkResponse> storeLinks,
         /** 재일 추천 글. 없으면 null */
-        Article article
+        Article article,
+        /** 플레이 영상. 없으면 빈 목록 */
+        List<PlayVideoResponse> playVideos,
+        /** 업적 공략. 없으면 빈 목록 */
+        List<AchievementGuideResponse> achievements
 ) {
 
     /**
      * 제목·소개·출시일 텍스트는 요청 언어로 (영어가 없으면 한국어). 큐레이터 글은 한국어만 있다.
      */
-    static GameDetailResponse of(Game game, List<GenreSummary> genres, CurationArticle article, Language language) {
+    static GameDetailResponse of(Game game, List<GenreSummary> genres, CurationArticle article, Language language,
+                                 List<PlayVideoResponse> playVideos, List<AchievementGuideResponse> achievements) {
         return new GameDetailResponse(
                 game.getSlug(), game.title(language), game.shortDescription(language), game.getHeaderImageUrl(),
                 game.getReleaseDate(), game.releaseDateText(language), game.isComingSoon(), game.isCoop(),
@@ -51,7 +58,7 @@ public record GameDetailResponse(
                 game.getStoreLinks().stream()
                         .map(link -> new StoreLinkResponse(link.getStore(), link.getUrl()))
                         .toList(),
-                article == null ? null : Article.from(article));
+                article == null ? null : Article.from(article), playVideos, achievements);
     }
 
     public record DeveloperCredit(String name, String slug, DeveloperRole role) {
