@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CoopBadge, GenreBadge } from "@/components/Badges";
+import { AdultBadge, CoopBadge, GenreBadge } from "@/components/Badges";
 import { formatCount, formatReleaseDate } from "@/lib/format";
 import { getDictionary, localePath, type Locale } from "@/lib/i18n";
 import type { GameSummary } from "@/lib/types";
@@ -49,8 +49,13 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
               fill
               priority={active === 0}
               sizes="(min-width: 1024px) 690px, 100vw"
-              className="animate-[fade-in_0.4s_ease] object-cover"
+              className={`animate-[fade-in_0.4s_ease] object-cover ${game.adult ? "scale-110 blur-xl" : ""}`}
             />
+          )}
+          {game.adult && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <AdultBadge locale={locale} large />
+            </div>
           )}
           <span className="absolute top-3 left-3 rounded bg-background/85 px-2 py-0.5 font-pixel text-[11px] text-accent">
             {dict.showcase.rank(active + 1)}
@@ -88,7 +93,7 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
               {game.oneLiner}
             </p>
           ) : null}
-          {game.shortDescription && (
+          {!game.adult && game.shortDescription && (
             <p className="line-clamp-4 text-sm leading-relaxed text-muted">{game.shortDescription}</p>
           )}
         </div>
@@ -110,7 +115,13 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
             }`}
           >
             {item.headerImageUrl && (
-              <Image src={item.headerImageUrl} alt="" fill sizes="(min-width: 1024px) 220px, 20vw" className="object-cover" />
+              <Image
+                src={item.headerImageUrl}
+                alt=""
+                fill
+                sizes="(min-width: 1024px) 220px, 20vw"
+                className={item.adult ? "scale-110 object-cover blur-md" : "object-cover"}
+              />
             )}
           </button>
         ))}

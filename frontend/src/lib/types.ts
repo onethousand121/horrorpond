@@ -55,6 +55,8 @@ export interface GameSummary {
   shortDescription: string | null;
   comingSoon: boolean;
   coop: boolean;
+  /** 성인 콘텐츠 (고정 노출한 경우만 목록에 나온다). 이미지를 흐리게, 소개는 숨긴다 */
+  adult: boolean;
   /** Steam 리뷰 수 */
   reviewCount: number | null;
   /** SteamSpy 상위 태그 (영문, 표 많은 순, 최대 5개) */
@@ -68,6 +70,8 @@ export interface GameSummary {
   sponsored: boolean;
   /** 플레이 영상이 하나 이상 있다 */
   hasPlayVideo: boolean;
+  /** 업적 공략이 하나 이상 있다 (업적 공략 페이지가 있다) */
+  hasAchievementGuide: boolean;
 }
 
 export interface DeveloperCredit {
@@ -109,6 +113,8 @@ export interface GameDetail {
   releaseDateText: string | null;
   comingSoon: boolean;
   coop: boolean;
+  /** 성인 콘텐츠: 상세 페이지는 소개·미디어 없이 Steam 링크만 보여준다 */
+  adult: boolean;
   reviewCount: number | null;
   genres: GenreSummary[];
   developers: DeveloperCredit[];

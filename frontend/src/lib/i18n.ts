@@ -19,6 +19,17 @@ export function localePath(locale: Locale, path: string): string {
   return path === "/" ? `/${locale}` : `/${locale}${path}`;
 }
 
+/**
+ * 페이지 메타데이터의 canonical + hreflang. path는 언어 접두사 없는 주소("/games/x")
+ * 검색엔진이 한국어·영어 페이지를 같은 내용의 언어별 버전으로 묶는다.
+ */
+export function alternatesFor(locale: Locale, path: string) {
+  return {
+    canonical: localePath(locale, path),
+    languages: { ko: path, en: localePath("en", path), "x-default": path },
+  };
+}
+
 /** 주소에서 언어 접두사를 뗀다: "/en/games" → "/games", "/ko" → "/" */
 export function stripLocale(pathname: string): string {
   for (const locale of LOCALES) {
@@ -38,9 +49,11 @@ const ko = {
     picks: "류재일 추천",
     runBy: "운영",
     steamCredit: "게임 정보와 이미지는 Steam에서 제공됩니다.",
+    disclaimer:
+      "lurkpond는 Valve Corporation 및 Steam과 관련이 없는 개인 운영 사이트입니다. 게임 이름, 이미지, 상표의 권리는 각 개발사·배급사에 있습니다.",
     home: "홈",
   },
-  nav: { games: "게임", coop: "협동", about: "소개", youtube: "YouTube" },
+  nav: { games: "게임", coop: "협동", about: "소개", youtube: "YouTube", privacy: "개인정보처리방침" },
   language: { label: "언어", ko: "한국어", en: "English" },
   search: {
     label: "게임 검색",
@@ -82,11 +95,19 @@ const ko = {
     playVideoN: (n: number) => `플레이 영상 ${n}`,
     achievements: "업적 공략",
     achievementCount: (n: number) => `업적 ${n}개`,
+    seeAllAchievements: (n: number) => `업적 공략 전체 보기 (${n}개) →`,
+    backToGame: "← 게임 정보",
+    pageTitle: (title: string, n: number) => `${title} 업적 공략 (전체 ${n}개)`,
+    pageDescription: (title: string, names: string) => `${title} 업적 달성 방법과 공략 영상: ${names}`,
     hasGuideVideo: "공략 영상",
     play: (title: string) => `${title} 재생`,
     chooseVideo: "영상 선택",
   },
-  badge: { coop: "협동", sponsored: "협찬" },
+  badge: { coop: "협동", sponsored: "협찬", adult: "19", adultLabel: "성인 게임" },
+  adult: {
+    title: "성인 게임",
+    notice: "성인 콘텐츠가 포함된 게임이라 이 사이트에서는 이미지와 소개를 보여주지 않습니다. 자세한 내용은 Steam에서 연령 확인 후 볼 수 있습니다.",
+  },
   games: {
     metaTitle: "공포게임 둘러보기",
     metaDescription: "출시 예정작부터 인기작까지, Steam 공포게임 전체 목록",
@@ -149,9 +170,11 @@ const en: Dictionary = {
     picks: "Jaeil's Picks",
     runBy: "Run by",
     steamCredit: "Game data and images provided by Steam.",
+    disclaimer:
+      "lurkpond is an independent site not affiliated with Valve Corporation or Steam. Game names, images and trademarks belong to their respective developers and publishers.",
     home: "Home",
   },
-  nav: { games: "Games", coop: "Co-op", about: "About", youtube: "YouTube" },
+  nav: { games: "Games", coop: "Co-op", about: "About", youtube: "YouTube", privacy: "Privacy" },
   language: { label: "Language", ko: "한국어", en: "English" },
   search: {
     label: "Search games",
@@ -192,11 +215,19 @@ const en: Dictionary = {
     playVideoN: (n: number) => `Gameplay video ${n}`,
     achievements: "Achievement guides",
     achievementCount: (n: number) => `${n} achievements`,
+    seeAllAchievements: (n: number) => `See all ${n} achievement guides →`,
+    backToGame: "← Back to game",
+    pageTitle: (title: string, n: number) => `${title} Achievement Guide (${n} achievements)`,
+    pageDescription: (title: string, names: string) => `How to unlock ${title} achievements, with guide videos: ${names}`,
     hasGuideVideo: "Guide video",
     play: (title: string) => `Play ${title}`,
     chooseVideo: "Choose a video",
   },
-  badge: { coop: "Co-op", sponsored: "Sponsored" },
+  badge: { coop: "Co-op", sponsored: "Sponsored", adult: "18+", adultLabel: "Adult game" },
+  adult: {
+    title: "Adult game",
+    notice: "This game contains adult content, so images and descriptions are not shown here. See the details on Steam after its age check.",
+  },
   games: {
     metaTitle: "Browse horror games",
     metaDescription: "Every horror game on Steam, from upcoming releases to popular hits",

@@ -3,6 +3,7 @@ package com.horrorpond.curation.repository;
 import com.horrorpond.catalog.domain.QGame;
 import com.horrorpond.catalog.domain.QGenre;
 import com.horrorpond.curation.domain.ArticleStatus;
+import com.horrorpond.curation.domain.QAchievementGuide;
 import com.horrorpond.curation.domain.QCurationArticle;
 import com.horrorpond.curation.domain.QPlayVideo;
 import com.querydsl.core.BooleanBuilder;
@@ -40,6 +41,7 @@ public class CuratedGameQueryRepository {
     private static final char LIKE_ESCAPE = '!';
     private static final QCurationArticle article = QCurationArticle.curationArticle;
     private static final QPlayVideo playVideo = QPlayVideo.playVideo;
+    private static final QAchievementGuide achievementGuide = QAchievementGuide.achievementGuide;
 
     private final JPAQueryFactory queryFactory;
 
@@ -49,9 +51,11 @@ public class CuratedGameQueryRepository {
                 .select(Projections.constructor(CuratedGameRow.class,
                         game.id, game.slug, game.title, game.titleEn, game.headerImageUrl, game.releaseDate,
                         game.releaseDateText, game.releaseDateTextEn, game.shortDescription, game.shortDescriptionEn,
-                        game.comingSoon, game.coop, game.reviewCount, game.tags,
+                        game.comingSoon, game.coop, game.adult, game.reviewCount, game.tags,
                         article.id.isNotNull(), article.oneLiner, article.highlights, article.sponsored.coalesce(false),
-                        JPAExpressions.selectOne().from(playVideo).where(playVideo.gameId.eq(game.id)).exists()))
+                        JPAExpressions.selectOne().from(playVideo).where(playVideo.gameId.eq(game.id)).exists(),
+                        JPAExpressions.selectOne().from(achievementGuide)
+                                .where(achievementGuide.gameId.eq(game.id)).exists()))
                 .from(game)
                 .leftJoin(article).on(article.gameId.eq(game.id), article.status.eq(ArticleStatus.PUBLISHED))
                 .where(where)
@@ -195,13 +199,15 @@ public class CuratedGameQueryRepository {
             String shortDescriptionEn,
             boolean comingSoon,
             boolean coop,
+            boolean adult,
             Integer reviewCount,
             List<String> tags,
             boolean picked,
             String oneLiner,
             List<String> highlights,
             boolean sponsored,
-            boolean hasPlayVideo
+            boolean hasPlayVideo,
+            boolean hasAchievementGuide
     ) {
     }
 }

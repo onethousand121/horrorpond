@@ -155,6 +155,18 @@ class PublicGameApiTest {
     }
 
     @Test
+    void pinnedAdultGameIsListedWithAdultFlag() throws Exception {
+        create(spec("pinned-adult").adult(true).reviewCount(5000));
+        create(spec("auto-adult").gameStatus(GameStatus.CANDIDATE).adult(true).reviewCount(5000));
+
+        mvc.perform(get("/api/games"))
+                .andExpect(jsonPath("$.content[*].slug", contains("pinned-adult")))
+                .andExpect(jsonPath("$.content[0].adult").value(true));
+        mvc.perform(get("/api/games/pinned-adult"))
+                .andExpect(jsonPath("$.adult").value(true));
+    }
+
+    @Test
     void hubStatsCountOnlyVisibleGames() throws Exception {
         LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
         create(spec("soon").comingSoon(true).releaseDate(today.plusDays(3)));
