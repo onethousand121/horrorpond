@@ -9,6 +9,8 @@ import org.springframework.web.client.RestClient;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -22,8 +24,9 @@ class SteamSpyClientTest {
 
     private final RestClient.Builder builder = RestClient.builder().baseUrl("https://spy.test");
     private final MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    private final List<Duration> sleeps = new ArrayList<>();
     private final SteamSpyClient client = new SteamSpyClient(builder.build(),
-            new SteamRequestPacer(Clock.systemUTC(), duration -> { }, Duration.ZERO));
+            new SteamRequestPacer(Clock.systemUTC(), duration -> { }, Duration.ZERO), sleeps::add);
 
     @Test
     void fetchHorrorAppIdsReturnsObjectKeys() {
@@ -67,5 +70,18 @@ class SteamSpyClientTest {
         server.expect(requestTo(APPDETAILS_URL)).andRespond(withSuccess("<html>", MediaType.TEXT_HTML));
 
         assertThatThrownBy(() -> client.fetchTopTags(578080)).isInstanceOf(SteamTransientException.class);
+        assertThat(sleeps).isEmpty();
+    }
+
+    @Test
+    void overloadBodyBacksOffBeforeRetry() {
+        // 실제로 받은 응답: HTTP 200 + 평문 본문
+        server.expect(requestTo(APPDETAILS_URL))
+                .andRespond(withSuccess("Connection failed: Too many connections", MediaType.TEXT_HTML));
+
+        assertThatThrownBy(() -> client.fetchTopTags(578080))
+                .isInstanceOf(SteamTransientException.class)
+                .hasMessageContaining("overloaded: Connection failed: Too many connections");
+        assertThat(sleeps).containsExactly(SteamSpyClient.OVERLOAD_BACKOFF);
     }
 }
