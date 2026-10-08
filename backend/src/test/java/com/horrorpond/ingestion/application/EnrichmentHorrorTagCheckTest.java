@@ -49,6 +49,7 @@ class EnrichmentHorrorTagCheckTest {
             "https://store.test", "https://spy.test", Duration.ofMillis(1500), Duration.ofSeconds(1),
             Duration.ofMinutes(60), 3, Duration.ofHours(2),
             new IngestionProperties.Enrichment(2000, Duration.ofDays(7), Duration.ofDays(1), 3),
+            new IngestionProperties.Metrics(0, 30, 10),
             new IngestionProperties.Scheduler(false, "-", "UTC"));
 
     private final EnrichmentService service = new EnrichmentService(

@@ -177,6 +177,13 @@ class IngestionPipelineIntegrationTest {
         assertThat(gameRepository.count()).isEqualTo(3);
         assertThat(developerRepository.count()).isEqualTo(4);
         assertThat(developerRepository.findByName("rose-engine").orElseThrow().getSlug()).isEqualTo("rose-engine");
+        // 리뷰 수가 있는 게임은 정규화하면서 그날의 리뷰 수 기록도 남는다
+        assertThat(jdbc.queryForObject("""
+                SELECT m.review_count FROM game_metric_daily m JOIN game g ON g.id = m.game_id
+                WHERE g.external_id = '739630' AND m.store = 'STEAM'""", Integer.class)).isEqualTo(684837);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM game_metric_daily", Integer.class))
+                .isEqualTo(jdbc.queryForObject("SELECT count(*) FROM game WHERE review_count IS NOT NULL",
+                        Integer.class));
     }
 
     @Test
