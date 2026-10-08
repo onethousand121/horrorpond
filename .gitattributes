@@ -1,4 +1,8 @@
 * text=auto
 gradlew text eol=lf
+# 서버(Linux)에서 실행하거나 그대로 쓰는 파일은 Windows에서 받아도 LF로 둔다 (CRLF면 bash가 "pipefail\r" 등으로 실패)
+*.sh text eol=lf
+Caddyfile text eol=lf
+Dockerfile text eol=lf
 *.bat text eol=crlf
 *.jar binary
