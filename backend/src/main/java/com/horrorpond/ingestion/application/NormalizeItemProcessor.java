@@ -3,9 +3,12 @@ package com.horrorpond.ingestion.application;
 import com.horrorpond.catalog.domain.Developer;
 import com.horrorpond.catalog.domain.DeveloperRole;
 import com.horrorpond.catalog.domain.Game;
+import com.horrorpond.catalog.domain.GameMetricDaily;
 import com.horrorpond.catalog.domain.GameSource;
 import com.horrorpond.catalog.domain.SteamGameData;
+import com.horrorpond.catalog.domain.Store;
 import com.horrorpond.catalog.repository.DeveloperRepository;
+import com.horrorpond.catalog.repository.GameMetricDailyRepository;
 import com.horrorpond.catalog.repository.GameRepository;
 import com.horrorpond.common.util.SlugGenerator;
 import com.horrorpond.ingestion.domain.SteamAppSeed;
@@ -16,12 +19,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
 /**
  * 스냅샷 1건을 1트랜잭션으로 Game에 반영한다. catalog 서비스가 아니라 Repository만 사용한다.
+ * 리뷰 수가 있으면 그날의 리뷰 수 기록(game_metric_daily)도 남긴다.
  */
 @Component
 @RequiredArgsConstructor
@@ -34,6 +40,8 @@ public class NormalizeItemProcessor {
     private final GameRepository gameRepository;
     private final DeveloperRepository developerRepository;
     private final SteamAppDetailsParser parser;
+    private final GameMetricDailyRepository metricRepository;
+    private final Clock clock;
 
     @Transactional
     public void process(int appid) {
@@ -56,6 +64,10 @@ public class NormalizeItemProcessor {
             seedRepository.findById(appid)
                     .map(SteamAppSeed::getSpyTags)
                     .ifPresent(game::applySteamTags);
+            if (data.reviewCount() != null) {
+                metricRepository.upsert(game.getId(), Store.STEAM.name(),
+                        LocalDate.ofInstant(clock.instant(), GameMetricDaily.ZONE), data.reviewCount(), clock.instant());
+            }
         }
         snapshot.markNormalized();
     }

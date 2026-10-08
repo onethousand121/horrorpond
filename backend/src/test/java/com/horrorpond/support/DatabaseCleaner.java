@@ -22,7 +22,7 @@ public final class DatabaseCleaner {
     public static void clean(JdbcTemplate jdbc) {
         jdbc.execute("""
                 TRUNCATE game_genre, game_developer, game_media, store_link, curation_article,
-                         play_video, achievement_guide,
+                         play_video, achievement_guide, game_metric_daily,
                          game, developer, steam_app_seed, steam_raw_snapshot, ingestion_job
                 RESTART IDENTITY CASCADE""");
         jdbc.update("DELETE FROM genre WHERE slug NOT IN (" + SEEDED_GENRE_SLUGS + ")");

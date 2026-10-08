@@ -170,6 +170,19 @@ public class Game extends BaseTimeEntity {
     }
 
     /**
+     * 리뷰 수만 새로 받았을 때 (하루 1회 리뷰 수 기록). 다른 Steam 필드는 다음 상세 갱신 때 바뀐다.
+     */
+    public void updateReviewCount(int reviewCount) {
+        if (source != GameSource.STEAM) {
+            throw new DomainStateException("Steam review count can only be applied to STEAM games: source=" + source);
+        }
+        if (reviewCount < 0) {
+            throw new DomainValidationException("reviewCount must not be negative: " + reviewCount);
+        }
+        this.reviewCount = reviewCount;
+    }
+
+    /**
      * 영어 Steam 데이터. 수집 시 영어 응답을 못 받았으면 호출하지 않아 이전 값을 유지한다.
      */
     public void applyEnglishText(String title, String shortDescription, String releaseDateText) {

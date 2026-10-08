@@ -136,12 +136,13 @@ Hobby(무료) 플랜은 **비상업적 이용**만 허용됩니다. 광고·제�
 ```bash
 curl -X POST https://<Public IP>.sslip.io/api/admin/ingestion/run \
   -H "X-Admin-Key: <ADMIN_API_KEY>" -H "Content-Type: application/json" \
-  -d '{"steps":["DISCOVERY","ENRICHMENT","NORMALIZE"]}'
+  -d '{"steps":["DISCOVERY","ENRICHMENT","NORMALIZE","METRICS"]}'
 
 curl https://<Public IP>.sslip.io/api/admin/ingestion/jobs -H "X-Admin-Key: <ADMIN_API_KEY>"
 ```
 
-한 번에 최대 1200건을 처리하고(1시간 이상), 이후 매일 04:00(KST)에 자동으로 이어서 수집합니다. 클라우드 IP에서 Steam/SteamSpy 호출이 막히는지 이때 job 결과(`failedCount`, `errorMessage`)로 확인합니다.
+한 번에 최대 1200건을 처리하고(1시간 이상), 이후 매일 04:00(KST)에 자동으로 이어서 수집합니다.
+마지막 단계 `METRICS`는 최근 30일 출시작과 리뷰 10개 이상인 게임의 리뷰 수를 하루 최대 400개 기록합니다(약 10분, 트렌드 계산용). 클라우드 IP에서 Steam/SteamSpy 호출이 막히는지 이때 job 결과(`failedCount`, `errorMessage`)로 확인합니다.
 
 ## 운영
 

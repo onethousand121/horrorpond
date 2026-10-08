@@ -109,11 +109,11 @@ public class EnrichmentService {
 
     /**
      * 새 아이템을 시작하기 전마다 경과 시간을 확인한다. 429 대기가 누적돼도 락 유지 시간 안에서 끝내기 위해,
-     * 예산(lockAtMostFor × 0.8)을 넘으면 남은 아이템은 다음 실행으로 넘기고 정상 종료한다.
+     * 예산(lockAtMostFor × 0.8 − 리뷰 수 기록 몫)을 넘으면 남은 아이템은 다음 실행으로 넘기고 정상 종료한다.
      */
     private Outcome enrich(List<SteamAppSeed> seeds) {
         Instant startedAt = clock.instant();
-        Duration budget = properties.runTimeBudget();
+        Duration budget = properties.enrichmentTimeBudget();
         int processed = 0;
         int failed = 0;
         int excluded = 0;

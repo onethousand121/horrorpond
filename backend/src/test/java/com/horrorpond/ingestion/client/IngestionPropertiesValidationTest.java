@@ -9,7 +9,8 @@ import java.time.Duration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * enrichment 1회 예상 소요(maxPerRun × (2 × requestInterval + steamSpyRequestInterval))가 lockAtMostFor의 80%를 넘으면 기동에 실패해야 한다.
+ * 수집 1회 예상 소요 = enrichment(maxPerRun × (2 × requestInterval + steamSpyRequestInterval))
+ * + 리뷰 수 기록(metrics.maxPerRun × requestInterval). 이게 lockAtMostFor의 80%를 넘으면 기동에 실패해야 한다.
  */
 class IngestionPropertiesValidationTest {
 
@@ -25,19 +26,37 @@ class IngestionPropertiesValidationTest {
             assertThat(properties.lockAtMostFor()).isEqualTo(Duration.ofHours(2));
             // 1200 × (1.5s × 2 + 1s)
             assertThat(properties.estimatedEnrichmentDuration()).isEqualTo(Duration.ofSeconds(4800));
+            // 400 × 1.5s, enrichment는 96분에서 이 몫을 뺀 시간까지만 쓴다
+            assertThat(properties.metrics().maxPerRun()).isEqualTo(400);
+            assertThat(properties.estimatedMetricsDuration()).isEqualTo(Duration.ofSeconds(600));
+            assertThat(properties.enrichmentTimeBudget()).isEqualTo(Duration.ofMinutes(86));
         });
     }
 
     @Test
     void exactlyEightyPercentIsAllowed() {
-        // 1440 × 4s = 96분 = 120분의 80%
-        runner.withPropertyValues("ingestion.enrichment.max-per-run=1440")
+        // 1290 × 4s + 400 × 1.5s = 86분 + 10분 = 96분 = 120분의 80%
+        runner.withPropertyValues("ingestion.enrichment.max-per-run=1290")
                 .run(context -> assertThat(context).hasNotFailed());
     }
 
     @Test
+    void disablingMetricsLeavesWholeBudgetToEnrichment() {
+        runner.withPropertyValues("ingestion.enrichment.max-per-run=1440", "ingestion.metrics.max-per-run=0")
+                .run(context -> assertThat(context).hasNotFailed());
+    }
+
+    @Test
+    void tooManyMetricsPerRunFailsStartup() {
+        // 1200 × 4s + 641 × 1.5s = 80분 + 16분 1.5초 > 96분
+        runner.withPropertyValues("ingestion.metrics.max-per-run=641")
+                .run(context -> assertThat(context).hasFailed()
+                        .getFailure().rootCause().hasMessageContaining("80% of lock-at-most-for"));
+    }
+
+    @Test
     void tooManyItemsPerRunFailsStartup() {
-        runner.withPropertyValues("ingestion.enrichment.max-per-run=1441")
+        runner.withPropertyValues("ingestion.enrichment.max-per-run=1291")
                 .run(context -> assertThat(context).hasFailed()
                         .getFailure().rootCause().hasMessageContaining("80% of lock-at-most-for"));
     }

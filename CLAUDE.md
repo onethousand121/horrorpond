@@ -25,6 +25,9 @@
   상위 10개 태그 안에 Horror 계열 태그가 없으면 NOT_HORROR로 기록하고 Steam 호출에서 제외 (MANUAL seed는 판정 안 함)
   SteamSpy 과부하 응답(HTTP 200 + "Connection failed: Too many connections")은 30s 쉬고 재시도, 판정 연속 3회 실패면 enrichment 중단
   appdetails에 recommendations(리뷰 수)가 없으면 appreviews로 받아 같은 모양으로 채운다
+  리뷰 수 기록(트렌드용): game_metric_daily(game_id, store, captured_on) 하루 1건. normalize가 리뷰 수를 반영할 때 함께 남기고,
+  파이프라인 마지막 METRICS 단계가 appreviews로 최근 30일 출시작 → 리뷰 10개 이상 게임(기록 오래된 순)을 하루 최대 400개 기록
+  (Game.reviewCount도 갱신). 숨김·성인·출시 전은 제외. enrichment 예산은 lock 80%에서 METRICS 몫을 뺀 값
   영어 텍스트(이름·짧은 소개·출시일)는 appdetails(l=english, filters=basic,release_date)로 받아 같은 스냅샷의 english 키에 붙인다.
   공개 API는 lang=ko|en (영어 값이 없으면 한국어). 큐레이터 글은 한국어만
 - 트리거: @Scheduled 일 1회 + POST /api/admin/ingestion/run (X-Admin-Key)
