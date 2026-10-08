@@ -12,6 +12,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -23,8 +24,16 @@ public class SteamSpyClient {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
+    /**
+     * SteamSpy는 DB가 과부하면 HTTP 200에 "Connection failed: Too many connections" 같은 본문을 준다.
+     * 곧바로 다시 부르면 또 실패하므로, 이 응답이면 길게 쉬고 나서 재시도로 넘긴다.
+     */
+    static final String OVERLOAD_BODY_PREFIX = "Connection failed";
+    static final Duration OVERLOAD_BACKOFF = Duration.ofSeconds(30);
+
     private final RestClient restClient;
     private final SteamRequestPacer pacer;
+    private final Sleeper sleeper;
 
     /**
      * SteamSpy는 Steam Store와 호출 제한이 따로라(appdetails 초당 1회) 전용 pacer를 쓴다.
@@ -32,12 +41,13 @@ public class SteamSpyClient {
     @Autowired
     public SteamSpyClient(@Qualifier("steamSpyRestClient") RestClient restClient, Clock clock, Sleeper sleeper,
                           IngestionProperties properties) {
-        this(restClient, new SteamRequestPacer(clock, sleeper, properties.steamSpyRequestInterval()));
+        this(restClient, new SteamRequestPacer(clock, sleeper, properties.steamSpyRequestInterval()), sleeper);
     }
 
-    SteamSpyClient(RestClient restClient, SteamRequestPacer pacer) {
+    SteamSpyClient(RestClient restClient, SteamRequestPacer pacer, Sleeper sleeper) {
         this.restClient = restClient;
         this.pacer = pacer;
+        this.sleeper = sleeper;
     }
 
     /**
@@ -68,6 +78,7 @@ public class SteamSpyClient {
     /**
      * 표가 많은 순서의 상위 태그 이름(최대 20개). tags는 {"Horror": 1234, ...} object이고,
      * 태그가 없거나 SteamSpy가 모르는 appid면 빈 배열([])이 온다. 재시도마다 pacer를 다시 통과한다.
+     * 과부하 응답이면 {@link #OVERLOAD_BACKOFF}만큼 쉰 뒤 재시도한다(트랜잭션 밖에서 호출된다).
      */
     @Retryable(includes = SteamTransientException.class, maxRetries = 2, delay = 2000, multiplier = 2)
     public List<String> fetchTopTags(int appid) {
@@ -88,7 +99,16 @@ public class SteamSpyClient {
         } catch (ResourceAccessException e) {
             throw new SteamTransientException("steamspy appdetails appid=" + appid + " I/O failure", e);
         }
+        if (body != null && body.stripLeading().startsWith(OVERLOAD_BODY_PREFIX)) {
+            sleeper.sleep(OVERLOAD_BACKOFF);
+            throw new SteamTransientException("steamspy appdetails appid=" + appid + " overloaded: " + firstLine(body));
+        }
         return parseTags(appid, body);
+    }
+
+    private static String firstLine(String body) {
+        String line = body.strip().lines().findFirst().orElse("");
+        return line.length() > 100 ? line.substring(0, 100) : line;
     }
 
     private static List<String> parseTags(int appid, String body) {

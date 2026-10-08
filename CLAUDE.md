@@ -23,6 +23,7 @@
   enrichment 우선순위: MANUAL → STEAM_SEARCH(신작) → STEAMSPY_TAG → 갱신 → 재시도
   enrichment는 자동 발견(SteamSpy/검색) seed를 먼저 SteamSpy appdetails(1s 간격) 상위 태그로 판정해
   상위 10개 태그 안에 Horror 계열 태그가 없으면 NOT_HORROR로 기록하고 Steam 호출에서 제외 (MANUAL seed는 판정 안 함)
+  SteamSpy 과부하 응답(HTTP 200 + "Connection failed: Too many connections")은 30s 쉬고 재시도, 판정 연속 3회 실패면 enrichment 중단
   appdetails에 recommendations(리뷰 수)가 없으면 appreviews로 받아 같은 모양으로 채운다
   영어 텍스트(이름·짧은 소개·출시일)는 appdetails(l=english, filters=basic,release_date)로 받아 같은 스냅샷의 english 키에 붙인다.
   공개 API는 lang=ko|en (영어 값이 없으면 한국어). 큐레이터 글은 한국어만
