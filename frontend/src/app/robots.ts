@@ -1,7 +1,5 @@
 import type { MetadataRoute } from "next";
-import { SITE_INDEXING } from "@/lib/site";
-
-const SITE_URL = (process.env.SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
+import { SITE_INDEXING, SITE_URL } from "@/lib/site";
 
 export default function robots(): MetadataRoute.Robots {
   if (!SITE_INDEXING) {

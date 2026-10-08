@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AchievementGuides } from "@/components/AchievementGuides";
-import { CoopBadge, GenreBadge } from "@/components/Badges";
+import { AdultBadge, CoopBadge, GenreBadge } from "@/components/Badges";
 import { HighlightList } from "@/components/HighlightList";
 import { Markdown } from "@/components/Markdown";
 import { MediaGallery } from "@/components/MediaGallery";
@@ -11,11 +12,47 @@ import { SponsorBadge } from "@/components/SponsorBadge";
 import { TrailerPlayer } from "@/components/TrailerPlayer";
 import { getGame } from "@/lib/api";
 import { formatCount, formatReleaseDate, groupDevelopers } from "@/lib/format";
-import { getDictionary, isLocale, localePath } from "@/lib/i18n";
+import { alternatesFor, getDictionary, isLocale, localePath, type Locale } from "@/lib/i18n";
+import { SITE_URL } from "@/lib/site";
+import type { GameDetail } from "@/lib/types";
 
 // ISR: 빌드 때는 만들지 않고(빈 배열) 첫 방문 때 정적 생성 후 1시간마다 갱신.
 // 없는 slug는 notFound()로 실제 404 상태 코드를 돌려준다.
 export const revalidate = 3600;
+
+/** schema.org VideoGame: 검색 결과에 게임 정보(장르, 출시일, 개발사)를 알려준다 */
+function videoGameJsonLd(game: GameDetail, lang: Locale) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "VideoGame",
+    name: game.title,
+    url: `${SITE_URL}${localePath(lang, `/games/${game.slug}`)}`,
+    inLanguage: lang,
+    ...(game.headerImageUrl && { image: game.headerImageUrl }),
+    ...(game.shortDescription && { description: game.shortDescription }),
+    ...(game.releaseDate && { datePublished: game.releaseDate }),
+    genre: ["Horror", ...game.genres.map((genre) => genre.name)],
+    gamePlatform: "PC",
+    playMode: game.coop ? ["SinglePlayer", "CoOp"] : "SinglePlayer",
+    author: game.developers
+      .filter((d) => d.role === "DEVELOPER")
+      .map((d) => ({ "@type": "Organization", name: d.name })),
+    publisher: game.developers
+      .filter((d) => d.role === "PUBLISHER")
+      .map((d) => ({ "@type": "Organization", name: d.name })),
+    ...(game.playVideos.length > 0 && {
+      subjectOf: game.playVideos.map((video) => ({
+        "@type": "VideoObject",
+        name: video.title ?? game.title,
+        embedUrl: `https://www.youtube.com/embed/${video.youtubeId}`,
+        thumbnailUrl: `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
+      })),
+    }),
+  };
+}
+
+/** 상세 페이지에는 업적 공략을 앞에서 몇 개만 보여주고 전용 페이지로 잇는다 */
+const PREVIEW_ACHIEVEMENTS = 5;
 
 export async function generateStaticParams() {
   return [];
@@ -26,14 +63,15 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/games/[slu
   if (!isLocale(lang)) return {};
   const game = await getGame(slug, lang);
   if (!game) return {};
+  // 성인 게임은 소개·이미지를 싣지 않고 검색엔진에도 내보내지 않는다
+  if (game.adult) {
+    return { title: game.title, description: getDictionary(lang).adult.notice, robots: { index: false, follow: false } };
+  }
   const description = game.article?.oneLiner ?? game.shortDescription ?? undefined;
   return {
     title: game.title,
     description,
-    alternates: {
-      canonical: localePath(lang, `/games/${game.slug}`),
-      languages: { ko: `/games/${game.slug}`, en: `/en/games/${game.slug}` },
-    },
+    alternates: alternatesFor(lang, `/games/${game.slug}`),
     openGraph: {
       title: game.title,
       description,
@@ -63,6 +101,13 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
 
   return (
     <article className="space-y-10">
+      {!game.adult && (
+        <script
+          type="application/ld+json"
+          // 검색엔진용 구조화 데이터. "<"를 이스케이프해 스크립트 태그가 닫히지 않게 한다
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(videoGameJsonLd(game, lang)).replace(/</g, "\\u003c") }}
+        />
+      )}
       <header className="relative -mx-4 overflow-hidden sm:mx-0 sm:rounded-2xl">
         <div className="relative aspect-[460/215] max-h-[420px] w-full bg-surface sm:aspect-[21/8]">
           {game.headerImageUrl && (
@@ -72,8 +117,13 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
               fill
               priority
               sizes="(min-width: 1152px) 1152px, 100vw"
-              className="object-cover"
+              className={game.adult ? "scale-110 object-cover blur-2xl" : "object-cover"}
             />
+          )}
+          {game.adult && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <AdultBadge locale={lang} large />
+            </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         </div>
@@ -85,76 +135,91 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
             ))}
           </div>
           <h1 className="text-3xl font-bold drop-shadow sm:text-5xl">{game.title}</h1>
-          {article?.oneLiner && <p className="max-w-3xl text-lg text-foreground/90">{article.oneLiner}</p>}
+          {!game.adult && article?.oneLiner && <p className="max-w-3xl text-lg text-foreground/90">{article.oneLiner}</p>}
         </div>
       </header>
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-10">
-          {article ? (
-            <section aria-label={t.pickLabel} className="space-y-6">
-              <p className="inline-block rounded bg-accent-2/90 px-2 py-0.5 font-pixel text-[11px] text-accent-ink">
-                {t.pickLabel}
-              </p>
-              {t.articleKoreanOnly && <p className="text-sm text-muted">{t.articleKoreanOnly}</p>}
-              {article.sponsored && (
-                <aside
-                  aria-label={t.sponsorNotice}
-                  className="flex gap-3 rounded-xl border border-amber-500/50 bg-amber-500/10 p-4 text-sm text-amber-100"
-                >
-                  <SponsorBadge locale={lang} />
-                  <p className="whitespace-pre-line">{article.sponsorDisclosure}</p>
-                </aside>
-              )}
-              <HighlightList items={article.highlights} locale={lang} />
-              <div className="space-y-4">
-                <h2 id="article-title" className="font-pixel text-[22px] leading-snug">
-                  {article.title}
-                </h2>
-                <Markdown>{article.body}</Markdown>
-              </div>
-              {game.shortDescription && (
-                <p className="border-l-2 border-border pl-4 text-sm text-muted">{game.shortDescription}</p>
-              )}
+          {game.adult ? (
+            <section aria-label={dict.adult.title} className="space-y-2 rounded-xl border border-red-400/40 bg-red-500/10 p-5">
+              <h2 className="font-pixel text-[11px] text-red-300">{dict.adult.title}</h2>
+              <p className="leading-relaxed text-foreground/90">{dict.adult.notice}</p>
             </section>
           ) : (
-            game.shortDescription && (
-              <section aria-label={t.about} className="space-y-2">
-                <h2 className="font-pixel text-[11px] text-muted">{t.aboutSteam}</h2>
-                <p className="leading-relaxed text-foreground/90">{game.shortDescription}</p>
-              </section>
-            )
-          )}
+            <>
+              {article ? (
+                <section aria-label={t.pickLabel} className="space-y-6">
+                  <p className="inline-block rounded bg-accent-2/90 px-2 py-0.5 font-pixel text-[11px] text-accent-ink">
+                    {t.pickLabel}
+                  </p>
+                  {t.articleKoreanOnly && <p className="text-sm text-muted">{t.articleKoreanOnly}</p>}
+                  {article.sponsored && (
+                    <aside
+                      aria-label={t.sponsorNotice}
+                      className="flex gap-3 rounded-xl border border-amber-500/50 bg-amber-500/10 p-4 text-sm text-amber-100"
+                    >
+                      <SponsorBadge locale={lang} />
+                      <p className="whitespace-pre-line">{article.sponsorDisclosure}</p>
+                    </aside>
+                  )}
+                  <HighlightList items={article.highlights} locale={lang} />
+                  <div className="space-y-4">
+                    <h2 id="article-title" className="font-pixel text-[22px] leading-snug">
+                      {article.title}
+                    </h2>
+                    <Markdown>{article.body}</Markdown>
+                  </div>
+                  {game.shortDescription && (
+                    <p className="border-l-2 border-border pl-4 text-sm text-muted">{game.shortDescription}</p>
+                  )}
+                </section>
+              ) : (
+                game.shortDescription && (
+                  <section aria-label={t.about} className="space-y-2">
+                    <h2 className="font-pixel text-[11px] text-muted">{t.aboutSteam}</h2>
+                    <p className="leading-relaxed text-foreground/90">{game.shortDescription}</p>
+                  </section>
+                )
+              )}
 
-          {/* 플레이 영상·업적 공략은 있을 때만 보인다 */}
-          {game.playVideos.length > 0 && (
-            <section aria-label={dict.guide.playVideos} className="space-y-4">
-              <hr className="divider" />
-              <h2 className="font-pixel text-[22px]">{dict.guide.playVideos}</h2>
-              <PlayVideos videos={game.playVideos} locale={lang} />
-            </section>
-          )}
+              {/* 플레이 영상·업적 공략은 있을 때만 보인다 */}
+              {game.playVideos.length > 0 && (
+                <section aria-label={dict.guide.playVideos} className="space-y-4">
+                  <hr className="divider" />
+                  <h2 className="font-pixel text-[22px]">{dict.guide.playVideos}</h2>
+                  <PlayVideos videos={game.playVideos} locale={lang} />
+                </section>
+              )}
 
-          {game.achievements.length > 0 && (
-            <section aria-label={dict.guide.achievements} className="space-y-4">
-              <hr className="divider" />
-              <h2 className="flex items-baseline gap-3 font-pixel text-[22px]">
-                {dict.guide.achievements}
-                <span className="font-sans text-sm font-normal text-muted">
-                  {dict.guide.achievementCount(game.achievements.length)}
-                </span>
-              </h2>
-              <AchievementGuides achievements={game.achievements} locale={lang} />
-            </section>
-          )}
+              {game.achievements.length > 0 && (
+                <section aria-label={dict.guide.achievements} className="space-y-4">
+                  <hr className="divider" />
+                  <h2 className="flex items-baseline gap-3 font-pixel text-[22px]">
+                    {dict.guide.achievements}
+                    <span className="font-sans text-sm font-normal text-muted">
+                      {dict.guide.achievementCount(game.achievements.length)}
+                    </span>
+                  </h2>
+                  <AchievementGuides achievements={game.achievements.slice(0, PREVIEW_ACHIEVEMENTS)} locale={lang} />
+                  <Link
+                    href={localePath(lang, `/games/${game.slug}/achievements`)}
+                    className="inline-block text-sm text-accent hover:underline"
+                  >
+                    {dict.guide.seeAllAchievements(game.achievements.length)}
+                  </Link>
+                </section>
+              )}
 
-          {(trailers.length > 0 || screenshots.length > 0) && (
-            <section aria-label={t.media} className="space-y-4">
-              <hr className="divider" />
-              <h2 className="font-pixel text-[22px]">{t.media}</h2>
-              <TrailerPlayer trailers={trailers} poster={trailerPoster} title={game.title} locale={lang} />
-              <MediaGallery screenshots={screenshots} title={game.title} locale={lang} />
-            </section>
+              {(trailers.length > 0 || screenshots.length > 0) && (
+                <section aria-label={t.media} className="space-y-4">
+                  <hr className="divider" />
+                  <h2 className="font-pixel text-[22px]">{t.media}</h2>
+                  <TrailerPlayer trailers={trailers} poster={trailerPoster} title={game.title} locale={lang} />
+                  <MediaGallery screenshots={screenshots} title={game.title} locale={lang} />
+                </section>
+              )}
+            </>
           )}
         </div>
 

@@ -25,6 +25,8 @@ public record GameDetailResponse(
         String releaseDateText,
         boolean comingSoon,
         boolean coop,
+        /** 성인 콘텐츠. 사이트는 소개·미디어 없이 Steam 링크만 보여준다 */
+        boolean adult,
         Integer reviewCount,
         List<GenreSummary> genres,
         List<DeveloperCredit> developers,
@@ -46,6 +48,7 @@ public record GameDetailResponse(
         return new GameDetailResponse(
                 game.getSlug(), game.title(language), game.shortDescription(language), game.getHeaderImageUrl(),
                 game.getReleaseDate(), game.releaseDateText(language), game.isComingSoon(), game.isCoop(),
+                game.isAdult(),
                 game.getReviewCount(), genres,
                 game.getDevelopers().stream()
                         .sorted(Comparator.comparing(GameDeveloper::getRole)

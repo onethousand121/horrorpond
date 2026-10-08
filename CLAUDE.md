@@ -2,6 +2,8 @@
 - Frontend: Next.js App Router, ISR(revalidate 3600), 서버 컴포넌트에서만 백엔드 호출
   다국어(ko/en): 라우트는 app/[lang], 한국어는 접두사 없는 주소(proxy가 /ko로 rewrite), 영어는 /en.
   언어 선택 쿠키(NEXT_LOCALE) 우선, 첫 화면(/)만 브라우저 언어로 /en 이동. UI 문구는 lib/i18n 사전
+  SEO: 페이지마다 alternatesFor(canonical+hreflang), 상세에 VideoGame JSON-LD, 업적 공략 전용 페이지(/games/{slug}/achievements),
+  검색엔진 소유 확인은 GOOGLE_/NAVER_SITE_VERIFICATION 환경변수
   빌드는 백엔드에 의존하지 않음: 동적 경로는 generateStaticParams가 [] 반환,
   데이터를 쓰는 고정 경로는 connection()으로 요청 시 렌더링 + fetch 데이터 캐시(1h, 태그)
 - Backend: Spring Boot 4.1.x / Java 17, 모듈러 모놀리스
@@ -13,7 +15,8 @@
 - 노출 정책(공포게임 허브): Game.status = CANDIDATE | PUBLISHED | HIDDEN. 규칙은 Game.isPubliclyVisible / ExposurePolicy 한 곳
   HIDDEN 비노출, PUBLISHED(큐레이터 공개) 항상 노출, CANDIDATE(수집됨)는 성인 아님 AND (출시 예정 OR 출시 후 new-release-days(10)일 이내 OR 리뷰 ≥ min-reviews(10))면 자동 노출 (AutoExposure)
   큐레이터 글은 선택(있으면 "재일 추천"). 플레이 영상(play_video)·업적 공략(achievement_guide)도 선택이며 없으면 사이트에서 영역을 숨긴다
-  (관리 화면에서 목록 전체를 한 번에 저장, 유튜브 주소는 YoutubeVideoId가 검증). 장르 = 큐레이터 지정 장르 ∪ SteamSpy 태그 매핑(genre.steam_tags)
+  (관리 화면에서 목록 전체를 한 번에 저장, 유튜브 주소는 YoutubeVideoId가 검증).
+  성인 게임(adult)은 자동 노출 제외, 고정 노출해도 이미지 흐림 + 19 표시, 상세는 소개·미디어 없이 Steam 링크만, noindex·사이트맵 제외 장르 = 큐레이터 지정 장르 ∪ SteamSpy 태그 매핑(genre.steam_tags)
 - 장르: 자체 택소노미(curator 관리) + SteamSpy 태그 자동 매핑. Steam genres/categories는 참고용 raw 데이터로만 보관
 - 수집: discovery(Steam 스토어 검색: Horror 최신 출시 300 + 인기 출시 예정 200, SteamSpy tag 전체) → enrichment(appdetails, 1.5s throttle, 429→60s backoff)
         → raw_snapshot(JSONB) 저장 → normalize(별도 단계, 재실행 가능)

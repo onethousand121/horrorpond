@@ -19,6 +19,21 @@ export function GenreBadge({ genre, locale, linked = false }: {
   );
 }
 
+/** 성인 게임 표시. 흐리게 처리한 이미지 위에 크게 올린다 */
+export function AdultBadge({ locale, large = false }: { locale: Locale; large?: boolean }) {
+  const t = getDictionary(locale).badge;
+  return (
+    <span
+      aria-label={t.adultLabel}
+      className={`inline-flex items-center justify-center rounded-full border-2 border-red-400 bg-background/80 font-pixel text-red-300 ${
+        large ? "size-14 text-lg" : "px-1.5 py-0.5 text-[11px]"
+      }`}
+    >
+      {t.adult}
+    </span>
+  );
+}
+
 export function CoopBadge({ locale }: { locale: Locale }) {
   return (
     <span className="rounded-full border border-accent-2/35 bg-accent-2/10 px-2 py-0.5 text-xs font-medium text-accent-2">

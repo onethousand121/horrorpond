@@ -18,7 +18,9 @@ x-app: &app
     SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
     ADMIN_API_KEY: ${ADMIN_API_KEY:?ADMIN_API_KEY must be set in .env}
     TZ: Asia/Seoul
-  mem_limit: 1536m
+  # 슬롯 하나의 메모리 상한 (JVM 힙은 이 값의 75%). 배포 중에는 두 슬롯이 잠깐 같이 뜨므로
+  # 메모리 2GB 서버는 .env에 APP_MEM_LIMIT=640m 처럼 낮춘다
+  mem_limit: ${APP_MEM_LIMIT:-1536m}
   # graceful shutdown(30s) + 여유
   stop_grace_period: 45s
   logging:

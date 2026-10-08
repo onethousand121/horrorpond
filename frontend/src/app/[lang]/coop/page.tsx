@@ -3,13 +3,13 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { GameGrid } from "@/components/GameGrid";
 import { getGames, MAX_PAGE_SIZE } from "@/lib/api";
-import { getDictionary, isLocale } from "@/lib/i18n";
+import { alternatesFor, getDictionary, isLocale } from "@/lib/i18n";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/coop">): Promise<Metadata> {
   const { lang } = await params;
   if (!isLocale(lang)) return {};
   const t = getDictionary(lang).coop;
-  return { title: t.title, description: t.description };
+  return { title: t.title, description: t.description, alternates: alternatesFor(lang, "/coop") };
 }
 
 // 요청 시 렌더링: 고정 경로는 빌드 때 사전 렌더링되므로, connection()으로 빌드가 백엔드에 의존하지 않게 한다.

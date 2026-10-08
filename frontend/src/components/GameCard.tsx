@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CoopBadge, GenreBadge } from "@/components/Badges";
+import { AdultBadge, CoopBadge, GenreBadge } from "@/components/Badges";
 import { HighlightList } from "@/components/HighlightList";
 import { SponsorBadge } from "@/components/SponsorBadge";
 import { formatCount, formatReleaseDate, isUpcoming } from "@/lib/format";
@@ -27,8 +27,17 @@ export function GameCard({ game, locale, eager = false }: { game: GameSummary; l
             fill
             loading={eager ? "eager" : undefined}
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-            className="object-cover transition duration-500 group-hover:scale-[1.03]"
+            className={
+              game.adult
+                ? "scale-110 object-cover blur-xl"
+                : "object-cover transition duration-500 group-hover:scale-[1.03]"
+            }
           />
+        )}
+        {game.adult && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <AdultBadge locale={locale} large />
+          </div>
         )}
         <div className="absolute top-2 left-2 flex gap-1.5">
           {isUpcoming(game) && (

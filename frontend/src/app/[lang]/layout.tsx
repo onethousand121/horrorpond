@@ -6,7 +6,7 @@ import { Logo } from "@/components/Logo";
 import { SearchBox } from "@/components/SearchBox";
 import { galmuri, PRETENDARD_CSS } from "@/lib/fonts";
 import { getDictionary, isLocale, LOCALES, localePath } from "@/lib/i18n";
-import { CURATOR, SITE_INDEXING, SITE_NAME } from "@/lib/site";
+import { CURATOR, SITE_INDEXING, SITE_NAME, SITE_URL } from "@/lib/site";
 import "../globals.css";
 
 export function generateStaticParams() {
@@ -18,12 +18,19 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
   if (!isLocale(lang)) return {};
   const dict = getDictionary(lang);
   return {
-    metadataBase: new URL(process.env.SITE_URL ?? "http://localhost:3000"),
+    metadataBase: new URL(SITE_URL),
     title: {
       default: `${SITE_NAME} — ${dict.site.tagline}`,
       template: `%s | ${SITE_NAME}`,
     },
     description: dict.site.description,
+    // 구글 서치콘솔·네이버 서치어드바이저 소유 확인 (값은 Vercel 환경변수, 없으면 생략)
+    verification: {
+      ...(process.env.GOOGLE_SITE_VERIFICATION && { google: process.env.GOOGLE_SITE_VERIFICATION }),
+      ...(process.env.NAVER_SITE_VERIFICATION && {
+        other: { "naver-site-verification": process.env.NAVER_SITE_VERIFICATION },
+      }),
+    },
     // 비공개 운영 중에는 모든 페이지를 noindex (lib/site)
     ...(SITE_INDEXING ? {} : { robots: { index: false, follow: false } }),
   };
@@ -37,6 +44,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
     { href: localePath(lang, "/games"), label: dict.nav.games },
     { href: localePath(lang, "/coop"), label: dict.nav.coop },
     { href: localePath(lang, "/about"), label: dict.nav.about },
+    { href: localePath(lang, "/privacy"), label: dict.nav.privacy },
   ];
 
   return (
@@ -78,6 +86,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
             <span>
               {SITE_NAME} · {dict.site.runBy} {dict.site.curatorName} · {dict.site.steamCredit}
             </span>
+            <p className="w-full text-[11px] leading-relaxed text-muted/70">{dict.site.disclaimer}</p>
           </div>
         </footer>
       </body>

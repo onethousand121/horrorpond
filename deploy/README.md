@@ -15,7 +15,28 @@
 - **CI/CD**: `main`에 push → 백엔드 전체 테스트 + 프론트 lint/타입/빌드 → 통과하면 jar를 서버로 올려 `deploy.sh` 실행.
 - **비공개 운영**: 프론트는 `SITE_INDEXING=true`가 아니면 모든 페이지가 noindex이고 robots.txt가 전체를 막습니다.
 
-## 1. 서버 만들기 (Oracle Cloud Always Free 기준)
+## 1. 서버 만들기
+
+둘 중 하나. 이후 단계(2~5)는 같습니다. SSH 사용자는 둘 다 `ubuntu`입니다.
+
+### 1-A. AWS Lightsail (권장, 월 $12)
+
+1. [Lightsail 콘솔](https://lightsail.aws.amazon.com/) → **Create instance**
+   - Region: **Seoul (ap-northeast-2)**
+   - Platform **Linux/Unix** → Blueprint **OS Only** → **Ubuntu 24.04 LTS**
+   - SSH key: 기본 키를 쓰면 **Download**로 `.pem` 파일을 받아 보관 (다시 받을 수 없음)
+   - Plan: **메모리 2GB** (dual-stack, 월 $12 내외. 서울 리전 가격은 화면에서 확인)
+   - 이름: `horrorpond` → Create
+2. 인스턴스 → **Networking** 탭
+   - **Attach static IP** → 새 고정 IP 만들어 연결 (인스턴스에 붙어 있는 동안 무료. 재시작해도 IP가 안 바뀜)
+   - **IPv4 Firewall**에 규칙 추가: **HTTPS (TCP 443)**. SSH(22)와 HTTP(80)는 기본으로 열려 있음
+3. 이 고정 IP가 아래 단계의 `<Public IP>`입니다.
+4. 요금 알림: AWS 콘솔 → Billing → **Budgets**에서 월 $15 예산 알림을 만들어 두면 예상보다 많이 나올 때 메일이 옵니다.
+5. `.env`(2단계)에 **`APP_MEM_LIMIT=640m`** 를 꼭 넣습니다. 메모리 2GB 서버에서 배포 중 두 버전이 잠깐 같이 뜨기 때문입니다. `setup-server.sh`가 스왑 2GB도 만들어 둡니다.
+
+접속: `ssh -i <받은 .pem 파일> ubuntu@<Public IP>` (Windows는 Git Bash나 PowerShell에서 같은 명령. 처음 한 번 `chmod 400 <파일>.pem`)
+
+### 1-B. Oracle Cloud Always Free (무료, 승인되면)
 
 1. 콘솔 → Compute → Instances → **Create instance**
    - Image: **Canonical Ubuntu 24.04** (aarch64)
@@ -48,6 +69,8 @@ API_DOMAIN=<Public IP>.sslip.io
 POSTGRES_PASSWORD=$(openssl rand -base64 32 | tr -d '/+=')
 ADMIN_API_KEY=$(openssl rand -base64 32 | tr -d '/+=')
 BACKUP_RCLONE_REMOTE=
+# Lightsail 2GB용. Oracle(12GB)은 아래 줄 생략
+APP_MEM_LIMIT=640m
 EOF
 chmod 600 ~/horrorpond/.env
 cat ~/horrorpond/.env   # ADMIN_API_KEY 값은 관리자 로그인에 쓰니 비밀번호 관리자에 보관
@@ -94,10 +117,19 @@ curl https://<Public IP>.sslip.io/api/genres
    - `API_BASE_URL` = `https://<Public IP>.sslip.io`
    - `SITE_URL` = Vercel이 준 주소 (예: `https://horrorpond.vercel.app`)
    - `SITE_INDEXING` = `false` (오픈할 때 `true`로 바꾸고 Redeploy)
+   - (선택) `GOOGLE_SITE_VERIFICATION`, `NAVER_SITE_VERIFICATION` = 서치콘솔·서치어드바이저의 HTML 태그 소유 확인 값 (content 부분만)
 4. Deploy. 함수 리전은 `frontend/vercel.json`에서 오사카(`kix1`)로 고정되어 있습니다.
 5. `https://<vercel 주소>/admin` 에서 `ADMIN_API_KEY`로 로그인
 
 Hobby(무료) 플랜은 **비상업적 이용**만 허용됩니다. 광고·제휴 링크를 붙이는 시점에 Pro로 올립니다.
+
+### 공개(검색 노출) 체크리스트
+
+1. 도메인 연결: Vercel → Settings → Domains에 `lurkpond.com` 추가, `SITE_URL=https://lurkpond.com`
+2. API 도메인: DNS에 `api.lurkpond.com` A 레코드 → 서버 IP, 서버 `.env`의 `API_DOMAIN=api.lurkpond.com` 후 `docker compose up -d caddy`, Vercel의 `API_BASE_URL=https://api.lurkpond.com`
+3. 문의 메일: Cloudflare Email Routing으로 `contact@lurkpond.com` → 개인 메일함 전달 (사이트에 표시되는 주소는 `frontend/src/lib/site.ts`의 `CONTACT_EMAIL`)
+4. `SITE_INDEXING=true` 후 Redeploy
+5. [구글 서치콘솔](https://search.google.com/search-console)과 [네이버 서치어드바이저](https://searchadvisor.naver.com/)에 사이트 등록 → 소유 확인 값을 Vercel 환경변수에 넣고 Redeploy → 두 곳에 `https://lurkpond.com/sitemap.xml` 제출
 
 ## 5. 첫 수집
 

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { GameGrid } from "@/components/GameGrid";
 import { GenreChips } from "@/components/GenreChips";
 import { getGames, getGenres, MAX_PAGE_SIZE } from "@/lib/api";
-import { getDictionary, isLocale, type Locale } from "@/lib/i18n";
+import { alternatesFor, getDictionary, isLocale, type Locale } from "@/lib/i18n";
 
 // ISR: 빌드 때는 만들지 않고(빈 배열, 빌드가 백엔드에 의존하지 않게) 첫 방문 때 정적 생성 후 1시간마다 갱신.
 export const revalidate = 3600;
@@ -22,7 +22,11 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/genres/[sl
   if (!isLocale(lang)) return {};
   const { genre } = await findGenre(slug, lang);
   if (!genre) return {};
-  return { title: genre.name, description: genre.description ?? undefined };
+  return {
+    title: genre.name,
+    description: genre.description ?? undefined,
+    alternates: alternatesFor(lang, `/genres/${genre.slug}`),
+  };
 }
 
 export default async function GenrePage({ params }: PageProps<"/[lang]/genres/[slug]">) {

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getDictionary, isLocale, type Locale } from "@/lib/i18n";
-import { SITE_NAME } from "@/lib/site";
+import { alternatesFor, getDictionary, isLocale, type Locale } from "@/lib/i18n";
+import { CONTACT_EMAIL, SITE_NAME } from "@/lib/site";
 
 const DESCRIPTION: Record<Locale, string> = {
   ko: "lurkpond는 공포게임을 한곳에서 모아 보는 사이트입니다.",
@@ -11,7 +11,11 @@ const DESCRIPTION: Record<Locale, string> = {
 export async function generateMetadata({ params }: PageProps<"/[lang]/about">): Promise<Metadata> {
   const { lang } = await params;
   if (!isLocale(lang)) return {};
-  return { title: getDictionary(lang).nav.about, description: DESCRIPTION[lang] };
+  return {
+    title: getDictionary(lang).nav.about,
+    description: DESCRIPTION[lang],
+    alternates: alternatesFor(lang, "/about"),
+  };
 }
 
 /** 소개 문구는 문단 단위라 사전 대신 언어별로 쓴다 */
@@ -68,10 +72,11 @@ export default async function AboutPage({ params }: PageProps<"/[lang]/about">) 
       <section className="space-y-3 rounded-lg border border-border bg-surface/60 p-6">
         <h2 className="text-lg font-bold">{c.contactTitle}</h2>
         <p className="text-sm leading-relaxed text-foreground/90">{c.contact}</p>
-        {/* TODO: 실제 연락처(이메일/폼)로 교체 */}
         <p className="text-sm">
           <span className="text-muted">{c.contactLabel}</span>{" "}
-          <span className="text-amber-300">TODO: contact@example.com</span>
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-accent hover:underline">
+            {CONTACT_EMAIL}
+          </a>
         </p>
       </section>
     </div>

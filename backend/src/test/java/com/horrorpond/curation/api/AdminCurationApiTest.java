@@ -271,7 +271,8 @@ class AdminCurationApiTest {
                 .andExpect(jsonPath("$.achievements[1].youtubeId").doesNotExist())
                 .andExpect(jsonPath("$.achievements[1].description").doesNotExist());
         mvc.perform(get("/api/games"))
-                .andExpect(jsonPath("$.content[0].hasPlayVideo").value(true));
+                .andExpect(jsonPath("$.content[0].hasPlayVideo").value(true))
+                .andExpect(jsonPath("$.content[0].hasAchievementGuide").value(true));
         mvc.perform(admin(get("/api/admin/games/{id}", id)))
                 .andExpect(jsonPath("$.playVideos", hasSize(2)))
                 .andExpect(jsonPath("$.achievements", hasSize(2)));

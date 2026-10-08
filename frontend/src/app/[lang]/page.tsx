@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -5,12 +6,17 @@ import { GameRow } from "@/components/GameRow";
 import { PopularShowcase } from "@/components/PopularShowcase";
 import { VideoRow } from "@/components/VideoRow";
 import { getGames, getGenres, getStats } from "@/lib/api";
-import { getDictionary, isLocale, localePath } from "@/lib/i18n";
+import { alternatesFor, getDictionary, isLocale, localePath } from "@/lib/i18n";
 import { CURATOR } from "@/lib/site";
 import { getFreshVideos } from "@/lib/youtube";
 
 // 요청 시 렌더링: 고정 경로는 빌드 때 사전 렌더링되므로, connection()으로 빌드가 백엔드에 의존하지 않게 한다.
 // 백엔드·유튜브 호출은 fetch 데이터 캐시(1시간, 태그 기반 갱신)가 막아 준다.
+
+export async function generateMetadata({ params }: PageProps<"/[lang]">): Promise<Metadata> {
+  const { lang } = await params;
+  return isLocale(lang) ? { alternates: alternatesFor(lang, "/") } : {};
+}
 
 const SHOWCASE = 5;
 const ROW = 8;

@@ -4,13 +4,13 @@ import { notFound } from "next/navigation";
 import { GameGrid } from "@/components/GameGrid";
 import { Pagination } from "@/components/Pagination";
 import { getGames, type GetGamesParams } from "@/lib/api";
-import { getDictionary, isLocale, localePath, type Locale } from "@/lib/i18n";
+import { alternatesFor, getDictionary, isLocale, localePath, type Locale } from "@/lib/i18n";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/games">): Promise<Metadata> {
   const { lang } = await params;
   if (!isLocale(lang)) return {};
   const t = getDictionary(lang).games;
-  return { title: t.metaTitle, description: t.metaDescription };
+  return { title: t.metaTitle, description: t.metaDescription, alternates: alternatesFor(lang, "/games") };
 }
 
 const VIEWS = [
