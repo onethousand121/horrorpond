@@ -70,7 +70,7 @@ export async function saveArticleAction(_prev: ActionResult | null, formData: Fo
         sponsored,
         sponsorDisclosure: sponsored ? disclosure : null,
       }),
-    "글을 저장했습니다.",
+    "글을 저장했습니다. 사이트에 '주인장 추천'으로 올리려면 위 '노출' 칸의 버튼을 누르세요(장점 포인트 1개 이상 필요).",
   );
 }
 
