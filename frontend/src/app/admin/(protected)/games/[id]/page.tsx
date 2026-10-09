@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { getAdminGame } from "@/lib/admin/api";
 import { getGenres } from "@/lib/api";
 import { formatCount, formatDate } from "@/lib/format";
-import { hideAction, publishAction, unhideAction } from "../../actions";
+import { deleteArticleAction, hideAction, publishAction, unhideAction, unpublishArticleAction } from "../../actions";
 import { ActionButton } from "../../components/ActionButton";
 import { ArticleForm } from "../../components/ArticleForm";
 import { CurationForm } from "../../components/CurationForm";
@@ -120,8 +120,25 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-semibold">큐레이션 글</h2>
-        <ArticleForm gameId={game.id} article={article} />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-semibold">큐레이션 글</h2>
+          {article && (
+            <div className="flex flex-wrap items-center gap-2">
+              {article.status === "PUBLISHED" && (
+                <ActionButton action={unpublishArticleAction} gameId={game.id} label="추천 내리기" />
+              )}
+              <ActionButton
+                action={deleteArticleAction}
+                gameId={game.id}
+                label="글 삭제"
+                variant="danger"
+                confirmMessage="추천 글을 삭제할까요? 되돌릴 수 없습니다."
+              />
+            </div>
+          )}
+        </div>
+        {/* 삭제·저장 후 서버 값으로 다시 그리도록 글이 바뀌면 새로 마운트한다 */}
+        <ArticleForm key={article ? `${article.status}-${article.title}` : "new"} gameId={game.id} article={article} />
       </section>
 
       <section className="space-y-3">

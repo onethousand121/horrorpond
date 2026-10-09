@@ -113,6 +113,13 @@ public class CurationArticle extends BaseTimeEntity {
         }
     }
 
+    /**
+     * 추천을 내린다. 글은 초안으로 남아 다시 공개할 수 있다 (최초 공개 시점은 유지).
+     */
+    public void unpublish() {
+        this.status = ArticleStatus.DRAFT;
+    }
+
     public boolean isPublished() {
         return status == ArticleStatus.PUBLISHED;
     }

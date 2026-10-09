@@ -93,6 +93,26 @@ public class CurationService {
         return AdminArticleResponse.from(article);
     }
 
+    /**
+     * 추천 내리기: 글은 초안으로 남긴다.
+     */
+    public AdminGameResponse unpublishArticle(Long gameId) {
+        Game game = findGame(gameId);
+        CurationArticle article = articleRepository.findByGameId(gameId)
+                .orElseThrow(() -> new NotFoundException("Article not found: gameId=" + gameId));
+        article.unpublish();
+        return AdminGameResponse.of(game, article, exposurePolicy);
+    }
+
+    /**
+     * 글 삭제: 공개 여부와 상관없이 지운다. 게임의 노출 상태(고정 노출 등)는 그대로다.
+     */
+    public AdminGameResponse deleteArticle(Long gameId) {
+        Game game = findGame(gameId);
+        articleRepository.findByGameId(gameId).ifPresent(articleRepository::delete);
+        return AdminGameResponse.of(game, null, exposurePolicy);
+    }
+
     public AdminGameResponse hide(Long gameId) {
         Game game = findGame(gameId);
         game.hide();

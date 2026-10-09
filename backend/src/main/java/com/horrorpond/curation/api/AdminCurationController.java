@@ -19,6 +19,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -96,6 +97,18 @@ public class AdminCurationController {
     @PostMapping("/{id}/publish")
     public AdminGameResponse publish(@PathVariable Long id) {
         return publishingService.publish(id);
+    }
+
+    /** 추천 내리기 (글은 초안으로 남는다) */
+    @PostMapping("/{id}/article/unpublish")
+    public AdminGameResponse unpublishArticle(@PathVariable Long id) {
+        return curationService.unpublishArticle(id);
+    }
+
+    /** 추천 글 삭제 */
+    @DeleteMapping("/{id}/article")
+    public AdminGameResponse deleteArticle(@PathVariable Long id) {
+        return curationService.deleteArticle(id);
     }
 
     @PostMapping("/{id}/hide")
