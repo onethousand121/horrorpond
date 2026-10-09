@@ -196,4 +196,17 @@ class SteamAppDetailsParserTest {
         change.accept(data);
         return data.toString();
     }
+
+    @Test
+    void blankKoreanNameFallsBackToEnglishOrSkipsTheApp() {
+        ParsedSteamApp withEnglish = parser.parse("""
+                {"type":"game","name":"","english":{"name":"Plague Town","short_description":"x"}}""");
+        assertThat(withEnglish.isGame()).isTrue();
+        assertThat(withEnglish.data().title()).isEqualTo("Plague Town");
+
+        ParsedSteamApp nameless = parser.parse("""
+                {"type":"game","name":" "}""");
+        assertThat(nameless.isGame()).isFalse();
+        assertThat(nameless.data()).isNull();
+    }
 }
