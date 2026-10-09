@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AchievementGuides } from "@/components/AchievementGuides";
-import { AdultBadge, CoopBadge, GenreBadge, KoreanBadge } from "@/components/Badges";
+import { AdultBadge, CoopBadge, GenreBadge, KeeperPickBadge, KoreanBadge } from "@/components/Badges";
 import { HighlightList } from "@/components/HighlightList";
 import { Markdown } from "@/components/Markdown";
 import { MediaGallery } from "@/components/MediaGallery";
@@ -163,8 +163,8 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
             <>
               {article ? (
                 <section aria-label={t.pickLabel} className="space-y-6">
-                  <p className="inline-block rounded bg-accent-2/90 px-2 py-0.5 font-pixel text-[11px] text-accent-ink">
-                    {t.pickLabel}
+                  <p>
+                    <KeeperPickBadge locale={lang} />
                   </p>
                   {t.articleKoreanOnly && <p className="text-sm text-muted">{t.articleKoreanOnly}</p>}
                   {article.sponsored && (

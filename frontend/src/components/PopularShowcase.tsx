@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AdultBadge, CoopBadge, GenreBadge, GuideBadges, KoreanBadge } from "@/components/Badges";
+import { AdultBadge, CoopBadge, GenreBadge, GuideBadges, KeeperPickBadge, KoreanBadge } from "@/components/Badges";
 import { formatCount, formatReleaseDate } from "@/lib/format";
 import { getDictionary, localePath, type Locale } from "@/lib/i18n";
 import type { GameSummary } from "@/lib/types";
@@ -95,9 +95,7 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
           </div>
           {game.picked && game.oneLiner ? (
             <p className="text-sm text-foreground/90">
-              <span className="mr-1.5 rounded bg-accent-2/90 px-1.5 py-0.5 font-pixel text-[11px] text-accent-ink">
-                {dict.site.pick}
-              </span>
+              <KeeperPickBadge locale={locale} className="mr-1.5 align-middle" />
               {game.oneLiner}
             </p>
           ) : null}

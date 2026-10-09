@@ -126,6 +126,11 @@ public class CuratedGameQueryRepository {
         if (query.picked()) {
             where.and(article.id.isNotNull());
         }
+        if (query.keeper()) {
+            // 주인장 추천: 추천 글이 있거나 주인장 플레이 영상이 있는 게임
+            where.and(article.id.isNotNull()
+                    .or(JPAExpressions.selectOne().from(playVideo).where(playVideo.gameId.eq(game.id)).exists()));
+        }
         if (query.release() != null) {
             // Steam 데이터는 주기적으로 갱신되므로, 출시일이 지났는데 아직 출시 예정으로 남은 게임은 최근 출시로 본다
             where.and(switch (query.release()) {
@@ -204,9 +209,11 @@ public class CuratedGameQueryRepository {
      * @param today      RECENT 계산 기준일
      * @param picked     true면 재일 추천(공개된 글이 있는 게임)만
      * @param korean     true면 한국어를 지원하는 게임만
+     * @param keeper     true면 주인장 추천(추천 글 또는 주인장 플레이 영상이 있는 게임)만
      */
     public record PublicGameQuery(Predicate visibility, String search, GenreFilter genre, Boolean coop, ReleaseWindow release,
-                                  LocalDate today, boolean picked, CuratedGameSort sort, boolean korean) {
+                                  LocalDate today, boolean picked, CuratedGameSort sort, boolean korean,
+                                  boolean keeper) {
     }
 
     public record GenreFilter(String slug, List<String> steamTags) {

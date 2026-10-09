@@ -19,7 +19,7 @@ const VIEWS = [
   { key: "recent", params: { release: "RECENT", sort: "RELEASE" } },
   { key: "upcoming", params: { release: "UPCOMING" } },
   { key: "latest", params: { sort: "LATEST" } },
-  { key: "picked", params: { picked: true } },
+  { key: "picked", params: { keeper: true, sort: "POPULAR" } },
 ] as const satisfies readonly { key: string; params: GetGamesParams }[];
 
 type ViewKey = (typeof VIEWS)[number]["key"];

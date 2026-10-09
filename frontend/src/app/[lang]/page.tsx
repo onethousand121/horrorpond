@@ -3,11 +3,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { GameRow } from "@/components/GameRow";
+import { KeeperFrog } from "@/components/KeeperFrog";
 import { PopularShowcase } from "@/components/PopularShowcase";
 import { VideoRow } from "@/components/VideoRow";
 import { getGames, getGenres, getStats } from "@/lib/api";
 import { alternatesFor, getDictionary, isLocale, localePath } from "@/lib/i18n";
 import { CURATOR } from "@/lib/site";
+import { pickRandom } from "@/lib/random";
 import { getFreshVideos } from "@/lib/youtube";
 
 // 요청 시 렌더링: 고정 경로는 빌드 때 사전 렌더링되므로, connection()으로 빌드가 백엔드에 의존하지 않게 한다.
@@ -21,6 +23,8 @@ export async function generateMetadata({ params }: PageProps<"/[lang]">): Promis
 const SHOWCASE = 5;
 const ROW = 8;
 const VIDEOS = 4;
+/** 주인장 추천 후보 수 (API 페이지 상한) */
+const KEEPER_POOL = 48;
 /** 마지막 영상이 이보다 오래되면 영상 줄을 숨긴다 */
 const VIDEO_FRESH_DAYS = 60;
 
@@ -43,7 +47,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
   await connection();
   const dict = getDictionary(lang);
   const t = dict.home;
-  const [stats, genres, trending, recent, upcoming, steady, videos] = await Promise.all([
+  const [stats, genres, trending, recent, upcoming, steady, keeperPool, videos] = await Promise.all([
     getStats(),
     getGenres(lang),
     // 지금 뜨는: 최근 90일 출시작을 하루 평균 리뷰 수로. 누적 리뷰 수(스테디셀러)는 바로 아래 줄로 따로 보여준다
@@ -52,8 +56,12 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
     getGames({ release: "RECENT", sort: "RELEASE", size: ROW, lang }),
     getGames({ release: "UPCOMING", size: ROW, lang }),
     getGames({ sort: "POPULAR", size: ROW, lang }),
+    // 주인장 추천 후보(추천 글이나 주인장 플레이 영상이 있는 게임). 요청마다 이 중에서 무작위로 고른다
+    getGames({ keeper: true, sort: "POPULAR", size: KEEPER_POOL, lang }).catch(() => null),
     getFreshVideos(VIDEOS, VIDEO_FRESH_DAYS),
   ]);
+
+  const keeperPicks = keeperPool ? pickRandom(keeperPool.content, ROW) : [];
 
   return (
     <div className="space-y-12">
@@ -142,6 +150,24 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section className="space-y-4">
           <SectionHeader title={t.videos(dict.site.curatorName)} href={CURATOR.youtubeUrl} more={t.channel} />
           <VideoRow videos={videos} locale={lang} />
+        </section>
+      )}
+
+      {keeperPicks.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-end justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <KeeperFrog variant="full" className="w-[92px] shrink-0" />
+              <div>
+                <h2 className="font-pixel text-[22px]">{t.keeper}</h2>
+                <p className="text-sm text-muted">{t.keeperIntro}</p>
+              </div>
+            </div>
+            <Link href={localePath(lang, "/games?view=picked")} className="shrink-0 text-sm text-muted hover:text-accent">
+              {t.more} →
+            </Link>
+          </div>
+          <GameRow games={keeperPicks} locale={lang} />
         </section>
       )}
     </div>
