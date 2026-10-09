@@ -205,7 +205,7 @@ const en: Dictionary = {
     coopOnly: "Co-op only",
     koreanOnly: "Korean supported",
     keeper: "Keeper's picks",
-    keeperIntro: "Picked from the games the keeper played on stream.",
+    keeperIntro: "Picked from the games the keeper has played.",
     trending: "Trending now",
     steady: "All-time favorites",
     recent: "New releases",

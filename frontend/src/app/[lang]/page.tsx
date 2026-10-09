@@ -157,7 +157,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section className="space-y-4">
           <div className="flex items-end justify-between gap-4">
             <div className="flex items-center gap-3">
-              <KeeperFrog className="size-10 shrink-0" />
+              <KeeperFrog variant="full" className="w-[92px] shrink-0" />
               <div>
                 <h2 className="font-pixel text-[22px]">{t.keeper}</h2>
                 <p className="text-sm text-muted">{t.keeperIntro}</p>

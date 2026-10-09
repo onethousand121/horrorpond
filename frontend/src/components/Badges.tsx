@@ -35,13 +35,13 @@ export function AdultBadge({ locale, large = false }: { locale: Locale; large?: 
   );
 }
 
-/** 주인장 추천(추천 글이 있는 게임). 따봉 개구리 + "주인장 추천" */
+/** 주인장 추천(추천 글이 있는 게임). 오케이 하는 개구리 + "주인장 추천" */
 export function KeeperPickBadge({ locale, className = "" }: { locale: Locale; className?: string }) {
   return (
     <span
       className={`inline-flex items-center gap-1 rounded bg-accent-2/90 px-1.5 py-0.5 font-pixel text-[11px] text-accent-ink ${className}`}
     >
-      <KeeperFrog className="size-3.5" />
+      <KeeperFrog className="w-[30px] shrink-0" />
       {getDictionary(locale).site.pick}
     </span>
   );
