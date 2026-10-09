@@ -1,8 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { AdultBadge, CoopBadge, GenreBadge, GuideBadges, KeeperPickBadge, KoreanBadge } from "@/components/Badges";
+import { AdultBadge, ContentBadges, CoopBadge, GenreBadge, KoreanBadge } from "@/components/Badges";
 import { HighlightList } from "@/components/HighlightList";
-import { SponsorBadge } from "@/components/SponsorBadge";
 import { formatCount, formatReleaseDate, isUpcoming } from "@/lib/format";
 import { getDictionary, localePath, type Locale } from "@/lib/i18n";
 import type { GameSummary } from "@/lib/types";
@@ -43,14 +42,12 @@ export function GameCard({ game, locale, eager = false }: { game: GameSummary; l
           {isUpcoming(game) && (
             <span className="rounded bg-background/85 px-1.5 py-0.5 font-pixel text-[11px] text-accent">{dict.card.upcoming}</span>
           )}
-          {game.picked && (
-            <KeeperPickBadge locale={locale} />
-          )}
-          {game.sponsored && <SponsorBadge locale={locale} />}
         </div>
-        <div className="absolute top-2 right-2 flex gap-1.5">
-          <GuideBadges
+        <div className="absolute top-2 right-2 flex flex-wrap justify-end gap-1.5">
+          <ContentBadges
             locale={locale}
+            sponsored={game.sponsored}
+            picked={game.picked}
             hasPlayVideo={game.hasPlayVideo}
             hasAchievementGuide={game.hasAchievementGuide}
           />
