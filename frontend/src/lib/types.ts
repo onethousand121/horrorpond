@@ -54,6 +54,10 @@ export interface GameSummary {
   shortDescription: string | null;
   /** 소개가 자동 번역이면 true. 백엔드 배포 전 응답에는 없다 */
   shortDescriptionTranslated?: boolean;
+  /** Steam 지원 언어 코드 (ko, en, ja …). 백엔드 배포 전 응답에는 없다 */
+  languages?: string[];
+  /** 음성까지 지원하는 언어 코드 */
+  audioLanguages?: string[];
   comingSoon: boolean;
   coop: boolean;
   /** 성인 콘텐츠 (고정 노출한 경우만 목록에 나온다). 이미지를 흐리게, 소개는 숨긴다 */
@@ -110,6 +114,8 @@ export interface GameDetail {
   shortDescription: string | null;
   shortDescriptionTranslated?: boolean;
   headerImageUrl: string | null;
+  languages?: string[];
+  audioLanguages?: string[];
   /** yyyy-MM-dd */
   releaseDate: string | null;
   releaseDateText: string | null;

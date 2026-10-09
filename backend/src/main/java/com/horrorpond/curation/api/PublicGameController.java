@@ -36,11 +36,12 @@ public class PublicGameController {
             @RequestParam(required = false) Boolean coop,
             @RequestParam(required = false) ReleaseWindow release,
             @RequestParam(defaultValue = "false") boolean picked,
+            @RequestParam(defaultValue = "false") boolean korean,
             @RequestParam(defaultValue = "LATEST") CuratedGameSort sort,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "24") @Min(1) @Max(MAX_PAGE_SIZE) int size,
             @RequestParam(defaultValue = "ko") @Pattern(regexp = Language.PARAM_PATTERN) String lang) {
-        return PageResponse.from(queryService.list(q, genre, coop, release, picked, sort, Language.from(lang),
+        return PageResponse.from(queryService.list(q, genre, coop, release, picked, korean, sort, Language.from(lang),
                 PageRequest.of(page, size)));
     }
 

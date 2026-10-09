@@ -60,13 +60,13 @@ public class SteamAppDetailsParser {
         JsonNode root = JSON.readTree(dataJson);
         String type = text(root, "type");
         if (!TYPE_GAME.equals(type)) {
-            return new ParsedSteamApp(type, null, List.of(), List.of(), null);
+            return new ParsedSteamApp(type, null, List.of(), List.of(), null, SteamLanguages.NONE);
         }
         ParsedSteamApp.EnglishText english = english(root.get(AppDetailsResult.Found.ENGLISH));
         // 한국어 응답에 이름이 비어 있는 게임이 있다. 영어 이름으로 대신하고, 둘 다 없으면 게임으로 만들지 않는다
         String title = firstNonBlank(text(root, "name"), english == null ? null : english.title());
         if (title == null) {
-            return new ParsedSteamApp(TYPE_UNNAMED, null, List.of(), List.of(), null);
+            return new ParsedSteamApp(TYPE_UNNAMED, null, List.of(), List.of(), null, SteamLanguages.NONE);
         }
         JsonNode release = root.path("release_date");
         String releaseDateText = text(release, "date");
@@ -82,7 +82,8 @@ public class SteamAppDetailsParser {
                 isAdult(root),
                 media(root),
                 List.of());
-        return new ParsedSteamApp(type, data, names(root, "developers"), names(root, "publishers"), english);
+        return new ParsedSteamApp(type, data, names(root, "developers"), names(root, "publishers"), english,
+                SteamLanguages.parse(text(root, "supported_languages")));
     }
 
     private static String firstNonBlank(String first, String second) {

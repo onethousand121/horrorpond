@@ -30,6 +30,10 @@ public record GameDetailResponse(
         /** 성인 콘텐츠. 사이트는 소개·미디어 없이 Steam 링크만 보여준다 */
         boolean adult,
         Integer reviewCount,
+        /** Steam 지원 언어 코드 (ko, en, ja …) */
+        List<String> languages,
+        /** 음성까지 지원하는 언어 코드 */
+        List<String> audioLanguages,
         List<GenreSummary> genres,
         List<DeveloperCredit> developers,
         List<Media> media,
@@ -52,7 +56,7 @@ public record GameDetailResponse(
                 game.isShortDescriptionAutoTranslated(language), game.getHeaderImageUrl(),
                 game.getReleaseDate(), game.releaseDateText(language), game.isComingSoon(), game.isCoop(),
                 game.isAdult(),
-                game.getReviewCount(), genres,
+                game.getReviewCount(), List.copyOf(game.getLanguages()), List.copyOf(game.getAudioLanguages()), genres,
                 game.getDevelopers().stream()
                         .sorted(Comparator.comparing(GameDeveloper::getRole)
                                 .thenComparing(credit -> credit.getDeveloper().getName()))

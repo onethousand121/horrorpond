@@ -90,6 +90,14 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           >
             {t.coopOnly}
           </Link>
+          {lang === "ko" && (
+            <Link
+              href={localePath(lang, "/games?korean=1")}
+              className={`${CHIP} border-accent/40 bg-accent/10 font-medium text-accent hover:bg-accent/20`}
+            >
+              {t.koreanOnly}
+            </Link>
+          )}
           {genres.map((genre) => (
             <Link
               key={genre.slug}

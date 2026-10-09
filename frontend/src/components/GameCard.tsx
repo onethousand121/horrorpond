@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { AdultBadge, CoopBadge, GenreBadge } from "@/components/Badges";
+import { AdultBadge, CoopBadge, GenreBadge, KoreanBadge } from "@/components/Badges";
 import { HighlightList } from "@/components/HighlightList";
 import { SponsorBadge } from "@/components/SponsorBadge";
 import { formatCount, formatReleaseDate, isUpcoming } from "@/lib/format";
@@ -70,6 +70,7 @@ export function GameCard({ game, locale, eager = false }: { game: GameSummary; l
         {game.picked && game.oneLiner && <p className="text-sm text-foreground/85">{game.oneLiner}</p>}
         {game.picked && <HighlightList items={game.highlights.slice(0, CARD_HIGHLIGHTS)} compact />}
         <div className="mt-auto flex flex-wrap gap-1.5 pt-1">
+          <KoreanBadge locale={locale} languages={game.languages} audioLanguages={game.audioLanguages} />
           {game.coop && <CoopBadge locale={locale} />}
           {game.genres.slice(0, CARD_GENRES).map((genre) => (
             <GenreBadge key={genre.slug} genre={genre} locale={locale} />

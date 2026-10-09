@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AdultBadge, CoopBadge, GenreBadge } from "@/components/Badges";
+import { AdultBadge, CoopBadge, GenreBadge, KoreanBadge } from "@/components/Badges";
 import { formatCount, formatReleaseDate } from "@/lib/format";
 import { getDictionary, localePath, type Locale } from "@/lib/i18n";
 import type { GameSummary } from "@/lib/types";
@@ -75,6 +75,7 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
               </span>}
           </p>
           <div className="flex flex-wrap gap-1.5">
+            <KoreanBadge locale={locale} languages={game.languages} audioLanguages={game.audioLanguages} />
             {game.coop && <CoopBadge locale={locale} />}
             {game.genres.map((genre) => (
               <GenreBadge key={genre.slug} genre={genre} locale={locale} />

@@ -34,6 +34,21 @@ export function AdultBadge({ locale, large = false }: { locale: Locale; large?: 
   );
 }
 
+/** 한국어 화면에서만: 한국어(자막·인터페이스) 또는 한국어 음성을 지원하면 표시 */
+export function KoreanBadge({ locale, languages, audioLanguages }: {
+  locale: Locale;
+  languages?: string[];
+  audioLanguages?: string[];
+}) {
+  if (locale !== "ko" || !languages?.includes("ko")) return null;
+  const t = getDictionary(locale).badge;
+  return (
+    <span className="rounded-full border border-accent/35 bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
+      {audioLanguages?.includes("ko") ? t.koreanAudio : t.korean}
+    </span>
+  );
+}
+
 export function CoopBadge({ locale }: { locale: Locale }) {
   return (
     <span className="rounded-full border border-accent-2/35 bg-accent-2/10 px-2 py-0.5 text-xs font-medium text-accent-2">
