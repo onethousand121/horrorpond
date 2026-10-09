@@ -31,6 +31,8 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
   if (!game) notFound();
 
   const article = game.article;
+  /** 글 종류 이름: 추천 / 후기 */
+  const kindName = article?.kind === "REVIEW" ? "후기" : "추천";
   /** 자동 노출이 안 되는 이유 (공개 사이트 규칙: 백엔드 ExposurePolicy) */
   const hiddenReason =
     game.status === "HIDDEN"
@@ -98,7 +100,7 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
             action={publishAction}
             gameId={game.id}
             variant="primary"
-            label={game.status === "PUBLISHED" ? "추천 글 공개 반영" : "고정 노출 + 추천 글 공개"}
+            label={game.status === "PUBLISHED" ? `${kindName} 글 공개 반영` : `고정 노출 + ${kindName} 글 공개`}
             pendingLabel="처리 중…"
           />
           {game.status === "HIDDEN" ? (
@@ -116,8 +118,9 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
         <p className="text-xs text-muted">
           수집된 공포게임은 성인 콘텐츠가 아니면 출시 예정, 출시 후 10일 이내, 또는 리뷰 10개 이상일 때 자동으로
           노출됩니다.
-          고정 노출은 이 기준과 상관없이 항상 보여줍니다. 아래 추천 글은 저장만 하면 초안이고, 이 버튼을 눌러야
-          &quot;주인장 추천&quot;으로 공개됩니다(장점 포인트 1개 이상 필요). 글을 고친 뒤에도 다시 누르면 반영됩니다.
+          고정 노출은 이 기준과 상관없이 항상 보여줍니다. 아래 글은 저장만 하면 초안이고, 이 버튼을 눌러야 공개됩니다.
+          추천은 &quot;주인장 추천&quot;으로(장점 포인트 1개 이상 필요), 후기는 &quot;플레이 후기&quot;로 올라갑니다.
+          글을 고친 뒤에도 다시 누르면 반영됩니다.
         </p>
       </section>
 
@@ -132,20 +135,20 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
           {article && (
             <div className="flex flex-wrap items-center gap-2">
               {article.status === "PUBLISHED" && (
-                <ActionButton action={unpublishArticleAction} gameId={game.id} label="추천 내리기" />
+                <ActionButton action={unpublishArticleAction} gameId={game.id} label={`${kindName} 내리기`} />
               )}
               <ActionButton
                 action={deleteArticleAction}
                 gameId={game.id}
                 label="글 삭제"
                 variant="danger"
-                confirmMessage="추천 글을 삭제할까요? 되돌릴 수 없습니다."
+                confirmMessage={`${kindName} 글을 삭제할까요? 되돌릴 수 없습니다.`}
               />
             </div>
           )}
         </div>
         {/* 삭제·저장 후 서버 값으로 다시 그리도록 글이 바뀌면 새로 마운트한다 */}
-        <ArticleForm key={article ? `${article.status}-${article.title}` : "new"} gameId={game.id} article={article} />
+        <ArticleForm key={article ? `${article.status}-${article.kind}-${article.title}` : "new"} gameId={game.id} article={article} />
       </section>
 
       <section className="space-y-3">

@@ -9,7 +9,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * @param picked     재일 추천(공개된 큐레이션 글이 있는 게임). 아니면 oneLiner는 null, highlights는 빈 목록
+ * @param picked     재일 추천(공개된 추천 글이 있는 게임)
+ * @param reviewed   주인장 플레이 후기(공개된 후기 글이 있는 게임). 추천도 후기도 아니면 oneLiner는 null, highlights는 빈 목록
  * @param reviewCount Steam 리뷰 수 (itch.io 게임은 평가 수). 없으면 null
  * @param tags        SteamSpy 상위 태그 (표 많은 순, 최대 5개)
  * @param languages   Steam 지원 언어 코드 (ko, en, ja …). audioLanguages는 음성까지 지원하는 언어
@@ -41,7 +42,8 @@ public record GameSummaryResponse(
         boolean sponsored,
         boolean hasPlayVideo,
         boolean hasAchievementGuide,
-        GameSource source
+        GameSource source,
+        boolean reviewed
 ) {
 
     static final int MAX_HIGHLIGHTS = 3;
@@ -63,7 +65,8 @@ public record GameSummaryResponse(
                 row.audioLanguages() == null ? List.of() : List.copyOf(row.audioLanguages()), genres, row.picked(),
                 row.oneLiner(),
                 List.copyOf(highlights.subList(0, Math.min(MAX_HIGHLIGHTS, highlights.size()))),
-                row.sponsored(), row.hasPlayVideo(), row.hasAchievementGuide(), row.source());
+                row.sponsored(), row.hasPlayVideo(), row.hasAchievementGuide(), row.source(),
+                row.reviewed());
     }
 
     public record GenreSummary(String slug, String name) {

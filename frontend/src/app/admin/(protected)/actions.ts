@@ -64,9 +64,11 @@ export async function saveArticleAction(_prev: ActionResult | null, formData: Fo
     .slice(0, ARTICLE_LIMITS.highlights);
   const sponsored = formData.get("sponsored") === "on";
   const disclosure = String(formData.get("sponsorDisclosure") ?? "").trim();
+  const kind = formData.get("kind") === "REVIEW" ? "REVIEW" : "PICK";
   return run(
     () =>
       upsertArticle(id, {
+        kind,
         title: String(formData.get("title") ?? ""),
         oneLiner: String(formData.get("oneLiner") ?? ""),
         body: String(formData.get("body") ?? ""),
@@ -74,7 +76,9 @@ export async function saveArticleAction(_prev: ActionResult | null, formData: Fo
         sponsored,
         sponsorDisclosure: sponsored ? disclosure : null,
       }),
-    "글을 저장했습니다. 사이트에 '주인장 추천'으로 올리려면 위 '노출' 칸의 버튼을 누르세요(장점 포인트 1개 이상 필요).",
+    kind === "REVIEW"
+      ? "글을 저장했습니다. 사이트에 '플레이 후기'로 올리려면 위 '노출' 칸의 버튼을 누르세요."
+      : "글을 저장했습니다. 사이트에 '주인장 추천'으로 올리려면 위 '노출' 칸의 버튼을 누르세요(장점 포인트 1개 이상 필요).",
   );
 }
 
@@ -205,10 +209,10 @@ export async function addItchGameAction(_prev: ActionResult | null, formData: Fo
 
 export async function unpublishArticleAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const id = gameId(formData);
-  return run(() => unpublishArticle(id), "추천을 내렸습니다. 글은 초안으로 남아 있어 다시 공개할 수 있습니다.");
+  return run(() => unpublishArticle(id), "글을 내렸습니다. 초안으로 남아 있어 다시 공개할 수 있습니다.");
 }
 
 export async function deleteArticleAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const id = gameId(formData);
-  return run(() => deleteArticle(id), "추천 글을 삭제했습니다.");
+  return run(() => deleteArticle(id), "글을 삭제했습니다.");
 }

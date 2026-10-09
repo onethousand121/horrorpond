@@ -3,17 +3,20 @@
 import { useActionState, useState } from "react";
 import { Markdown } from "@/components/Markdown";
 import { ARTICLE_LIMITS, type AdminArticle } from "@/lib/admin/types";
+import type { ArticleKind } from "@/lib/types";
 import { saveArticleAction } from "../actions";
 import { ResultMessage } from "./ActionButton";
 
 const inputClass = "w-full rounded border border-border bg-background px-3 py-1.5";
 
 /**
- * 큐레이션 글. 장점 포인트(highlights)는 최대 5개, 빈 칸은 저장하지 않는다. 공개 중인 글은 저장 즉시 사이트에 반영된다.
+ * 큐레이션 글. 종류는 추천(추천 뱃지·주인장 추천 줄) / 플레이 후기(후기 뱃지, 추천 목록 제외).
+ * 장점 포인트(highlights)는 최대 5개, 빈 칸은 저장하지 않는다. 공개 중인 글은 저장 즉시 사이트에 반영된다.
  * 입력은 모두 controlled: React 폼 액션은 끝날 때 폼을 리셋하므로, 검증 실패 시 입력이 사라지지 않게 한다.
  */
 export function ArticleForm({ gameId, article }: { gameId: number; article: AdminArticle | null }) {
   const [state, action, pending] = useActionState(saveArticleAction, null);
+  const [kind, setKind] = useState<ArticleKind>(article?.kind ?? "PICK");
   const [title, setTitle] = useState(article?.title ?? "");
   const [body, setBody] = useState(article?.body ?? "");
   const [oneLiner, setOneLiner] = useState(article?.oneLiner ?? "");
@@ -27,6 +30,25 @@ export function ArticleForm({ gameId, article }: { gameId: number; article: Admi
   return (
     <form action={action} className="space-y-4">
       <input type="hidden" name="gameId" value={gameId} />
+
+      <fieldset className="space-y-1">
+        <legend className="text-sm font-medium">종류</legend>
+        <div className="flex flex-wrap gap-4 text-sm">
+          <label className="flex items-center gap-2">
+            <input type="radio" name="kind" value="PICK" checked={kind === "PICK"} onChange={() => setKind("PICK")} />
+            추천
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="radio" name="kind" value="REVIEW" checked={kind === "REVIEW"} onChange={() => setKind("REVIEW")} />
+            플레이 후기
+          </label>
+        </div>
+        <span className="text-xs text-muted">
+          {kind === "PICK"
+            ? "추천 뱃지가 붙고 홈의 '주인장 추천' 줄에 나옵니다."
+            : "후기 뱃지가 붙고 글은 그대로 보이지만, 추천 목록과 '주인장 추천' 줄에는 나오지 않습니다."}
+        </span>
+      </fieldset>
 
       <label className="block space-y-1">
         <span className="text-sm font-medium">제목</span>
@@ -59,7 +81,11 @@ export function ArticleForm({ gameId, article }: { gameId: number; article: Admi
       </label>
 
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">장점 포인트 (공개하려면 1개 이상, 최대 {ARTICLE_LIMITS.highlights}개)</legend>
+        <legend className="text-sm font-medium">
+          {kind === "PICK"
+            ? `장점 포인트 (공개하려면 1개 이상, 최대 ${ARTICLE_LIMITS.highlights}개)`
+            : `포인트 (선택, 최대 ${ARTICLE_LIMITS.highlights}개)`}
+        </legend>
         {highlights.map((value, i) => (
           <input
             key={i}

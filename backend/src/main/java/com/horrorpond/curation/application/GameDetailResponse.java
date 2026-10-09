@@ -10,6 +10,7 @@ import com.horrorpond.common.domain.Language;
 import com.horrorpond.curation.application.GameGuideResponses.AchievementGuideResponse;
 import com.horrorpond.curation.application.GameGuideResponses.PlayVideoResponse;
 import com.horrorpond.curation.application.GameSummaryResponse.GenreSummary;
+import com.horrorpond.curation.domain.ArticleKind;
 import com.horrorpond.curation.domain.CurationArticle;
 
 import java.time.Instant;
@@ -91,13 +92,16 @@ public record GameDetailResponse(
     /**
      * @param body markdown 원문. 렌더링은 프론트엔드가 한다.
      */
+    /**
+     * @param kind PICK(추천) | REVIEW(플레이 후기)
+     */
     public record Article(String title, String oneLiner, String body, List<String> highlights,
-                          boolean sponsored, String sponsorDisclosure, Instant publishedAt) {
+                          boolean sponsored, String sponsorDisclosure, Instant publishedAt, ArticleKind kind) {
 
         static Article from(CurationArticle article) {
             return new Article(article.getTitle(), article.getOneLiner(), article.getBody(),
                     List.copyOf(article.getHighlights()), article.isSponsored(), article.getSponsorDisclosure(),
-                    article.getPublishedAt());
+                    article.getPublishedAt(), article.getKind());
         }
     }
 }

@@ -66,23 +66,41 @@ public class CurationArticle extends BaseTimeEntity {
     @Column(nullable = false, length = 20)
     private ArticleStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ArticleKind kind = ArticleKind.PICK;
+
     private Instant publishedAt;
 
     public static CurationArticle draft(Long gameId, String title, String oneLiner, String body,
+                                        List<String> highlights) {
+        return draft(gameId, ArticleKind.PICK, title, oneLiner, body, highlights);
+    }
+
+    public static CurationArticle draft(Long gameId, ArticleKind kind, String title, String oneLiner, String body,
                                         List<String> highlights) {
         Objects.requireNonNull(gameId, "gameId");
         CurationArticle article = new CurationArticle();
         article.gameId = gameId;
         article.status = ArticleStatus.DRAFT;
-        article.edit(title, oneLiner, body, highlights);
+        article.edit(kind, title, oneLiner, body, highlights);
         return article;
     }
 
     public void edit(String title, String oneLiner, String body, List<String> highlights) {
+        edit(kind, title, oneLiner, body, highlights);
+    }
+
+    /**
+     * 종류도 함께 바꾼다. 공개된 추천 글은 장점 포인트가 1개 이상이어야 한다 (후기는 없어도 된다).
+     */
+    public void edit(ArticleKind kind, String title, String oneLiner, String body, List<String> highlights) {
+        Objects.requireNonNull(kind, "kind");
         List<String> validated = validateHighlights(highlights);
-        if (isPublished() && validated.isEmpty()) {
+        if (isPublished() && kind == ArticleKind.PICK && validated.isEmpty()) {
             throw new DomainValidationException("A published article needs at least one highlight");
         }
+        this.kind = kind;
         this.title = requireText(title, "title", MAX_TITLE_LENGTH);
         this.oneLiner = requireText(oneLiner, "oneLiner", MAX_ONE_LINER_LENGTH);
         this.body = requireText(body, "body", Integer.MAX_VALUE);
@@ -104,7 +122,7 @@ public class CurationArticle extends BaseTimeEntity {
      */
     public void publish(Instant now) {
         Objects.requireNonNull(now, "now");
-        if (highlights.isEmpty()) {
+        if (!isPublishable()) {
             throw new DomainValidationException("At least one highlight is required to publish");
         }
         this.status = ArticleStatus.PUBLISHED;
@@ -118,6 +136,15 @@ public class CurationArticle extends BaseTimeEntity {
      */
     public void unpublish() {
         this.status = ArticleStatus.DRAFT;
+    }
+
+    /** 추천은 장점 포인트가 1개 이상일 때, 후기는 언제나 공개할 수 있다 */
+    public boolean isPublishable() {
+        return kind == ArticleKind.REVIEW || !highlights.isEmpty();
+    }
+
+    public boolean isPick() {
+        return kind == ArticleKind.PICK;
     }
 
     public boolean isPublished() {

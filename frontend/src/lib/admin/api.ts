@@ -100,7 +100,7 @@ export function deleteArticle(id: number): Promise<AdminGame> {
 
 export function upsertArticle(
   id: number,
-  body: Pick<AdminArticle, "title" | "oneLiner" | "body" | "highlights" | "sponsored" | "sponsorDisclosure">,
+  body: Pick<AdminArticle, "kind" | "title" | "oneLiner" | "body" | "highlights" | "sponsored" | "sponsorDisclosure">,
 ) {
   return adminFetch<AdminArticle>(`/api/admin/games/${id}/article`, { method: "PUT", body });
 }

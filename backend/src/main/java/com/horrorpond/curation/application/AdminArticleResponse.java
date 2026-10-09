@@ -1,5 +1,6 @@
 package com.horrorpond.curation.application;
 
+import com.horrorpond.curation.domain.ArticleKind;
 import com.horrorpond.curation.domain.ArticleStatus;
 import com.horrorpond.curation.domain.CurationArticle;
 
@@ -10,6 +11,7 @@ public record AdminArticleResponse(
         Long id,
         Long gameId,
         ArticleStatus status,
+        ArticleKind kind,
         String title,
         String oneLiner,
         String body,
@@ -20,7 +22,7 @@ public record AdminArticleResponse(
 ) {
 
     static AdminArticleResponse from(CurationArticle article) {
-        return new AdminArticleResponse(article.getId(), article.getGameId(), article.getStatus(),
+        return new AdminArticleResponse(article.getId(), article.getGameId(), article.getStatus(), article.getKind(),
                 article.getTitle(), article.getOneLiner(), article.getBody(), List.copyOf(article.getHighlights()),
                 article.isSponsored(), article.getSponsorDisclosure(), article.getPublishedAt());
     }

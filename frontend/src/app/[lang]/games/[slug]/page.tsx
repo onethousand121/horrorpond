@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AchievementGuides } from "@/components/AchievementGuides";
-import { AdultBadge, CoopBadge, GenreBadge, KeeperPickBadge, KoreanBadge } from "@/components/Badges";
+import { AdultBadge, CoopBadge, GenreBadge, KeeperPickBadge, KeeperReviewBadge, KoreanBadge } from "@/components/Badges";
 import { HighlightList } from "@/components/HighlightList";
 import { Markdown } from "@/components/Markdown";
 import { MediaGallery } from "@/components/MediaGallery";
@@ -109,6 +109,7 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
   const steamLink = game.storeLinks.find((link) => link.store === "STEAM");
   const itchLink = game.storeLinks.find((link) => link.store === "ITCH");
   const isItch = game.source === "ITCH";
+  const isReview = article?.kind === "REVIEW";
 
   // 같은 그림이 두 번 보이지 않게: 헤더 이미지(상단 히어로)와 첫 스크린샷(갤러리 큰 화면)을 피해 포스터를 고른다
   const trailerPoster = (screenshots[1] ?? screenshots[0])?.url ?? game.headerImageUrl;
@@ -164,9 +165,9 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
           ) : (
             <>
               {article ? (
-                <section aria-label={t.pickLabel} className="space-y-6">
+                <section aria-label={isReview ? t.reviewLabel : t.pickLabel} className="space-y-6">
                   <p>
-                    <KeeperPickBadge locale={lang} />
+                    {isReview ? <KeeperReviewBadge locale={lang} /> : <KeeperPickBadge locale={lang} />}
                   </p>
                   {t.articleKoreanOnly && <p className="text-sm text-muted">{t.articleKoreanOnly}</p>}
                   {article.sponsored && (

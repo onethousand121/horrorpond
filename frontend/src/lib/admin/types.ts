@@ -1,6 +1,6 @@
 // 관리자 API 응답 DTO와 1:1로 맞춘 타입.
 // 출처: backend curation/application/{AdminGameResponse, AdminGameDetailResponse, AdminArticleResponse}
-import type { AchievementGuide, PlayVideo } from "@/lib/types";
+import type { AchievementGuide, ArticleKind, PlayVideo } from "@/lib/types";
 
 export type GameSource = "STEAM" | "ITCH" | "MANUAL";
 export type GameStatus = "CANDIDATE" | "PUBLISHED" | "HIDDEN";
@@ -41,6 +41,8 @@ export interface AdminArticle {
   id: number;
   gameId: number;
   status: ArticleStatus;
+  /** 백엔드 배포 전 응답에는 없다 (그때는 추천) */
+  kind?: ArticleKind;
   title: string;
   oneLiner: string;
   body: string;

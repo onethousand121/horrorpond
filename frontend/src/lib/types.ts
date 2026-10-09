@@ -6,6 +6,8 @@
 export type DeveloperRole = "DEVELOPER" | "PUBLISHER";
 export type MediaType = "SCREENSHOT" | "TRAILER";
 export type Store = "STEAM" | "ITCH" | "HUMBLE" | "FANATICAL" | "GMG";
+/** 큐레이션 글 종류: 추천 / 플레이 후기(추천 뱃지·추천 목록에 안 나온다) */
+export type ArticleKind = "PICK" | "REVIEW";
 /** 게임을 가져온 곳. ITCH면 reviewCount는 itch.io 평가 수 */
 export type GameSource = "STEAM" | "ITCH" | "MANUAL";
 /** 백엔드 CuratedGameSort: 최근 추가 / 최신 출시 / 인기(누적 Steam 리뷰 수) / 지금 뜨는(최근 출시작의 하루 평균 리뷰 수) */
@@ -81,6 +83,8 @@ export interface GameSummary {
   hasAchievementGuide: boolean;
   /** 백엔드 배포 전 응답에는 없다 (그때는 Steam으로 본다) */
   source?: GameSource;
+  /** 주인장 플레이 후기(공개된 후기 글)가 있으면 true. 백엔드 배포 전 응답에는 없다 */
+  reviewed?: boolean;
 }
 
 export interface DeveloperCredit {
@@ -110,6 +114,8 @@ export interface Article {
   sponsorDisclosure: string | null;
   /** ISO-8601 Instant */
   publishedAt: string | null;
+  /** PICK(추천) | REVIEW(플레이 후기). 백엔드 배포 전 응답에는 없다 (그때는 추천) */
+  kind?: ArticleKind;
 }
 
 export interface GameDetail {

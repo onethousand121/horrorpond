@@ -3,6 +3,7 @@ package com.horrorpond.curation.repository;
 import com.horrorpond.catalog.domain.GameSource;
 import com.horrorpond.catalog.domain.QGame;
 import com.horrorpond.catalog.domain.QGenre;
+import com.horrorpond.curation.domain.ArticleKind;
 import com.horrorpond.curation.domain.ArticleStatus;
 import com.horrorpond.curation.domain.QAchievementGuide;
 import com.horrorpond.curation.domain.QCurationArticle;
@@ -13,6 +14,7 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
@@ -59,11 +61,12 @@ public class CuratedGameQueryRepository {
                         game.shortDescriptionKoAuto,
                         game.comingSoon, game.coop, game.adult, game.reviewCount, game.tags,
                         game.languages, game.audioLanguages,
-                        article.id.isNotNull(), article.oneLiner, article.highlights, article.sponsored.coalesce(false),
+                        isArticle(ArticleKind.PICK), article.oneLiner, article.highlights,
+                        article.sponsored.coalesce(false),
                         JPAExpressions.selectOne().from(playVideo).where(playVideo.gameId.eq(game.id)).exists(),
                         JPAExpressions.selectOne().from(achievementGuide)
                                 .where(achievementGuide.gameId.eq(game.id)).exists(),
-                        game.source))
+                        game.source, isArticle(ArticleKind.REVIEW)))
                 .from(game)
                 .leftJoin(article).on(article.gameId.eq(game.id), article.status.eq(ArticleStatus.PUBLISHED))
                 .where(where)
@@ -126,11 +129,11 @@ public class CuratedGameQueryRepository {
                     Expressions.constant(KOREAN)));
         }
         if (query.picked()) {
-            where.and(article.id.isNotNull());
+            where.and(article.kind.eq(ArticleKind.PICK));
         }
         if (query.keeper()) {
-            // 주인장 추천: 추천 글이 있거나 주인장 플레이 영상이 있는 게임
-            where.and(article.id.isNotNull()
+            // 주인장 추천: 추천 글(후기는 제외)이 있거나 주인장 플레이 영상이 있는 게임
+            where.and(article.kind.eq(ArticleKind.PICK)
                     .or(JPAExpressions.selectOne().from(playVideo).where(playVideo.gameId.eq(game.id)).exists()));
         }
         if (query.release() != null) {
@@ -152,6 +155,11 @@ public class CuratedGameQueryRepository {
                     .and(game.reviewCount.gt(0));
         }
         return where;
+    }
+
+    /** 공개된 글이 그 종류면 true (글이 없으면 false) */
+    private static BooleanExpression isArticle(ArticleKind kind) {
+        return new CaseBuilder().when(article.kind.eq(kind)).then(true).otherwise(false);
     }
 
     /** 검색어의 %, _ 를 글자 그대로 찾도록 이스케이프한다. */
@@ -209,7 +217,7 @@ public class CuratedGameQueryRepository {
      * @param genre      장르 필터. 없으면 null
      * @param release    출시 시점 필터. 없으면 null
      * @param today      RECENT 계산 기준일
-     * @param picked     true면 재일 추천(공개된 글이 있는 게임)만
+     * @param picked     true면 재일 추천(공개된 추천 글이 있는 게임, 후기 제외)만
      * @param korean     true면 한국어를 지원하는 게임만
      * @param keeper     true면 주인장 추천(추천 글 또는 주인장 플레이 영상이 있는 게임)만
      */
@@ -246,7 +254,8 @@ public class CuratedGameQueryRepository {
             boolean sponsored,
             boolean hasPlayVideo,
             boolean hasAchievementGuide,
-            GameSource source
+            GameSource source,
+            boolean reviewed
     ) {
     }
 }
