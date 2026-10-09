@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AdultBadge, CoopBadge, GenreBadge, GuideBadges, KeeperPickBadge, KoreanBadge } from "@/components/Badges";
+import { AdultBadge, ContentBadges, CoopBadge, GenreBadge, KoreanBadge } from "@/components/Badges";
 import { formatCount, formatReleaseDate } from "@/lib/format";
 import { getDictionary, localePath, type Locale } from "@/lib/i18n";
 import type { GameSummary } from "@/lib/types";
@@ -60,9 +60,11 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
           <span className="absolute top-3 left-3 rounded bg-background/85 px-2 py-0.5 font-pixel text-[11px] text-accent">
             {dict.showcase.rank(active + 1)}
           </span>
-          <div className="absolute top-3 right-3 flex gap-1.5">
-            <GuideBadges
+          <div className="absolute top-3 right-3 flex flex-wrap justify-end gap-1.5">
+            <ContentBadges
               locale={locale}
+              sponsored={game.sponsored}
+              picked={game.picked}
               hasPlayVideo={game.hasPlayVideo}
               hasAchievementGuide={game.hasAchievementGuide}
             />
@@ -94,10 +96,7 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
             ))}
           </div>
           {game.picked && game.oneLiner ? (
-            <p className="text-sm text-foreground/90">
-              <KeeperPickBadge locale={locale} className="mr-1.5 align-middle" />
-              {game.oneLiner}
-            </p>
+            <p className="border-l-2 border-accent-2/60 pl-3 text-sm text-foreground/90">{game.oneLiner}</p>
           ) : null}
           {!game.adult && game.shortDescription && (
             <p className="line-clamp-4 text-sm leading-relaxed text-muted">{game.shortDescription}</p>

@@ -62,7 +62,7 @@ export function KoreanBadge({ locale, languages, audioLanguages }: {
   );
 }
 
-const GUIDE_BADGE =
+const CHIP =
   "inline-flex items-center gap-1 rounded bg-background/85 px-1.5 py-0.5 text-[11px] font-medium text-foreground backdrop-blur-sm";
 
 /** 유튜브 재생 버튼 모양 */
@@ -88,27 +88,45 @@ function TrophyIcon() {
 }
 
 /**
- * 플레이 영상·업적 공략이 있는 게임 표시 (목록 카드 이미지 위). 둘 다 없으면 아무것도 그리지 않는다.
+ * 주인장이 붙인 콘텐츠 표시 (카드 이미지 오른쪽 위). 모두 같은 칩 모양이고 순서는 협찬 → 추천 → 영상 → 업적.
+ * 협찬은 눈에 잘 띄어야 하므로(추천·보증 심사지침) 아이콘 없이 노란 테두리와 글자로 맨 앞에 둔다.
  */
-export function GuideBadges({ locale, hasPlayVideo, hasAchievementGuide }: {
+export function ContentBadges({ locale, sponsored, picked, hasPlayVideo, hasAchievementGuide }: {
   locale: Locale;
+  sponsored: boolean;
+  picked: boolean;
   hasPlayVideo: boolean;
   hasAchievementGuide: boolean;
 }) {
-  if (!hasPlayVideo && !hasAchievementGuide) return null;
-  const t = getDictionary(locale).card;
+  if (!sponsored && !picked && !hasPlayVideo && !hasAchievementGuide) return null;
+  const t = getDictionary(locale);
   return (
     <>
+      {sponsored && (
+        <span
+          className={`${CHIP} border border-amber-400/80 font-bold text-amber-300`}
+          title={t.card.sponsoredLabel}
+          aria-label={t.card.sponsoredLabel}
+        >
+          {t.badge.sponsored}
+        </span>
+      )}
+      {picked && (
+        <span className={CHIP} title={t.card.hasPick} aria-label={t.card.hasPick}>
+          <KeeperFrog className="w-[22px] shrink-0" />
+          {t.card.pickShort}
+        </span>
+      )}
       {hasPlayVideo && (
-        <span className={GUIDE_BADGE} title={t.hasPlayVideo} aria-label={t.hasPlayVideo}>
+        <span className={CHIP} title={t.card.hasPlayVideo} aria-label={t.card.hasPlayVideo}>
           <PlayIcon />
-          {t.videoShort}
+          {t.card.videoShort}
         </span>
       )}
       {hasAchievementGuide && (
-        <span className={GUIDE_BADGE} title={t.hasAchievementGuide} aria-label={t.hasAchievementGuide}>
+        <span className={CHIP} title={t.card.hasAchievementGuide} aria-label={t.card.hasAchievementGuide}>
           <TrophyIcon />
-          {t.achievementShort}
+          {t.card.achievementShort}
         </span>
       )}
     </>
