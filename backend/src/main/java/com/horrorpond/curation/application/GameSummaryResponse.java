@@ -1,5 +1,6 @@
 package com.horrorpond.curation.application;
 
+import com.horrorpond.catalog.domain.Game;
 import com.horrorpond.common.domain.Language;
 import com.horrorpond.curation.repository.CuratedGameQueryRepository.CuratedGameRow;
 
@@ -12,6 +13,7 @@ import java.util.List;
  * @param tags        SteamSpy 상위 태그 (표 많은 순, 최대 5개)
  * @param hasPlayVideo 플레이 영상이 하나 이상 있으면 true
  * @param hasAchievementGuide 업적 공략이 하나 이상 있으면 true (업적 공략 페이지가 있다)
+ * @param shortDescriptionTranslated 소개가 자동 번역이면 true (사이트에 "자동 번역" 표시)
  * @param adult       성인 콘텐츠 (고정 노출한 경우에만 목록에 나온다. 사이트는 이미지를 흐리게 보여준다)
  */
 public record GameSummaryResponse(
@@ -21,6 +23,7 @@ public record GameSummaryResponse(
         LocalDate releaseDate,
         String releaseDateText,
         String shortDescription,
+        boolean shortDescriptionTranslated,
         boolean comingSoon,
         boolean coop,
         boolean adult,
@@ -46,7 +49,9 @@ public record GameSummaryResponse(
         List<String> tags = row.tags() == null ? List.of() : row.tags();
         return new GameSummaryResponse(row.slug(), language.pick(row.title(), row.titleEn()), row.headerImageUrl(),
                 row.releaseDate(), language.pick(row.releaseDateText(), row.releaseDateTextEn()),
-                language.pick(row.shortDescription(), row.shortDescriptionEn()), row.comingSoon(), row.coop(), row.adult(), row.reviewCount(),
+                Game.shortDescription(language, row.shortDescription(), row.shortDescriptionEn(),
+                        row.shortDescriptionKoAuto()),
+                Game.isShortDescriptionAutoTranslated(language, row.shortDescriptionKoAuto()), row.comingSoon(), row.coop(), row.adult(), row.reviewCount(),
                 List.copyOf(tags.subList(0, Math.min(MAX_TAGS, tags.size()))), genres, row.picked(),
                 row.oneLiner(),
                 List.copyOf(highlights.subList(0, Math.min(MAX_HIGHLIGHTS, highlights.size()))),

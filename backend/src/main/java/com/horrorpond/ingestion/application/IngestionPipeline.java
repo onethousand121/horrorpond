@@ -10,7 +10,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * 수집 단계를 discovery → enrichment → normalize → metrics(리뷰 수 기록) 순서로 실행한다.
+ * 수집 단계를 discovery → enrichment → normalize → metrics(리뷰 수 기록) → translate(한국어 자동 번역) 순서로 실행한다.
  * 앞 단계가 실패해도 다음 단계는 진행한다 (각 단계는 자기 job에 결과를 남긴다).
  */
 @Slf4j
@@ -20,12 +20,13 @@ public class IngestionPipeline {
 
     public static final String LOCK_NAME = "steam-ingestion";
     public static final List<JobType> ALL_STEPS = List.of(JobType.DISCOVERY, JobType.ENRICHMENT, JobType.NORMALIZE,
-            JobType.METRICS);
+            JobType.METRICS, JobType.TRANSLATE);
 
     private final DiscoveryService discoveryService;
     private final EnrichmentService enrichmentService;
     private final NormalizeService normalizeService;
     private final ReviewMetricsService reviewMetricsService;
+    private final TranslationService translationService;
 
     /**
      * 요청 순서와 무관하게 정해진 단계 순서로, 중복 없이 실행한다.
@@ -41,6 +42,7 @@ public class IngestionPipeline {
                     case ENRICHMENT -> enrichmentService.run(trigger);
                     case NORMALIZE -> normalizeService.run(trigger);
                     case METRICS -> reviewMetricsService.run(trigger);
+                    case TRANSLATE -> translationService.run(trigger);
                 }
             } catch (RuntimeException e) {
                 log.error("Ingestion step {} failed unexpectedly; continuing with next step", step, e);

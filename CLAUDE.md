@@ -28,6 +28,9 @@
   리뷰 수 기록(트렌드용): game_metric_daily(game_id, store, captured_on) 하루 1건. normalize가 리뷰 수를 반영할 때 함께 남기고,
   파이프라인 마지막 METRICS 단계가 appreviews로 최근 30일 출시작 → 리뷰 10개 이상 게임(기록 오래된 순)을 하루 최대 400개 기록
   (Game.reviewCount도 갱신). 숨김·성인·출시 전은 제외. enrichment 예산은 lock 80%에서 METRICS 몫을 뺀 값
+  한국어 자동 번역: 한국어 소개(short_description)에 한글이 없으면 TRANSLATE 단계(파이프라인 마지막)가 DeepL로 번역해
+  game.short_description_ko_auto에 저장 (한국어 화면만 사용, "자동 번역" 표시). Steam 소개가 바뀌면 Game이 번역을 지운다.
+  DEEPL_API_KEY 없으면 건너뜀. 이달 남은 한도 − monthly-reserve(2만 자) 안에서 한 번에 최대 15만 자, 공개·출시 예정·최근·리뷰 많은 순
   영어 텍스트(이름·짧은 소개·출시일)는 appdetails(l=english, filters=basic,release_date)로 받아 같은 스냅샷의 english 키에 붙인다.
   공개 API는 lang=ko|en (영어 값이 없으면 한국어). 큐레이터 글은 한국어만
 - 트리거: @Scheduled 일 1회 + POST /api/admin/ingestion/run (X-Admin-Key)

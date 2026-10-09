@@ -20,6 +20,8 @@ public record GameDetailResponse(
         String slug,
         String title,
         String shortDescription,
+        /** 소개가 자동 번역이면 true (사이트에 "자동 번역" 표시) */
+        boolean shortDescriptionTranslated,
         String headerImageUrl,
         LocalDate releaseDate,
         String releaseDateText,
@@ -46,7 +48,8 @@ public record GameDetailResponse(
     static GameDetailResponse of(Game game, List<GenreSummary> genres, CurationArticle article, Language language,
                                  List<PlayVideoResponse> playVideos, List<AchievementGuideResponse> achievements) {
         return new GameDetailResponse(
-                game.getSlug(), game.title(language), game.shortDescription(language), game.getHeaderImageUrl(),
+                game.getSlug(), game.title(language), game.shortDescription(language),
+                game.isShortDescriptionAutoTranslated(language), game.getHeaderImageUrl(),
                 game.getReleaseDate(), game.releaseDateText(language), game.isComingSoon(), game.isCoop(),
                 game.isAdult(),
                 game.getReviewCount(), genres,

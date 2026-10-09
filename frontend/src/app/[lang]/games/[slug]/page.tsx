@@ -81,6 +81,15 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/games/[slu
   };
 }
 
+/** 한국어 소개가 없어 DeepL로 번역한 소개에 붙이는 표시 */
+function AutoTranslatedMark({ label }: { label: string }) {
+  return (
+    <span className="ml-2 rounded border border-border px-1.5 py-0.5 align-middle font-sans text-[10px] text-muted">
+      {label}
+    </span>
+  );
+}
+
 export default async function GameDetailPage({ params }: PageProps<"/[lang]/games/[slug]">) {
   const { lang, slug } = await params;
   if (!isLocale(lang)) notFound();
@@ -171,13 +180,19 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
                     <Markdown>{article.body}</Markdown>
                   </div>
                   {game.shortDescription && (
-                    <p className="border-l-2 border-border pl-4 text-sm text-muted">{game.shortDescription}</p>
+                    <p className="border-l-2 border-border pl-4 text-sm text-muted">
+                      {game.shortDescription}
+                      {game.shortDescriptionTranslated && <AutoTranslatedMark label={t.autoTranslated} />}
+                    </p>
                   )}
                 </section>
               ) : (
                 game.shortDescription && (
                   <section aria-label={t.about} className="space-y-2">
-                    <h2 className="font-pixel text-[11px] text-muted">{t.aboutSteam}</h2>
+                    <h2 className="font-pixel text-[11px] text-muted">
+                      {t.aboutSteam}
+                      {game.shortDescriptionTranslated && <AutoTranslatedMark label={t.autoTranslated} />}
+                    </h2>
                     <p className="leading-relaxed text-foreground/90">{game.shortDescription}</p>
                   </section>
                 )

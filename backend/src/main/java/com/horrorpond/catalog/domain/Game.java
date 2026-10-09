@@ -81,6 +81,10 @@ public class Game extends BaseTimeEntity {
     @Column(length = 100)
     private String releaseDateTextEn;
 
+    /** 한국어 소개(shortDescription)에 한글이 없을 때의 자동 번역. Steam 소개가 바뀌면 지운다 */
+    @Column(name = "short_description_ko_auto", columnDefinition = "text")
+    private String shortDescriptionKoAuto;
+
     @Column(nullable = false)
     private boolean comingSoon;
 
@@ -156,6 +160,9 @@ public class Game extends BaseTimeEntity {
             throw new DomainStateException("Steam data can only be applied to STEAM games: source=" + source);
         }
         this.title = data.title();
+        if (!Objects.equals(this.shortDescription, data.shortDescription())) {
+            this.shortDescriptionKoAuto = null; // 원문이 바뀌었으니 번역을 다시 해야 한다
+        }
         this.shortDescription = data.shortDescription();
         this.headerImageUrl = data.headerImageUrl();
         this.releaseDate = data.releaseDate();
@@ -196,7 +203,45 @@ public class Game extends BaseTimeEntity {
     }
 
     public String shortDescription(Language language) {
-        return language.pick(shortDescription, shortDescriptionEn);
+        return shortDescription(language, shortDescription, shortDescriptionEn, shortDescriptionKoAuto);
+    }
+
+    /**
+     * 한국어 화면은 자동 번역이 있으면 그걸, 아니면 Steam 한국어 소개. 영어 화면은 영어 소개(없으면 한국어 소개).
+     * 목록 조회(projection)도 같은 규칙을 쓰도록 static으로 둔다.
+     */
+    public static String shortDescription(Language language, String korean, String english, String koreanAuto) {
+        if (language == Language.KO && koreanAuto != null) {
+            return koreanAuto;
+        }
+        return language.pick(korean, english);
+    }
+
+    public static boolean isShortDescriptionAutoTranslated(Language language, String koreanAuto) {
+        return language == Language.KO && koreanAuto != null;
+    }
+
+    public boolean isShortDescriptionAutoTranslated(Language language) {
+        return isShortDescriptionAutoTranslated(language, shortDescriptionKoAuto);
+    }
+
+    /** 한글(완성형 음절)이 한 글자라도 있으면 한국어 소개로 본다 */
+    public static boolean containsHangul(String text) {
+        return text != null && text.codePoints().anyMatch(c -> c >= 0xAC00 && c <= 0xD7A3);
+    }
+
+    /**
+     * 자동 번역을 반영한다. 번역하는 사이에 Steam 소개가 바뀌었으면(sourceText ≠ 지금 소개) 버린다.
+     *
+     * @return 반영했으면 true
+     */
+    public boolean applyKoreanTranslation(String sourceText, String translated) {
+        if (translated == null || translated.isBlank() || !Objects.equals(sourceText, shortDescription)
+                || containsHangul(shortDescription)) {
+            return false;
+        }
+        this.shortDescriptionKoAuto = translated.strip();
+        return true;
     }
 
     public String releaseDateText(Language language) {
