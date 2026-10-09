@@ -64,6 +64,7 @@ public class NormalizeItemProcessor {
             seedRepository.findById(appid)
                     .map(SteamAppSeed::getSpyTags)
                     .ifPresent(game::applySteamTags);
+            game.applySteamLanguages(parsed.languages().languages(), parsed.languages().audioLanguages());
             if (data.reviewCount() != null) {
                 metricRepository.upsert(game.getId(), Store.STEAM.name(),
                         LocalDate.ofInstant(clock.instant(), GameMetricDaily.ZONE), data.reviewCount(), clock.instant());

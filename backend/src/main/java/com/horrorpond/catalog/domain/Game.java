@@ -106,6 +106,16 @@ public class Game extends BaseTimeEntity {
     @Column(nullable = false, columnDefinition = "varchar(100)[]")
     private List<String> tags = new ArrayList<>();
 
+    /** Steam 지원 언어 코드 (ko, en, ja, zh-Hans …) */
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(nullable = false, columnDefinition = "varchar(20)[]")
+    private List<String> languages = new ArrayList<>();
+
+    /** 음성까지 지원하는 언어 코드 */
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(name = "audio_languages", nullable = false, columnDefinition = "varchar(20)[]")
+    private List<String> audioLanguages = new ArrayList<>();
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private GameStatus status;
@@ -246,6 +256,11 @@ public class Game extends BaseTimeEntity {
 
     public String releaseDateText(Language language) {
         return language.pick(releaseDateText, releaseDateTextEn);
+    }
+
+    public void applySteamLanguages(List<String> languages, List<String> audioLanguages) {
+        this.languages = new ArrayList<>(languages == null ? List.of() : languages);
+        this.audioLanguages = new ArrayList<>(audioLanguages == null ? List.of() : audioLanguages);
     }
 
     public void applySteamTags(List<String> tags) {

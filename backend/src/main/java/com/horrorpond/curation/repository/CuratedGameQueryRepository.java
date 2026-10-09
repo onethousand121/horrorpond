@@ -44,6 +44,9 @@ public class CuratedGameQueryRepository {
     private static final QPlayVideo playVideo = QPlayVideo.playVideo;
     private static final QAchievementGuide achievementGuide = QAchievementGuide.achievementGuide;
 
+    /** 한국어 지원 필터의 언어 코드 (Game.languages) */
+    static final String KOREAN = "ko";
+
     private final JPAQueryFactory queryFactory;
 
     public Page<CuratedGameRow> findVisible(PublicGameQuery query, Pageable pageable) {
@@ -54,6 +57,7 @@ public class CuratedGameQueryRepository {
                         game.releaseDateText, game.releaseDateTextEn, game.shortDescription, game.shortDescriptionEn,
                         game.shortDescriptionKoAuto,
                         game.comingSoon, game.coop, game.adult, game.reviewCount, game.tags,
+                        game.languages, game.audioLanguages,
                         article.id.isNotNull(), article.oneLiner, article.highlights, article.sponsored.coalesce(false),
                         JPAExpressions.selectOne().from(playVideo).where(playVideo.gameId.eq(game.id)).exists(),
                         JPAExpressions.selectOne().from(achievementGuide)
@@ -114,6 +118,10 @@ public class CuratedGameQueryRepository {
         }
         if (query.coop() != null) {
             where.and(game.coop.eq(query.coop()));
+        }
+        if (query.korean()) {
+            where.and(Expressions.booleanTemplate("array_contains({0}, {1})", game.languages,
+                    Expressions.constant(KOREAN)));
         }
         if (query.picked()) {
             where.and(article.id.isNotNull());
@@ -195,9 +203,10 @@ public class CuratedGameQueryRepository {
      * @param release    출시 시점 필터. 없으면 null
      * @param today      RECENT 계산 기준일
      * @param picked     true면 재일 추천(공개된 글이 있는 게임)만
+     * @param korean     true면 한국어를 지원하는 게임만
      */
     public record PublicGameQuery(Predicate visibility, String search, GenreFilter genre, Boolean coop, ReleaseWindow release,
-                                  LocalDate today, boolean picked, CuratedGameSort sort) {
+                                  LocalDate today, boolean picked, CuratedGameSort sort, boolean korean) {
     }
 
     public record GenreFilter(String slug, List<String> steamTags) {
@@ -220,6 +229,8 @@ public class CuratedGameQueryRepository {
             boolean adult,
             Integer reviewCount,
             List<String> tags,
+            List<String> languages,
+            List<String> audioLanguages,
             boolean picked,
             String oneLiner,
             List<String> highlights,

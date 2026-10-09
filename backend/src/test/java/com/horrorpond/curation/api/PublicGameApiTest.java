@@ -185,6 +185,22 @@ class PublicGameApiTest {
     }
 
     @Test
+    void koreanFilterAndLanguagesInResponses() throws Exception {
+        create(spec("korean").reviewCount(300).languages(List.of("en", "ko"), List.of("en")));
+        create(spec("english-only").reviewCount(200).languages(List.of("en", "ja"), List.of("ja")));
+
+        mvc.perform(get("/api/games").param("korean", "true"))
+                .andExpect(jsonPath("$.content[*].slug", contains("korean")))
+                .andExpect(jsonPath("$.content[0].languages", contains("en", "ko")))
+                .andExpect(jsonPath("$.content[0].audioLanguages", contains("en")));
+        mvc.perform(get("/api/games").param("sort", "POPULAR"))
+                .andExpect(jsonPath("$.content[*].slug", contains("korean", "english-only")));
+        mvc.perform(get("/api/games/english-only"))
+                .andExpect(jsonPath("$.languages", contains("en", "ja")))
+                .andExpect(jsonPath("$.audioLanguages", contains("ja")));
+    }
+
+    @Test
     void trendingRanksRecentReleasesByReviewsPerDay() throws Exception {
         LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
         // 하루 평균: 3000/31 ≈ 97, 2000/11 ≈ 182, 출시 이틀째 400건은 7일로 나눠 ≈ 57
@@ -453,6 +469,7 @@ class PublicGameApiTest {
                     spec.releaseDate == null ? "Coming soon" : spec.releaseDate.toString(), spec.comingSoon, spec.coop,
                     spec.reviewCount, spec.adult, media, credits));
             game.applySteamTags(spec.tags);
+            game.applySteamLanguages(spec.languages, spec.audioLanguages);
             if (spec.englishTitle != null) {
                 game.applyEnglishText(spec.englishTitle, "English description " + spec.slug, "Oct 1, 2026");
             }
@@ -503,6 +520,8 @@ class PublicGameApiTest {
         private boolean adult;
         private boolean comingSoon;
         private List<String> tags = List.of();
+        private List<String> languages = List.of();
+        private List<String> audioLanguages = List.of();
         private String englishTitle;
 
         GameSpec(String slug) {
@@ -534,6 +553,7 @@ class PublicGameApiTest {
         GameSpec comingSoon(boolean value) { comingSoon = value; return this; }
 
         GameSpec tags(String... values) { tags = List.of(values); return this; }
+        GameSpec languages(List<String> all, List<String> audio) { languages = all; audioLanguages = audio; return this; }
 
         GameSpec englishTitle(String value) { englishTitle = value; return this; }
     }

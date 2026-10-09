@@ -31,6 +31,8 @@
   한국어 자동 번역: 한국어 소개(short_description)에 한글이 없으면 TRANSLATE 단계(파이프라인 마지막)가 DeepL로 번역해
   game.short_description_ko_auto에 저장 (한국어 화면만 사용, "자동 번역" 표시). Steam 소개가 바뀌면 Game이 번역을 지운다.
   DEEPL_API_KEY 없으면 건너뜀. 이달 남은 한도 − monthly-reserve(2만 자) 안에서 한 번에 최대 15만 자, 공개·출시 예정·최근·리뷰 많은 순
+  지원 언어: appdetails supported_languages(한국어 이름, "*"는 음성)를 코드로(game.languages/audio_languages, ko·en·zh-Hans…).
+  카드·상세에 "한국어/한국어 음성" 배지(한국어 화면만), 상세에 지원 언어 목록, 목록 필터 korean=true
   영어 텍스트(이름·짧은 소개·출시일)는 appdetails(l=english, filters=basic,release_date)로 받아 같은 스냅샷의 english 키에 붙인다.
   공개 API는 lang=ko|en (영어 값이 없으면 한국어). 큐레이터 글은 한국어만
 - 트리거: @Scheduled 일 1회 + POST /api/admin/ingestion/run (X-Admin-Key)

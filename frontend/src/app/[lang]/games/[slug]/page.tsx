@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AchievementGuides } from "@/components/AchievementGuides";
-import { AdultBadge, CoopBadge, GenreBadge } from "@/components/Badges";
+import { AdultBadge, CoopBadge, GenreBadge, KoreanBadge } from "@/components/Badges";
 import { HighlightList } from "@/components/HighlightList";
 import { Markdown } from "@/components/Markdown";
 import { MediaGallery } from "@/components/MediaGallery";
@@ -13,6 +13,7 @@ import { TrailerPlayer } from "@/components/TrailerPlayer";
 import { getGame } from "@/lib/api";
 import { formatCount, formatReleaseDate, groupDevelopers } from "@/lib/format";
 import { alternatesFor, getDictionary, isLocale, localePath, type Locale } from "@/lib/i18n";
+import { languageName, orderLanguages, VISIBLE_LANGUAGES } from "@/lib/languages";
 import { SITE_URL } from "@/lib/site";
 import type { GameDetail } from "@/lib/types";
 
@@ -103,6 +104,8 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
   const screenshots = game.media.filter((m) => m.type === "SCREENSHOT");
   const developers = groupDevelopers(game.developers, lang);
   const releaseDate = formatReleaseDate(game, lang);
+  const languages = orderLanguages(game.languages ?? [], lang);
+  const audioLanguages = game.audioLanguages ?? [];
   const steamLink = game.storeLinks.find((link) => link.store === "STEAM");
 
   // 같은 그림이 두 번 보이지 않게: 헤더 이미지(상단 히어로)와 첫 스크린샷(갤러리 큰 화면)을 피해 포스터를 고른다
@@ -138,6 +141,7 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
         </div>
         <div className="relative -mt-10 space-y-3 px-4 sm:-mt-28 sm:px-8">
           <div className="flex flex-wrap gap-1.5">
+            <KoreanBadge locale={lang} languages={game.languages} audioLanguages={game.audioLanguages} />
             {game.coop && <CoopBadge locale={lang} />}
             {game.genres.map((genre) => (
               <GenreBadge key={genre.slug} genre={genre} locale={lang} linked />
@@ -252,6 +256,24 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted">{t.steamReviews}</dt>
                   <dd>{t.reviewCount(formatCount(game.reviewCount, lang))}</dd>
+                </div>
+              )}
+              {languages.length > 0 && (
+                <div className="flex justify-between gap-4">
+                  <dt className="shrink-0 text-muted">{t.languages}</dt>
+                  <dd className="text-right">
+                    {languages
+                      .slice(0, VISIBLE_LANGUAGES)
+                      .map((code) =>
+                        audioLanguages.includes(code)
+                          ? `${languageName(code, lang)}(${t.audio})`
+                          : languageName(code, lang),
+                      )
+                      .join(", ")}
+                    {languages.length > VISIBLE_LANGUAGES && (
+                      <span className="text-muted"> {t.moreLanguages(languages.length - VISIBLE_LANGUAGES)}</span>
+                    )}
+                  </dd>
                 </div>
               )}
               {developers.map((dev) => (

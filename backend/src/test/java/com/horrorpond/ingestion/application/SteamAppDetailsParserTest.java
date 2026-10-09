@@ -209,4 +209,22 @@ class SteamAppDetailsParserTest {
         assertThat(nameless.isGame()).isFalse();
         assertThat(nameless.data()).isNull();
     }
+
+    @Test
+    void supportedLanguagesBecomeCodesWithAudioMarked() {
+        ParsedSteamApp parsed = parser.parse(fixtureData(5060920).replace("\"type\":\"dlc\"", "\"type\":\"game\""));
+        assertThat(parsed.languages().languages())
+                .containsExactly("en", "fr", "it", "de", "es", "ru", "zh-Hans", "pt-BR", "th", "zh-Hant", "ja", "ko",
+                        "pl", "es-419", "tr");
+        assertThat(parsed.languages().audioLanguages()).containsExactly("en", "fr", "ja");
+    }
+
+    @Test
+    void englishLanguageNamesAndUnknownNames() {
+        SteamLanguages parsed = SteamLanguages.parse(
+                "English<strong>*</strong>, Korean, Klingon<br><strong>*</strong>languages with full audio support");
+        assertThat(parsed.languages()).containsExactly("en", "ko");
+        assertThat(parsed.audioLanguages()).containsExactly("en");
+        assertThat(SteamLanguages.parse(null).languages()).isEmpty();
+    }
 }

@@ -34,6 +34,74 @@ export function AdultBadge({ locale, large = false }: { locale: Locale; large?: 
   );
 }
 
+/** 한국어 화면에서만: 한국어(자막·인터페이스) 또는 한국어 음성을 지원하면 표시 */
+export function KoreanBadge({ locale, languages, audioLanguages }: {
+  locale: Locale;
+  languages?: string[];
+  audioLanguages?: string[];
+}) {
+  if (locale !== "ko" || !languages?.includes("ko")) return null;
+  const t = getDictionary(locale).badge;
+  return (
+    <span className="rounded-full border border-accent/35 bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
+      {audioLanguages?.includes("ko") ? t.koreanAudio : t.korean}
+    </span>
+  );
+}
+
+const GUIDE_BADGE =
+  "inline-flex items-center gap-1 rounded bg-background/85 px-1.5 py-0.5 text-[11px] font-medium text-foreground backdrop-blur-sm";
+
+/** 유튜브 재생 버튼 모양 */
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 20 14" aria-hidden className="h-[11px] w-[15px] shrink-0">
+      <rect width="20" height="14" rx="4" fill="#ff0033" />
+      <path d="M8 4l5.5 3L8 10z" fill="#ffffff" />
+    </svg>
+  );
+}
+
+/** 트로피 모양 */
+function TrophyIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden className="size-[13px] shrink-0">
+      <path
+        d="M4 2h8v2h2.5v1.5A3 3 0 0 1 11.8 8.4 4 4 0 0 1 9 10.9V12h2v2H5v-2h2v-1.1A4 4 0 0 1 4.2 8.4 3 3 0 0 1 1.5 5.5V4H4zm0 3.5H3a1.5 1.5 0 0 0 1 1.3zm8 0v1.3a1.5 1.5 0 0 0 1-1.3z"
+        fill="#f2b632"
+      />
+    </svg>
+  );
+}
+
+/**
+ * 플레이 영상·업적 공략이 있는 게임 표시 (목록 카드 이미지 위). 둘 다 없으면 아무것도 그리지 않는다.
+ */
+export function GuideBadges({ locale, hasPlayVideo, hasAchievementGuide }: {
+  locale: Locale;
+  hasPlayVideo: boolean;
+  hasAchievementGuide: boolean;
+}) {
+  if (!hasPlayVideo && !hasAchievementGuide) return null;
+  const t = getDictionary(locale).card;
+  return (
+    <>
+      {hasPlayVideo && (
+        <span className={GUIDE_BADGE} title={t.hasPlayVideo} aria-label={t.hasPlayVideo}>
+          <PlayIcon />
+          {t.videoShort}
+        </span>
+      )}
+      {hasAchievementGuide && (
+        <span className={GUIDE_BADGE} title={t.hasAchievementGuide} aria-label={t.hasAchievementGuide}>
+          <TrophyIcon />
+          {t.achievementShort}
+        </span>
+      )}
+    </>
+  );
+}
+
 export function CoopBadge({ locale }: { locale: Locale }) {
   return (
     <span className="rounded-full border border-accent-2/35 bg-accent-2/10 px-2 py-0.5 text-xs font-medium text-accent-2">

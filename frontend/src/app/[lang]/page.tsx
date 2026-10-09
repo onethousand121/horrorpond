@@ -46,7 +46,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
   const [stats, genres, trending, recent, upcoming, steady, videos] = await Promise.all([
     getStats(),
     getGenres(lang),
-    // 지금 뜨는: 최근 90일 출시작을 하루 평균 리뷰 수로. 누적 리뷰 수(스테디셀러)는 아래쪽 줄로 따로 보여준다
+    // 지금 뜨는: 최근 90일 출시작을 하루 평균 리뷰 수로. 누적 리뷰 수(스테디셀러)는 바로 아래 줄로 따로 보여준다
     // 배포 순서상 백엔드가 TRENDING을 모르는 몇 분 동안은 누적 인기순으로 대신 보여준다
     getGames({ sort: "TRENDING", size: SHOWCASE, lang }).catch(() => getGames({ sort: "POPULAR", size: SHOWCASE, lang })),
     getGames({ release: "RECENT", sort: "RELEASE", size: ROW, lang }),
@@ -90,6 +90,14 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           >
             {t.coopOnly}
           </Link>
+          {lang === "ko" && (
+            <Link
+              href={localePath(lang, "/games?korean=1")}
+              className={`${CHIP} border-accent/40 bg-accent/10 font-medium text-accent hover:bg-accent/20`}
+            >
+              {t.koreanOnly}
+            </Link>
+          )}
           {genres.map((genre) => (
             <Link
               key={genre.slug}
@@ -109,6 +117,13 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         </section>
       )}
 
+      {steady.content.length > 0 && (
+        <section className="space-y-4">
+          <SectionHeader title={t.steady} href={localePath(lang, "/games?view=popular")} more={t.more} />
+          <GameRow games={steady.content} locale={lang} />
+        </section>
+      )}
+
       {recent.content.length > 0 && (
         <section className="space-y-4">
           <SectionHeader title={t.recent} href={localePath(lang, "/games?view=recent")} more={t.more} />
@@ -120,13 +135,6 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section className="space-y-4">
           <SectionHeader title={t.upcoming} href={localePath(lang, "/games?view=upcoming")} more={t.more} />
           <GameRow games={upcoming.content} locale={lang} />
-        </section>
-      )}
-
-      {steady.content.length > 0 && (
-        <section className="space-y-4">
-          <SectionHeader title={t.steady} href={localePath(lang, "/games?view=popular")} more={t.more} />
-          <GameRow games={steady.content} locale={lang} />
         </section>
       )}
 
