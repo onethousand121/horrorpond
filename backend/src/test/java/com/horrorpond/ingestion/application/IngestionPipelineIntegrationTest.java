@@ -435,6 +435,52 @@ class IngestionPipelineIntegrationTest {
         assertThat(jobRepository.findById(recentId).orElseThrow().getStatus()).isEqualTo(JobStatus.RUNNING);
     }
 
+    @Autowired
+    IngestionJobRecorder jobRecorder;
+
+    @Test
+    void shutdownFailsJobsRunningHereAndReleasesTheirLock() {
+        Long running = jobRecorder.start(JobType.ENRICHMENT, TriggerType.SCHEDULED);
+        Long finished = jobRecorder.start(JobType.DISCOVERY, TriggerType.SCHEDULED);
+        jobRecorder.succeed(finished, 3, 0);
+        Long otherInstance = jobRepository.save(IngestionJob.start(JobType.ENRICHMENT, TriggerType.SCHEDULED,
+                clock.instant())).getId();
+        jdbc.update("DELETE FROM shedlock WHERE name = ?", IngestionPipeline.LOCK_NAME);
+        jdbc.update("""
+                INSERT INTO shedlock (name, lock_until, locked_at, locked_by)
+                VALUES (?, now() + interval '2 hours', now(), ?)""",
+                IngestionPipeline.LOCK_NAME, net.javacrumbs.shedlock.support.Utils.getHostname());
+
+        staleJobCleaner.failJobsRunningHereOnShutdown();
+
+        IngestionJob interrupted = jobRepository.findById(running).orElseThrow();
+        assertThat(interrupted.getStatus()).isEqualTo(JobStatus.FAILED);
+        assertThat(interrupted.getErrorMessage()).contains("interrupted by shutdown");
+        assertThat(jobRepository.findById(finished).orElseThrow().getStatus()).isEqualTo(JobStatus.SUCCEEDED);
+        assertThat(jobRepository.findById(otherInstance).orElseThrow().getStatus())
+                .as("다른 인스턴스(또는 이전 실행)가 남긴 job은 건드리지 않는다").isEqualTo(JobStatus.RUNNING);
+        assertThat(jdbc.queryForObject("SELECT lock_until <= locked_at FROM shedlock WHERE name = ?",
+                Boolean.class, IngestionPipeline.LOCK_NAME)).isTrue();
+
+        // 뒤늦게 끝난 작업 스레드가 결과를 써도 예외 없이 무시된다
+        jobRecorder.succeed(running, 10, 0);
+        assertThat(jobRepository.findById(running).orElseThrow().getStatus()).isEqualTo(JobStatus.FAILED);
+    }
+
+    @Test
+    void progressIsRecordedEveryFiftyItemsWhileRunning() {
+        Long jobId = jobRecorder.start(JobType.ENRICHMENT, TriggerType.MANUAL);
+        jobRecorder.progress(jobId, 49, 0);
+        assertThat(jobRepository.findById(jobId).orElseThrow().getProcessedCount()).isZero();
+        jobRecorder.progress(jobId, 48, 2);
+        IngestionJob job = jobRepository.findById(jobId).orElseThrow();
+        assertThat(job.getProcessedCount()).isEqualTo(48);
+        assertThat(job.getFailedCount()).isEqualTo(2);
+        assertThat(job.getStatus()).isEqualTo(JobStatus.RUNNING);
+        jobRecorder.succeed(jobId, 60, 2);
+        assertThat(jobRepository.findById(jobId).orElseThrow().getProcessedCount()).isEqualTo(60);
+    }
+
     private void saveSeed(int appid, DiscoveredBy by, Instant discoveredAt) {
         seedRepository.save(SteamAppSeed.discovered(appid, by, discoveredAt));
     }

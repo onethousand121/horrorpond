@@ -28,6 +28,7 @@ public class NormalizeService {
             int processed = 0;
             int failed = 0;
             for (int appid : appids) {
+                jobRecorder.progress(jobId, processed, failed);
                 try {
                     itemProcessor.process(appid);
                     processed++;

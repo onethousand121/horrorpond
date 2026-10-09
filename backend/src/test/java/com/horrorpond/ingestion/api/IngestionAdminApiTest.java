@@ -1,10 +1,15 @@
 package com.horrorpond.ingestion.api;
 
 import com.horrorpond.ingestion.application.IngestionPipeline;
+import com.horrorpond.ingestion.domain.DiscoveredBy;
+import com.horrorpond.ingestion.domain.FetchStatus;
+import com.horrorpond.ingestion.domain.HorrorTag;
 import com.horrorpond.ingestion.domain.IngestionJob;
 import com.horrorpond.ingestion.domain.JobType;
+import com.horrorpond.ingestion.domain.SteamAppSeed;
 import com.horrorpond.ingestion.domain.TriggerType;
 import com.horrorpond.ingestion.repository.IngestionJobRepository;
+import com.horrorpond.ingestion.repository.SteamAppSeedRepository;
 import com.horrorpond.support.DatabaseCleaner;
 import com.horrorpond.support.TestcontainersConfiguration;
 import net.javacrumbs.shedlock.core.LockConfiguration;
@@ -55,6 +60,9 @@ class IngestionAdminApiTest {
 
     @Autowired
     IngestionJobRepository jobRepository;
+
+    @Autowired
+    SteamAppSeedRepository seedRepository;
 
     @Autowired
     JdbcTemplate jdbc;
@@ -135,16 +143,33 @@ class IngestionAdminApiTest {
     }
 
     @Test
-    void addSeedCreatesManualSeedAndRejectsDuplicate() throws Exception {
+    void addSeedCreatesManualSeedAndPromotesDiscoveredOne() throws Exception {
         mvc.perform(post("/api/admin/ingestion/seeds").header("X-Admin-Key", KEY)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"appid\":739630}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.appid").value(739630))
                 .andExpect(jsonPath("$.discoveredBy").value("MANUAL"))
                 .andExpect(jsonPath("$.fetchStatus").value("PENDING"));
-
+        // 다시 요청해도 그대로 수동 요청
         mvc.perform(post("/api/admin/ingestion/seeds").header("X-Admin-Key", KEY)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"appid\":739630}"))
+                .andExpect(status().isCreated());
+
+        // 자동 발견에서 공포가 아니라고 걸러진 게임도 관리자가 요청하면 수동으로 받는다
+        SteamAppSeed spy = SteamAppSeed.discovered(578080, DiscoveredBy.STEAMSPY_TAG, Instant.now());
+        spy.recordHorrorTag(HorrorTag.NOT_HORROR, Instant.now());
+        seedRepository.save(spy);
+        mvc.perform(post("/api/admin/ingestion/seeds").header("X-Admin-Key", KEY)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"appid\":578080}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.discoveredBy").value("MANUAL"));
+
+        // 이미 수집된 게임은 409
+        SteamAppSeed collected = SteamAppSeed.discovered(594330, DiscoveredBy.STEAMSPY_TAG, Instant.now());
+        collected.markFetched(FetchStatus.OK, Instant.now());
+        seedRepository.save(collected);
+        mvc.perform(post("/api/admin/ingestion/seeds").header("X-Admin-Key", KEY)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"appid\":594330}"))
                 .andExpect(status().isConflict());
     }
 

@@ -33,8 +33,11 @@ public class DiscoveryService {
 
     private static final int CHUNK_SIZE = 500;
     static final int SEARCH_PAGE_SIZE = 100;
-    /** 최신 출시작은 매일 이만큼 본다 (Horror 태그 신작은 하루 수십 개 수준) */
-    static final int NEW_RELEASE_LIMIT = 300;
+    /**
+     * Horror 태그 게임 전체를 최신 출시순으로 매일 훑는다 (약 1.5만 개 = 150페이지, 1.5s 간격이라 4분 안팎).
+     * SteamSpy 태그 목록은 2025년 이후 게임이 많이 빠져 있어, Steam 검색이 실질적인 전체 목록이다. 이 값은 안전 상한
+     */
+    static final int HORROR_SEARCH_LIMIT = 20_000;
     /** 출시 예정작은 자동 노출되므로 인기 상위만 받는다 (전체는 2천 개가 넘고 대부분 무명) */
     static final int UPCOMING_LIMIT = 200;
 
@@ -90,7 +93,7 @@ public class DiscoveryService {
 
     Set<Integer> searchHorrorAppIds() {
         Set<Integer> appids = new LinkedHashSet<>();
-        appids.addAll(searchPages(SteamSearchList.NEW_RELEASES, NEW_RELEASE_LIMIT));
+        appids.addAll(searchPages(SteamSearchList.NEW_RELEASES, HORROR_SEARCH_LIMIT));
         appids.addAll(searchPages(SteamSearchList.POPULAR_UPCOMING, UPCOMING_LIMIT));
         return appids;
     }
@@ -98,7 +101,17 @@ public class DiscoveryService {
     private List<Integer> searchPages(SteamSearchList list, int limit) {
         List<Integer> appids = new ArrayList<>();
         for (int start = 0; start < limit; start += SEARCH_PAGE_SIZE) {
-            List<Integer> page = storeClient.fetchHorrorSearchPage(list, start, SEARCH_PAGE_SIZE);
+            List<Integer> page;
+            try {
+                page = storeClient.fetchHorrorSearchPage(list, start, SEARCH_PAGE_SIZE);
+            } catch (RuntimeException e) {
+                if (appids.isEmpty()) {
+                    throw e; // 첫 페이지부터 실패하면 검색 출처 실패로 기록한다
+                }
+                // 긴 목록 중간에서 실패하면 받은 데까지 쓰고, 나머지는 다음 날 다시 훑는다
+                log.warn("Steam search {} stopped at start={}: {}", list, start, e.getMessage());
+                break;
+            }
             appids.addAll(page);
             if (page.size() < SEARCH_PAGE_SIZE) {
                 break;
