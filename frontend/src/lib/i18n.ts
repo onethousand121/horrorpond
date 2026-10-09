@@ -90,6 +90,10 @@ const ko = {
     reviews: "리뷰",
     steamReviews: "Steam 리뷰",
     playVideo: "플레이 영상",
+    videoShort: "영상",
+    achievementShort: "업적",
+    hasPlayVideo: "류재일 플레이 영상 있음",
+    hasAchievementGuide: "업적 공략 있음",
   },
   guide: {
     playVideos: "플레이 영상",
@@ -215,6 +219,10 @@ const en: Dictionary = {
     reviews: "Reviews",
     steamReviews: "Steam reviews",
     playVideo: "Gameplay",
+    videoShort: "Video",
+    achievementShort: "Achievements",
+    hasPlayVideo: "Has a gameplay video",
+    hasAchievementGuide: "Has an achievement guide",
   },
   guide: {
     playVideos: "Gameplay videos",

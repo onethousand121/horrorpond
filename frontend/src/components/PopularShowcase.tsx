@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AdultBadge, CoopBadge, GenreBadge, KoreanBadge } from "@/components/Badges";
+import { AdultBadge, CoopBadge, GenreBadge, GuideBadges, KoreanBadge } from "@/components/Badges";
 import { formatCount, formatReleaseDate } from "@/lib/format";
 import { getDictionary, localePath, type Locale } from "@/lib/i18n";
 import type { GameSummary } from "@/lib/types";
@@ -60,6 +60,13 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
           <span className="absolute top-3 left-3 rounded bg-background/85 px-2 py-0.5 font-pixel text-[11px] text-accent">
             {dict.showcase.rank(active + 1)}
           </span>
+          <div className="absolute top-3 right-3 flex gap-1.5">
+            <GuideBadges
+              locale={locale}
+              hasPlayVideo={game.hasPlayVideo}
+              hasAchievementGuide={game.hasAchievementGuide}
+            />
+          </div>
         </div>
         <div className="flex min-w-0 flex-col gap-3 p-5">
           <h3 className="text-xl leading-snug font-bold">
