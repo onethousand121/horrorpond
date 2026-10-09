@@ -57,7 +57,8 @@ export default async function GamesPage({ params, searchParams }: PageProps<"/[l
   const view = parseView(query.view);
   const page = parsePage(query.page);
   const q = parseSearch(query.q);
-  const viewParams = VIEWS.find((v) => v.key === view)!.params;
+  // 검색은 탭(지금 뜨는 = 최근 90일 등) 조건 없이 사이트 전체에서 찾고, 많이 알려진 게임부터 보여준다
+  const viewParams: GetGamesParams = q ? { sort: "POPULAR" } : VIEWS.find((v) => v.key === view)!.params;
 
   const games = await getGames({ ...viewParams, q: q || undefined, page: page - 1, lang });
 
@@ -67,28 +68,30 @@ export default async function GamesPage({ params, searchParams }: PageProps<"/[l
         <h1 className="font-pixel text-[22px]">
           {q ? t.search.resultsFor(q) : t.games.heading} <span className="font-sans text-base font-normal text-muted">{games.totalElements}</span>
         </h1>
-        <nav aria-label={t.games.viewNav} className="flex flex-wrap gap-1.5 text-sm">
-          {VIEWS.map((v) => (
-            <Link
-              key={v.key}
-              href={href(lang, v.key, 1, q)}
-              aria-current={v.key === view ? "page" : undefined}
-              className={`rounded-full border px-3 py-1 ${
-                v.key === view
-                  ? "border-accent bg-accent font-medium text-accent-ink"
-                  : "border-border text-muted hover:border-accent/50 hover:text-foreground"
-              }`}
-            >
-              {t.games.views[v.key]}
-            </Link>
-          ))}
-        </nav>
+        {!q && (
+          <nav aria-label={t.games.viewNav} className="flex flex-wrap gap-1.5 text-sm">
+            {VIEWS.map((v) => (
+              <Link
+                key={v.key}
+                href={href(lang, v.key, 1, q)}
+                aria-current={v.key === view ? "page" : undefined}
+                className={`rounded-full border px-3 py-1 ${
+                  v.key === view
+                    ? "border-accent bg-accent font-medium text-accent-ink"
+                    : "border-border text-muted hover:border-accent/50 hover:text-foreground"
+                }`}
+              >
+                {t.games.views[v.key]}
+              </Link>
+            ))}
+          </nav>
+        )}
       </div>
       <GameGrid games={games.content} locale={lang} emptyMessage={q ? t.search.noResults : undefined} />
       <Pagination
         page={page - 1}
         totalPages={games.totalPages}
-        hrefFor={(p) => href(lang, view, p + 1, q)}
+        hrefFor={(p) => href(lang, q ? "trending" : view, p + 1, q)}
         locale={lang}
       />
     </div>
