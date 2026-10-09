@@ -3,6 +3,7 @@ package com.horrorpond.curation.api;
 import com.horrorpond.catalog.domain.GameStatus;
 import com.horrorpond.common.web.PageResponse;
 import com.horrorpond.curation.application.AdminArticleResponse;
+import com.horrorpond.curation.domain.ArticleKind;
 import com.horrorpond.curation.application.AdminGameDetailResponse;
 import com.horrorpond.curation.application.AdminGameResponse;
 import com.horrorpond.curation.application.CurationService;
@@ -67,7 +68,8 @@ public class AdminCurationController {
 
     @PutMapping("/{id}/article")
     public AdminArticleResponse upsertArticle(@PathVariable Long id, @Valid @RequestBody ArticleRequest request) {
-        return curationService.upsertArticle(id, new CurationService.ArticleCommand(request.title(),
+        ArticleKind kind = request.kind() == null ? ArticleKind.PICK : request.kind();
+        return curationService.upsertArticle(id, new CurationService.ArticleCommand(kind, request.title(),
                 request.oneLiner(), request.body(), request.highlights(), request.sponsored(),
                 request.sponsorDisclosure()));
     }
@@ -143,9 +145,10 @@ public class AdminCurationController {
     }
 
     /**
-     * 길이·개수 등 글 규칙은 도메인(CurationArticle)이 검증한다.
+     * 길이·개수 등 글 규칙은 도메인(CurationArticle)이 검증한다. kind가 없으면 추천(PICK).
      */
     public record ArticleRequest(
+            ArticleKind kind,
             String title,
             String oneLiner,
             String body,

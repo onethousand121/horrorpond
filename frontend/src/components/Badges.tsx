@@ -47,6 +47,18 @@ export function KeeperPickBadge({ locale, className = "" }: { locale: Locale; cl
   );
 }
 
+/** 주인장 플레이 후기(추천은 아닌 글). 추천 뱃지와 같은 모양에 다른 색 */
+export function KeeperReviewBadge({ locale, className = "" }: { locale: Locale; className?: string }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded border border-border bg-surface-2 px-1.5 py-0.5 font-pixel text-[11px] text-foreground ${className}`}
+    >
+      <NoteIcon />
+      {getDictionary(locale).detail.reviewLabel}
+    </span>
+  );
+}
+
 /** 한국어 화면에서만: 한국어(자막·인터페이스) 또는 한국어 음성을 지원하면 표시 */
 export function KoreanBadge({ locale, languages, audioLanguages }: {
   locale: Locale;
@@ -75,6 +87,16 @@ function PlayIcon() {
   );
 }
 
+/** 메모장 모양 (플레이 후기) */
+function NoteIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden className="size-[13px] shrink-0">
+      <rect x="2.5" y="1.5" width="11" height="13" rx="1.5" fill="#cfd8c4" />
+      <path d="M5 5h6M5 8h6M5 11h4" stroke="#3b4a36" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** 트로피 모양 */
 function TrophyIcon() {
   return (
@@ -88,17 +110,18 @@ function TrophyIcon() {
 }
 
 /**
- * 주인장이 붙인 콘텐츠 표시 (카드 이미지 오른쪽 위). 모두 같은 칩 모양이고 순서는 협찬 → 추천 → 영상 → 업적.
+ * 주인장이 붙인 콘텐츠 표시 (카드 이미지 오른쪽 위). 모두 같은 칩 모양이고 순서는 협찬 → 추천/후기 → 영상 → 업적.
  * 협찬은 눈에 잘 띄어야 하므로(추천·보증 심사지침) 아이콘 없이 노란 테두리와 글자로 맨 앞에 둔다.
  */
-export function ContentBadges({ locale, sponsored, picked, hasPlayVideo, hasAchievementGuide }: {
+export function ContentBadges({ locale, sponsored, picked, reviewed = false, hasPlayVideo, hasAchievementGuide }: {
   locale: Locale;
   sponsored: boolean;
   picked: boolean;
+  reviewed?: boolean;
   hasPlayVideo: boolean;
   hasAchievementGuide: boolean;
 }) {
-  if (!sponsored && !picked && !hasPlayVideo && !hasAchievementGuide) return null;
+  if (!sponsored && !picked && !reviewed && !hasPlayVideo && !hasAchievementGuide) return null;
   const t = getDictionary(locale);
   return (
     <>
@@ -115,6 +138,12 @@ export function ContentBadges({ locale, sponsored, picked, hasPlayVideo, hasAchi
         <span className={CHIP} title={t.card.hasPick} aria-label={t.card.hasPick}>
           <KeeperFrog className="w-[22px] shrink-0" />
           {t.card.pickShort}
+        </span>
+      )}
+      {reviewed && (
+        <span className={CHIP} title={t.card.hasReview} aria-label={t.card.hasReview}>
+          <NoteIcon />
+          {t.card.reviewShort}
         </span>
       )}
       {hasPlayVideo && (

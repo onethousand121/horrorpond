@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
+import { redirect } from "next/navigation";
 import {
+  addItchGame,
   addSteamSeed,
   AdminApiError,
   deleteArticle,
@@ -62,9 +64,11 @@ export async function saveArticleAction(_prev: ActionResult | null, formData: Fo
     .slice(0, ARTICLE_LIMITS.highlights);
   const sponsored = formData.get("sponsored") === "on";
   const disclosure = String(formData.get("sponsorDisclosure") ?? "").trim();
+  const kind = formData.get("kind") === "REVIEW" ? "REVIEW" : "PICK";
   return run(
     () =>
       upsertArticle(id, {
+        kind,
         title: String(formData.get("title") ?? ""),
         oneLiner: String(formData.get("oneLiner") ?? ""),
         body: String(formData.get("body") ?? ""),
@@ -72,7 +76,9 @@ export async function saveArticleAction(_prev: ActionResult | null, formData: Fo
         sponsored,
         sponsorDisclosure: sponsored ? disclosure : null,
       }),
-    "글을 저장했습니다. 사이트에 '주인장 추천'으로 올리려면 위 '노출' 칸의 버튼을 누르세요(장점 포인트 1개 이상 필요).",
+    kind === "REVIEW"
+      ? "글을 저장했습니다. 사이트에 '플레이 후기'로 올리려면 위 '노출' 칸의 버튼을 누르세요."
+      : "글을 저장했습니다. 사이트에 '주인장 추천'으로 올리려면 위 '노출' 칸의 버튼을 누르세요(장점 포인트 1개 이상 필요).",
   );
 }
 
@@ -182,12 +188,31 @@ export async function addSteamGamesAction(_prev: ActionResult | null, formData: 
   return { ok: invalid.length === 0, message: parts.join(" · ") };
 }
 
+/** itch.io 게임을 지금 받아 오고, 그 게임의 관리 화면으로 간다 (고정 노출·추천 글은 거기서) */
+export async function addItchGameAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const url = String(formData.get("url") ?? "").trim();
+  if (!url) return { ok: false, message: "itch.io 게임 주소를 넣어 주세요." };
+  let gameId: number;
+  try {
+    ({ gameId } = await addItchGame(url));
+  } catch (e) {
+    if (e instanceof AdminApiError) {
+      if (e.status === 400) return { ok: false, message: "itch.io 게임 주소가 아니에요. 예: https://작성자.itch.io/게임" };
+      if (e.status === 404) return { ok: false, message: "itch.io에서 게임을 찾지 못했어요 (삭제·비공개일 수 있어요)." };
+      return { ok: false, message: e.message };
+    }
+    throw e;
+  }
+  refreshPages();
+  redirect(`/admin/games/${gameId}`);
+}
+
 export async function unpublishArticleAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const id = gameId(formData);
-  return run(() => unpublishArticle(id), "추천을 내렸습니다. 글은 초안으로 남아 있어 다시 공개할 수 있습니다.");
+  return run(() => unpublishArticle(id), "글을 내렸습니다. 초안으로 남아 있어 다시 공개할 수 있습니다.");
 }
 
 export async function deleteArticleAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const id = gameId(formData);
-  return run(() => deleteArticle(id), "추천 글을 삭제했습니다.");
+  return run(() => deleteArticle(id), "글을 삭제했습니다.");
 }

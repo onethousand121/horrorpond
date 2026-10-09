@@ -21,6 +21,7 @@ public record IngestionProperties(
         @DefaultValue("PT2H") Duration lockAtMostFor,
         @DefaultValue Enrichment enrichment,
         @DefaultValue Metrics metrics,
+        @DefaultValue Itch itch,
         @DefaultValue Scheduler scheduler
 ) {
 
@@ -31,9 +32,11 @@ public record IngestionProperties(
      * 다른 인스턴스가 같은 작업을 동시에 시작할 수 있다.
      */
     @AssertTrue(message = "enrichment.max-per-run x (2 x request-interval + steam-spy-request-interval)"
-            + " + metrics.max-per-run x request-interval must not exceed 80% of lock-at-most-for")
+            + " + metrics.max-per-run x request-interval"
+            + " + (itch.max-pages + itch.max-per-run) x itch.request-interval must not exceed 80% of lock-at-most-for")
     public boolean isEnrichmentRunWithinLock() {
-        return estimatedEnrichmentDuration().plus(estimatedMetricsDuration()).compareTo(runTimeBudget()) <= 0;
+        return estimatedEnrichmentDuration().plus(estimatedMetricsDuration()).plus(estimatedItchDuration())
+                .compareTo(runTimeBudget()) <= 0;
     }
 
     /**
@@ -44,10 +47,17 @@ public record IngestionProperties(
     }
 
     /**
-     * enrichment가 쓸 수 있는 시간. 뒤에 이어지는 리뷰 수 기록(METRICS) 몫을 남겨 둔다.
+     * enrichment가 쓸 수 있는 시간. 뒤에 이어지는 itch.io 수집(ITCH)과 리뷰 수 기록(METRICS) 몫을 남겨 둔다.
      */
     public Duration enrichmentTimeBudget() {
-        return runTimeBudget().minus(estimatedMetricsDuration());
+        return runTimeBudget().minus(estimatedMetricsDuration()).minus(estimatedItchDuration());
+    }
+
+    /**
+     * 목록 페이지 + 게임 페이지(게임마다 1번). 재시도는 넣지 않는다.
+     */
+    public Duration estimatedItchDuration() {
+        return itch.requestInterval().multipliedBy((long) itch.maxPages() + itch.maxPerRun());
     }
 
     /**
@@ -84,6 +94,27 @@ public record IngestionProperties(
             @DefaultValue("400") @PositiveOrZero int maxPerRun,
             @DefaultValue("30") @Positive int recentDays,
             @DefaultValue("10") @PositiveOrZero int minReviews
+    ) {
+    }
+
+    /**
+     * itch.io 수집. 게임잼 작품이 너무 많아 공포 태그 평점순 목록에서 평가 수가 minRatings 이상인 게임만 받는다.
+     * 관리자가 주소로 추가한 게임은 기준과 상관없이 받는다.
+     *
+     * @param maxPages     평점순 목록에서 볼 페이지 수 (페이지당 36개, 0이면 자동 발견 끔)
+     * @param minRatings   자동 발견 기준 평가 수
+     * @param maxPerRun    한 번에 받을 게임 페이지 수 (0이면 게임 페이지를 받지 않음)
+     * @param refreshAfter 이 기간이 지나면 게임 페이지를 다시 받는다
+     */
+    public record Itch(
+            @DefaultValue("https://itch.io") String baseUrl,
+            @DefaultValue("2s") Duration requestInterval,
+            @DefaultValue("20") @PositiveOrZero int maxPages,
+            @DefaultValue("500") @Positive int minRatings,
+            @DefaultValue("100") @PositiveOrZero int maxPerRun,
+            @DefaultValue("7d") Duration refreshAfter,
+            @DefaultValue("1d") Duration failedRetryAfter,
+            @DefaultValue("3") int maxFailCount
     ) {
     }
 

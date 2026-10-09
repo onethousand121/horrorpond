@@ -48,6 +48,7 @@ export function GameCard({ game, locale, eager = false }: { game: GameSummary; l
             locale={locale}
             sponsored={game.sponsored}
             picked={game.picked}
+            reviewed={game.reviewed}
             hasPlayVideo={game.hasPlayVideo}
             hasAchievementGuide={game.hasAchievementGuide}
           />
@@ -61,13 +62,14 @@ export function GameCard({ game, locale, eager = false }: { game: GameSummary; l
           </Link>
         </h3>
         <p className="flex flex-wrap gap-x-3 text-xs text-muted">
+          {game.source === "ITCH" && <span>itch.io</span>}
           {release && <span>{release}</span>}
           {game.reviewCount != null && game.reviewCount > 0 && <span>
-              {dict.card.reviews} {formatCount(game.reviewCount, locale)}
+              {game.source === "ITCH" ? dict.card.ratings : dict.card.reviews} {formatCount(game.reviewCount, locale)}
             </span>}
         </p>
-        {game.picked && game.oneLiner && <p className="text-sm text-foreground/85">{game.oneLiner}</p>}
-        {game.picked && <HighlightList items={game.highlights.slice(0, CARD_HIGHLIGHTS)} compact />}
+        {(game.picked || game.reviewed) && game.oneLiner && <p className="text-sm text-foreground/85">{game.oneLiner}</p>}
+        {(game.picked || game.reviewed) && <HighlightList items={game.highlights.slice(0, CARD_HIGHLIGHTS)} compact />}
         <div className="mt-auto flex flex-wrap gap-1.5 pt-1">
           <KoreanBadge locale={locale} languages={game.languages} audioLanguages={game.audioLanguages} />
           {game.coop && <CoopBadge locale={locale} />}

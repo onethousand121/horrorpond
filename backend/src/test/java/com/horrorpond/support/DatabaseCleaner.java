@@ -23,7 +23,7 @@ public final class DatabaseCleaner {
         jdbc.execute("""
                 TRUNCATE game_genre, game_developer, game_media, store_link, curation_article,
                          play_video, achievement_guide, game_metric_daily,
-                         game, developer, steam_app_seed, steam_raw_snapshot, ingestion_job
+                         game, developer, steam_app_seed, itch_game_seed, steam_raw_snapshot, ingestion_job
                 RESTART IDENTITY CASCADE""");
         jdbc.update("DELETE FROM genre WHERE slug NOT IN (" + SEEDED_GENRE_SLUGS + ")");
         jdbc.update("UPDATE shedlock SET lock_until = locked_at");

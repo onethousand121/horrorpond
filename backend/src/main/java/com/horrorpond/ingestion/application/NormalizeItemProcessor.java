@@ -7,7 +7,6 @@ import com.horrorpond.catalog.domain.GameMetricDaily;
 import com.horrorpond.catalog.domain.GameSource;
 import com.horrorpond.catalog.domain.SteamGameData;
 import com.horrorpond.catalog.domain.Store;
-import com.horrorpond.catalog.repository.DeveloperRepository;
 import com.horrorpond.catalog.repository.GameMetricDailyRepository;
 import com.horrorpond.catalog.repository.GameRepository;
 import com.horrorpond.common.util.SlugGenerator;
@@ -33,12 +32,10 @@ import java.util.function.Predicate;
 @RequiredArgsConstructor
 public class NormalizeItemProcessor {
 
-    private static final String DEVELOPER_SLUG_FALLBACK = "developer";
-
     private final SteamRawSnapshotRepository snapshotRepository;
     private final SteamAppSeedRepository seedRepository;
     private final GameRepository gameRepository;
-    private final DeveloperRepository developerRepository;
+    private final DeveloperResolver developerResolver;
     private final SteamAppDetailsParser parser;
     private final GameMetricDailyRepository metricRepository;
     private final Clock clock;
@@ -83,10 +80,7 @@ public class NormalizeItemProcessor {
     }
 
     private Developer findOrCreateDeveloper(String name) {
-        return developerRepository.findByName(name)
-                .orElseGet(() -> developerRepository.save(Developer.create(name,
-                        uniqueSlug(SlugGenerator.slugify(name, DEVELOPER_SLUG_FALLBACK),
-                                developerRepository::existsBySlug))));
+        return developerResolver.findOrCreate(name);
     }
 
     /**

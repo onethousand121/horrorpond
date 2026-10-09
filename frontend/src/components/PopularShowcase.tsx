@@ -65,6 +65,7 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
               locale={locale}
               sponsored={game.sponsored}
               picked={game.picked}
+              reviewed={game.reviewed}
               hasPlayVideo={game.hasPlayVideo}
               hasAchievementGuide={game.hasAchievementGuide}
             />
@@ -80,7 +81,8 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
           <p className="flex flex-wrap gap-x-3 text-xs text-muted">
             {release && <span>{release}</span>}
             {game.reviewCount != null && game.reviewCount > 0 && <span>
-                {dict.card.steamReviews} {formatCount(game.reviewCount, locale)}
+                {game.source === "ITCH" ? dict.card.itchRatings : dict.card.steamReviews}{" "}
+                {formatCount(game.reviewCount, locale)}
               </span>}
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -95,7 +97,7 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
               </span>
             ))}
           </div>
-          {game.picked && game.oneLiner ? (
+          {(game.picked || game.reviewed) && game.oneLiner ? (
             <p className="border-l-2 border-accent-2/60 pl-3 text-sm text-foreground/90">{game.oneLiner}</p>
           ) : null}
           {!game.adult && game.shortDescription && (

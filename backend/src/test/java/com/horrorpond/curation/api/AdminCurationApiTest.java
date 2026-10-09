@@ -180,6 +180,44 @@ class AdminCurationApiTest {
     }
 
     @Test
+    void reviewIsPublishedWithoutHighlightsAndIsNotAPick() throws Exception {
+        Long id = steamCandidate(4, "Played", "played-4");
+        mvc.perform(admin(put("/api/admin/games/{id}/article", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"kind\":\"REVIEW\",\"title\":\"t\",\"oneLiner\":\"o\",\"body\":\"b\","
+                                + "\"highlights\":[],\"sponsored\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.kind").value("REVIEW"));
+        mvc.perform(admin(post("/api/admin/games/{id}/publish", id))).andExpect(status().isOk());
+
+        // 후기도 글은 그대로 보이지만, 추천 뱃지·추천 목록·주인장 추천에는 나오지 않는다
+        mvc.perform(get("/api/games/played-4"))
+                .andExpect(jsonPath("$.article.kind").value("REVIEW"))
+                .andExpect(jsonPath("$.article.oneLiner").value("o"));
+        mvc.perform(get("/api/games").param("q", "Played"))
+                .andExpect(jsonPath("$.content[0].picked").value(false))
+                .andExpect(jsonPath("$.content[0].reviewed").value(true))
+                .andExpect(jsonPath("$.content[0].oneLiner").value("o"));
+        mvc.perform(get("/api/games").param("picked", "true")).andExpect(jsonPath("$.content", hasSize(0)));
+        mvc.perform(get("/api/games").param("keeper", "true")).andExpect(jsonPath("$.content", hasSize(0)));
+
+        // 추천으로 바꾸려면 장점 포인트가 있어야 한다 (공개된 글)
+        mvc.perform(admin(put("/api/admin/games/{id}/article", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"kind\":\"PICK\",\"title\":\"t\",\"oneLiner\":\"o\",\"body\":\"b\","
+                                + "\"highlights\":[],\"sponsored\":false}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(admin(put("/api/admin/games/{id}/article", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"kind\":\"PICK\",\"title\":\"t\",\"oneLiner\":\"o\",\"body\":\"b\","
+                                + "\"highlights\":[\"h\"],\"sponsored\":false}"))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/games").param("picked", "true"))
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].reviewed").value(false));
+    }
+
+    @Test
     void publishWithoutArticlePinsGameOnly() throws Exception {
         Long id = steamCandidate(1, "No Article", "no-article-1");
         mvc.perform(admin(get("/api/admin/games/{id}", id)))

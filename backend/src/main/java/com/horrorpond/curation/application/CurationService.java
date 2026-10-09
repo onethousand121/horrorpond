@@ -9,6 +9,7 @@ import com.horrorpond.catalog.repository.GenreRepository;
 import com.horrorpond.common.domain.DomainStateException;
 import com.horrorpond.common.domain.DomainValidationException;
 import com.horrorpond.common.error.NotFoundException;
+import com.horrorpond.curation.domain.ArticleKind;
 import com.horrorpond.curation.domain.CurationArticle;
 import com.horrorpond.curation.repository.AdminGameQueryRepository;
 import com.horrorpond.curation.repository.CurationArticleRepository;
@@ -80,10 +81,11 @@ public class CurationService {
         findGame(gameId);
         CurationArticle article = articleRepository.findByGameId(gameId)
                 .map(existing -> {
-                    existing.edit(command.title(), command.oneLiner(), command.body(), command.highlights());
+                    existing.edit(command.kind(), command.title(), command.oneLiner(), command.body(),
+                            command.highlights());
                     return existing;
                 })
-                .orElseGet(() -> articleRepository.save(CurationArticle.draft(gameId, command.title(),
+                .orElseGet(() -> articleRepository.save(CurationArticle.draft(gameId, command.kind(), command.title(),
                         command.oneLiner(), command.body(), command.highlights())));
         if (command.sponsored()) {
             article.markSponsored(command.sponsorDisclosure());
@@ -141,7 +143,7 @@ public class CurationService {
         return new HashSet<>(found);
     }
 
-    public record ArticleCommand(String title, String oneLiner, String body, List<String> highlights,
-                                 boolean sponsored, String sponsorDisclosure) {
+    public record ArticleCommand(ArticleKind kind, String title, String oneLiner, String body,
+                                 List<String> highlights, boolean sponsored, String sponsorDisclosure) {
     }
 }

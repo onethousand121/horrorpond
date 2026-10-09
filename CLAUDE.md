@@ -14,7 +14,8 @@
 - DB: PostgreSQL 16, Flyway 마이그레이션. Redis 미사용(MVP)
 - 노출 정책(공포게임 허브): Game.status = CANDIDATE | PUBLISHED | HIDDEN. 규칙은 Game.isPubliclyVisible / ExposurePolicy 한 곳
   HIDDEN 비노출, PUBLISHED(큐레이터 공개) 항상 노출, CANDIDATE(수집됨)는 성인 아님 AND (출시 예정 OR 출시 후 new-release-days(10)일 이내 OR 리뷰 ≥ min-reviews(10))면 자동 노출 (AutoExposure)
-  큐레이터 글은 선택(있으면 "재일 추천"). 플레이 영상(play_video)·업적 공략(achievement_guide)도 선택이며 없으면 사이트에서 영역을 숨긴다
+  큐레이터 글은 선택. 종류(curation_article.kind)는 PICK("주인장 추천", 장점 포인트 1개 이상 필요, 추천 목록·주인장 추천 줄)
+  | REVIEW("플레이 후기", 포인트 선택, 후기 뱃지만 붙고 추천 목록에는 안 나옴). 플레이 영상(play_video)·업적 공략(achievement_guide)도 선택이며 없으면 사이트에서 영역을 숨긴다
   (관리 화면에서 목록 전체를 한 번에 저장, 유튜브 주소는 YoutubeVideoId가 검증).
   성인 게임(adult)은 자동 노출 제외, 고정 노출해도 이미지 흐림 + 19 표시, 상세는 소개·미디어 없이 Steam 링크만, noindex·사이트맵 제외 장르 = 큐레이터 지정 장르 ∪ SteamSpy 태그 매핑(genre.steam_tags)
 - 장르: 자체 택소노미(curator 관리) + SteamSpy 태그 자동 매핑. Steam genres/categories는 참고용 raw 데이터로만 보관
@@ -31,6 +32,10 @@
   한국어 자동 번역: 한국어 소개(short_description)에 한글이 없으면 TRANSLATE 단계(파이프라인 마지막)가 DeepL로 번역해
   game.short_description_ko_auto에 저장 (한국어 화면만 사용, "자동 번역" 표시). Steam 소개가 바뀌면 Game이 번역을 지운다.
   DEEPL_API_KEY 없으면 건너뜀. 이달 남은 한도 − monthly-reserve(2만 자) 안에서 한 번에 최대 15만 자, 공개·출시 예정·최근·리뷰 많은 순
+  itch.io(ITCH 단계, NORMALIZE 다음): 게임잼 작품이 너무 많아 공포 태그 평점순 목록(20페이지)에서 평가 수 ≥ min-ratings(500)인
+  게임만 itch_game_seed로 받고, 게임 페이지(HTML, 2s 간격, 하루 최대 100개, 7일마다 갱신)를 Game(source=ITCH)에 반영.
+  평가 수는 reviewCount 자리에 넣고(목록에서 매일 갱신, game_metric_daily store=ITCH), 노출 규칙은 Steam과 같다.
+  관리자는 itch.io 주소로 아무 게임이나 바로 추가(POST /api/admin/ingestion/itch) → 평가가 적으면 고정 노출로 공개
   지원 언어: appdetails supported_languages(한국어 이름, "*"는 음성)를 코드로(game.languages/audio_languages, ko·en·zh-Hans…).
   카드·상세에 "한국어/한국어 음성" 배지(한국어 화면만), 상세에 지원 언어 목록, 목록 필터 korean=true
   영어 텍스트(이름·짧은 소개·출시일)는 appdetails(l=english, filters=basic,release_date)로 받아 같은 스냅샷의 english 키에 붙인다.

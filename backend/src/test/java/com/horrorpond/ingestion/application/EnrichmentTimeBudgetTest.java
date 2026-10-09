@@ -56,6 +56,8 @@ class EnrichmentTimeBudgetTest {
             Duration.ofHours(2),
             new IngestionProperties.Enrichment(2000, Duration.ofDays(7), Duration.ofDays(1), 3),
             new IngestionProperties.Metrics(0, 30, 10),
+            new IngestionProperties.Itch("https://itch.test", Duration.ofSeconds(2), 0, 200, 0, Duration.ofDays(7),
+                    Duration.ofDays(1), 3),
             new IngestionProperties.Scheduler(false, "-", "UTC"));
 
     private final EnrichmentService service = new EnrichmentService(

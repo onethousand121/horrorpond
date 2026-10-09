@@ -94,7 +94,7 @@ public class Game extends BaseTimeEntity {
     @Column(nullable = false)
     private boolean coop;
 
-    /** Steam 리뷰 수. 출시작 자동 노출의 품질 하한에 쓴다 */
+    /** Steam 리뷰 수 (itch.io 게임은 평가 수). 출시작 자동 노출의 품질 하한에 쓴다 */
     private Integer reviewCount;
 
     /** 성인 콘텐츠. 자동 노출에서 제외되고, 큐레이터가 공개(PUBLISHED)해야 보인다 */
@@ -143,6 +143,10 @@ public class Game extends BaseTimeEntity {
 
     public static Game candidateFromSteam(int appid, String title, String slug) {
         return create(GameSource.STEAM, String.valueOf(appid), title, slug);
+    }
+
+    public static Game candidateFromItch(long itchId, String title, String slug) {
+        return create(GameSource.ITCH, String.valueOf(itchId), title, slug);
     }
 
     public static Game manual(String title, String slug) {
@@ -197,6 +201,54 @@ public class Game extends BaseTimeEntity {
             throw new DomainValidationException("reviewCount must not be negative: " + reviewCount);
         }
         this.reviewCount = reviewCount;
+    }
+
+    // ===== itch.io 소유 필드 =====
+
+    /**
+     * itch.io가 소유한 필드만 갱신한다. coop·status·slug·genres는 큐레이터 소유라 건드리지 않는다.
+     * 성인 콘텐츠는 itch 목록이 기본으로 걸러 주고, 관리자가 직접 고른 게임만 따로 들어오므로 false로 둔다.
+     */
+    public void applyItchData(ItchGameData data) {
+        Objects.requireNonNull(data, "data");
+        if (source != GameSource.ITCH) {
+            throw new DomainStateException("itch.io data can only be applied to ITCH games: source=" + source);
+        }
+        this.title = data.title();
+        this.titleEn = null;
+        if (!Objects.equals(this.shortDescription, data.shortDescription())) {
+            this.shortDescriptionKoAuto = null;
+        }
+        this.shortDescription = data.shortDescription();
+        this.shortDescriptionEn = null;
+        this.headerImageUrl = data.headerImageUrl();
+        this.releaseDate = data.releaseDate();
+        this.releaseDateText = data.releaseDateText();
+        this.releaseDateTextEn = data.releaseDateTextEn();
+        this.comingSoon = false;
+        this.reviewCount = data.ratingCount();
+        this.adult = false;
+        this.tags = new ArrayList<>(data.tags());
+        this.languages = new ArrayList<>(data.languages());
+        this.audioLanguages = new ArrayList<>();
+        replaceMedia(data.media());
+        replaceDevelopers(data.developers().stream()
+                .map(developer -> new SteamGameData.Credit(developer, DeveloperRole.DEVELOPER))
+                .toList());
+        upsertStoreLink(Store.ITCH, data.url());
+    }
+
+    /**
+     * itch.io 목록에서 평가 수만 새로 봤을 때. 다른 필드는 다음 게임 페이지 갱신 때 바뀐다.
+     */
+    public void updateItchRatingCount(int ratingCount) {
+        if (source != GameSource.ITCH) {
+            throw new DomainStateException("itch.io rating count can only be applied to ITCH games: source=" + source);
+        }
+        if (ratingCount < 0) {
+            throw new DomainValidationException("ratingCount must not be negative: " + ratingCount);
+        }
+        this.reviewCount = ratingCount;
     }
 
     /**

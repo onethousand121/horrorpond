@@ -37,22 +37,29 @@ public record AdminGameDetailResponse(
         String steamUrl,
         AdminArticleResponse article,
         List<PlayVideoResponse> playVideos,
-        List<AchievementGuideResponse> achievements
+        List<AchievementGuideResponse> achievements,
+        /** itch.io 게임 주소 (ITCH 게임만) */
+        String itchUrl
 ) {
 
     static AdminGameDetailResponse of(Game game, CurationArticle article, ExposurePolicy policy,
                                       List<PlayVideoResponse> playVideos,
                                       List<AchievementGuideResponse> achievements) {
         List<String> genreSlugs = game.getGenres().stream().map(Genre::getSlug).sorted().toList();
-        String steamUrl = game.getStoreLinks().stream()
-                .filter(link -> link.getStore() == Store.STEAM)
-                .map(StoreLink::getUrl)
-                .findFirst()
-                .orElse(null);
+        String steamUrl = storeUrl(game, Store.STEAM);
         return new AdminGameDetailResponse(game.getId(), game.getSource(), game.getExternalId(), game.getSlug(),
                 game.getTitle(), game.getShortDescription(), game.getHeaderImageUrl(), game.getReleaseDate(),
                 game.isComingSoon(), game.isCoop(), game.getReviewCount(), game.isAdult(), List.copyOf(game.getTags()),
                 game.getStatus(), policy.isVisible(game), genreSlugs, steamUrl,
-                article == null ? null : AdminArticleResponse.from(article), playVideos, achievements);
+                article == null ? null : AdminArticleResponse.from(article), playVideos, achievements,
+                storeUrl(game, Store.ITCH));
+    }
+
+    private static String storeUrl(Game game, Store store) {
+        return game.getStoreLinks().stream()
+                .filter(link -> link.getStore() == store)
+                .map(StoreLink::getUrl)
+                .findFirst()
+                .orElse(null);
     }
 }

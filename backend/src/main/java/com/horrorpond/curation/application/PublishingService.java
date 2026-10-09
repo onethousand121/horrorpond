@@ -14,7 +14,8 @@ import java.time.Instant;
 
 /**
  * 큐레이터 공개: 자동 노출 조건(리뷰 수, 성인 여부)과 무관하게 게임을 항상 노출한다.
- * 글은 선택이다. 장점 포인트가 1개 이상인 글이 있으면 함께 공개하고, 없거나 작성 중이면 게임만 공개한다.
+ * 글은 선택이다. 공개할 수 있는 글(추천은 장점 포인트 1개 이상, 후기는 언제나)이 있으면 함께 공개하고,
+ * 없거나 작성 중이면 게임만 공개한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -31,7 +32,7 @@ public class PublishingService {
                 .orElseThrow(() -> new NotFoundException("Game not found: " + gameId));
         Instant now = clock.instant();
         CurationArticle article = articleRepository.findByGameId(gameId).orElse(null);
-        if (article != null && !article.getHighlights().isEmpty()) {
+        if (article != null && article.isPublishable()) {
             article.publish(now);
         }
         game.publish(now);
