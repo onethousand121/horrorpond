@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { AdultBadge, CoopBadge, GenreBadge, GuideBadges, KoreanBadge } from "@/components/Badges";
+import { AdultBadge, CoopBadge, GenreBadge, GuideBadges, KeeperPickBadge, KoreanBadge } from "@/components/Badges";
 import { HighlightList } from "@/components/HighlightList";
 import { SponsorBadge } from "@/components/SponsorBadge";
 import { formatCount, formatReleaseDate, isUpcoming } from "@/lib/format";
@@ -44,7 +44,7 @@ export function GameCard({ game, locale, eager = false }: { game: GameSummary; l
             <span className="rounded bg-background/85 px-1.5 py-0.5 font-pixel text-[11px] text-accent">{dict.card.upcoming}</span>
           )}
           {game.picked && (
-            <span className="rounded bg-accent-2/90 px-1.5 py-0.5 font-pixel text-[11px] text-accent-ink">{dict.site.pick}</span>
+            <KeeperPickBadge locale={locale} />
           )}
           {game.sponsored && <SponsorBadge locale={locale} />}
         </div>

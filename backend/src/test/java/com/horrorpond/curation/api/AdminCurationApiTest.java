@@ -273,6 +273,9 @@ class AdminCurationApiTest {
         mvc.perform(get("/api/games"))
                 .andExpect(jsonPath("$.content[0].hasPlayVideo").value(true))
                 .andExpect(jsonPath("$.content[0].hasAchievementGuide").value(true));
+        // 주인장 추천 목록: 주인장 플레이 영상이 있는 게임
+        mvc.perform(get("/api/games").param("keeper", "true"))
+                .andExpect(jsonPath("$.content[*].slug", contains("guided-1")));
         mvc.perform(admin(get("/api/admin/games/{id}", id)))
                 .andExpect(jsonPath("$.playVideos", hasSize(2)))
                 .andExpect(jsonPath("$.achievements", hasSize(2)));
@@ -296,6 +299,7 @@ class AdminCurationApiTest {
                 .andExpect(status().isOk());
         mvc.perform(get("/api/games/guided-1")).andExpect(jsonPath("$.playVideos", hasSize(0)));
         mvc.perform(get("/api/games")).andExpect(jsonPath("$.content[0].hasPlayVideo").value(false));
+        mvc.perform(get("/api/games").param("keeper", "true")).andExpect(jsonPath("$.content", hasSize(0)));
     }
 
     @Test
