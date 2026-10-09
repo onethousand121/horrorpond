@@ -3,6 +3,7 @@ package com.horrorpond.curation.application;
 import com.horrorpond.catalog.domain.DeveloperRole;
 import com.horrorpond.catalog.domain.Game;
 import com.horrorpond.catalog.domain.GameDeveloper;
+import com.horrorpond.catalog.domain.GameSource;
 import com.horrorpond.catalog.domain.MediaType;
 import com.horrorpond.catalog.domain.Store;
 import com.horrorpond.common.domain.Language;
@@ -43,7 +44,9 @@ public record GameDetailResponse(
         /** 플레이 영상. 없으면 빈 목록 */
         List<PlayVideoResponse> playVideos,
         /** 업적 공략. 없으면 빈 목록 */
-        List<AchievementGuideResponse> achievements
+        List<AchievementGuideResponse> achievements,
+        /** STEAM | ITCH | MANUAL. ITCH면 reviewCount는 itch.io 평가 수 */
+        GameSource source
 ) {
 
     /**
@@ -68,7 +71,7 @@ public record GameDetailResponse(
                 game.getStoreLinks().stream()
                         .map(link -> new StoreLinkResponse(link.getStore(), link.getUrl()))
                         .toList(),
-                article == null ? null : Article.from(article), playVideos, achievements);
+                article == null ? null : Article.from(article), playVideos, achievements, game.getSource());
     }
 
     public record DeveloperCredit(String name, String slug, DeveloperRole role) {

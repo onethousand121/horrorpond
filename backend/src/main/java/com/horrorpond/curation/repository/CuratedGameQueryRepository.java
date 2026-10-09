@@ -1,5 +1,6 @@
 package com.horrorpond.curation.repository;
 
+import com.horrorpond.catalog.domain.GameSource;
 import com.horrorpond.catalog.domain.QGame;
 import com.horrorpond.catalog.domain.QGenre;
 import com.horrorpond.curation.domain.ArticleStatus;
@@ -61,7 +62,8 @@ public class CuratedGameQueryRepository {
                         article.id.isNotNull(), article.oneLiner, article.highlights, article.sponsored.coalesce(false),
                         JPAExpressions.selectOne().from(playVideo).where(playVideo.gameId.eq(game.id)).exists(),
                         JPAExpressions.selectOne().from(achievementGuide)
-                                .where(achievementGuide.gameId.eq(game.id)).exists()))
+                                .where(achievementGuide.gameId.eq(game.id)).exists(),
+                        game.source))
                 .from(game)
                 .leftJoin(article).on(article.gameId.eq(game.id), article.status.eq(ArticleStatus.PUBLISHED))
                 .where(where)
@@ -243,7 +245,8 @@ public class CuratedGameQueryRepository {
             List<String> highlights,
             boolean sponsored,
             boolean hasPlayVideo,
-            boolean hasAchievementGuide
+            boolean hasAchievementGuide,
+            GameSource source
     ) {
     }
 }

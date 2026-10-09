@@ -1,6 +1,7 @@
 package com.horrorpond.ingestion.api;
 
 import com.horrorpond.ingestion.application.IngestionTriggerService;
+import com.horrorpond.ingestion.application.ItchIngestionService;
 import com.horrorpond.ingestion.application.SeedService;
 import com.horrorpond.ingestion.domain.DiscoveredBy;
 import com.horrorpond.ingestion.domain.FetchStatus;
@@ -11,9 +12,11 @@ import com.horrorpond.ingestion.domain.SteamAppSeed;
 import com.horrorpond.ingestion.domain.TriggerType;
 import com.horrorpond.ingestion.repository.IngestionJobRepository;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Limit;
 import org.springframework.http.HttpStatus;
@@ -40,6 +43,7 @@ public class IngestionAdminController {
 
     private final IngestionTriggerService triggerService;
     private final SeedService seedService;
+    private final ItchIngestionService itchIngestionService;
     private final IngestionJobRepository jobRepository;
 
     @PostMapping("/run")
@@ -61,6 +65,21 @@ public class IngestionAdminController {
     @ResponseStatus(HttpStatus.CREATED)
     public SeedResponse addSeed(@Valid @RequestBody SeedRequest request) {
         return SeedResponse.from(seedService.addManual(request.appid()));
+    }
+
+    /**
+     * itch.io 게임을 주소로 바로 받는다 (인기 기준 없음). 게임이 만들어지면 관리 화면에서 고정 노출하면 된다.
+     */
+    @PostMapping("/itch")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ItchGameResponse addItchGame(@Valid @RequestBody ItchGameRequest request) {
+        return new ItchGameResponse(itchIngestionService.addManual(request.url()));
+    }
+
+    public record ItchGameRequest(@NotBlank @Size(max = 500) String url) {
+    }
+
+    public record ItchGameResponse(long gameId) {
     }
 
     public record RunRequest(@NotEmpty List<@NotNull JobType> steps) {

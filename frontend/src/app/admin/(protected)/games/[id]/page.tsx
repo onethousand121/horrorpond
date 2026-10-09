@@ -70,8 +70,15 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
                 Steam 스토어 ↗
               </a>
             )}
+            {game.itchUrl && (
+              <a href={game.itchUrl} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+                itch.io ↗
+              </a>
+            )}
             {game.comingSoon ? <span>출시 예정</span> : game.releaseDate && <span>출시 {formatDate(game.releaseDate)}</span>}
-            <span>리뷰 {game.reviewCount == null ? "-" : formatCount(game.reviewCount)}</span>
+            <span>
+              {game.source === "ITCH" ? "평가" : "리뷰"} {game.reviewCount == null ? "-" : formatCount(game.reviewCount)}
+            </span>
             {game.publiclyVisible && (
               <Link href={`/games/${game.slug}`} target="_blank" className="hover:text-foreground">
                 사이트에서 보기 ↗

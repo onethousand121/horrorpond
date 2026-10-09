@@ -1,6 +1,7 @@
 package com.horrorpond.curation.application;
 
 import com.horrorpond.catalog.domain.Game;
+import com.horrorpond.catalog.domain.GameSource;
 import com.horrorpond.common.domain.Language;
 import com.horrorpond.curation.repository.CuratedGameQueryRepository.CuratedGameRow;
 
@@ -9,13 +10,14 @@ import java.util.List;
 
 /**
  * @param picked     재일 추천(공개된 큐레이션 글이 있는 게임). 아니면 oneLiner는 null, highlights는 빈 목록
- * @param reviewCount Steam 리뷰 수. 없으면 null
+ * @param reviewCount Steam 리뷰 수 (itch.io 게임은 평가 수). 없으면 null
  * @param tags        SteamSpy 상위 태그 (표 많은 순, 최대 5개)
  * @param languages   Steam 지원 언어 코드 (ko, en, ja …). audioLanguages는 음성까지 지원하는 언어
  * @param hasPlayVideo 플레이 영상이 하나 이상 있으면 true
  * @param hasAchievementGuide 업적 공략이 하나 이상 있으면 true (업적 공략 페이지가 있다)
  * @param shortDescriptionTranslated 소개가 자동 번역이면 true (사이트에 "자동 번역" 표시)
  * @param adult       성인 콘텐츠 (고정 노출한 경우에만 목록에 나온다. 사이트는 이미지를 흐리게 보여준다)
+ * @param source      STEAM | ITCH | MANUAL. ITCH면 reviewCount는 itch.io 평가 수
  */
 public record GameSummaryResponse(
         String slug,
@@ -38,7 +40,8 @@ public record GameSummaryResponse(
         List<String> highlights,
         boolean sponsored,
         boolean hasPlayVideo,
-        boolean hasAchievementGuide
+        boolean hasAchievementGuide,
+        GameSource source
 ) {
 
     static final int MAX_HIGHLIGHTS = 3;
@@ -60,7 +63,7 @@ public record GameSummaryResponse(
                 row.audioLanguages() == null ? List.of() : List.copyOf(row.audioLanguages()), genres, row.picked(),
                 row.oneLiner(),
                 List.copyOf(highlights.subList(0, Math.min(MAX_HIGHLIGHTS, highlights.size()))),
-                row.sponsored(), row.hasPlayVideo(), row.hasAchievementGuide());
+                row.sponsored(), row.hasPlayVideo(), row.hasAchievementGuide(), row.source());
     }
 
     public record GenreSummary(String slug, String name) {

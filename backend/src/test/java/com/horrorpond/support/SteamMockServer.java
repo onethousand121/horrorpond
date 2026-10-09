@@ -4,7 +4,7 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 /**
- * Steam Store/SteamSpy RestClient를 하나의 MockRestServiceServer에 묶는다.
+ * Steam Store/SteamSpy/itch.io RestClient를 하나의 MockRestServiceServer에 묶는다.
  * 통합 테스트에서 @TestBean으로 실제 RestClient 빈을 교체할 때 쓴다.
  */
 public final class SteamMockServer {
@@ -27,6 +27,15 @@ public final class SteamMockServer {
 
     public static RestClient spyRestClient() {
         return BUILDER.clone().baseUrl(SPY_BASE).build();
+    }
+
+    /** itch.io는 게임마다 주소가 달라 baseUrl 없이 만든다 (목록 주소는 ingestion.itch.base-url) */
+    public static RestClient itchRestClient() {
+        return BUILDER.clone().build();
+    }
+
+    public static String itchTopRatedUrl(int page) {
+        return "https://itch.test/games/top-rated/tag-horror?format=json&page=" + page;
     }
 
     public static String appDetailsUrl(int appid) {

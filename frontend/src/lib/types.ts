@@ -6,6 +6,8 @@
 export type DeveloperRole = "DEVELOPER" | "PUBLISHER";
 export type MediaType = "SCREENSHOT" | "TRAILER";
 export type Store = "STEAM" | "ITCH" | "HUMBLE" | "FANATICAL" | "GMG";
+/** 게임을 가져온 곳. ITCH면 reviewCount는 itch.io 평가 수 */
+export type GameSource = "STEAM" | "ITCH" | "MANUAL";
 /** 백엔드 CuratedGameSort: 최근 추가 / 최신 출시 / 인기(누적 Steam 리뷰 수) / 지금 뜨는(최근 출시작의 하루 평균 리뷰 수) */
 export type GameSort = "LATEST" | "RELEASE" | "POPULAR" | "TRENDING";
 /** 백엔드 ReleaseWindow: 출시 예정 / 최근 90일 출시 / 오늘 포함 최근 7일 출시 */
@@ -77,6 +79,8 @@ export interface GameSummary {
   hasPlayVideo: boolean;
   /** 업적 공략이 하나 이상 있다 (업적 공략 페이지가 있다) */
   hasAchievementGuide: boolean;
+  /** 백엔드 배포 전 응답에는 없다 (그때는 Steam으로 본다) */
+  source?: GameSource;
 }
 
 export interface DeveloperCredit {
@@ -135,6 +139,8 @@ export interface GameDetail {
   playVideos: PlayVideo[];
   /** 업적 공략. 없으면 빈 배열 (사이트에서 영역을 숨긴다) */
   achievements: AchievementGuide[];
+  /** 백엔드 배포 전 응답에는 없다 (그때는 Steam으로 본다) */
+  source?: GameSource;
 }
 
 /** 백엔드 GameGuideResponses.PlayVideoResponse */

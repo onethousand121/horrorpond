@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
+import { redirect } from "next/navigation";
 import {
+  addItchGame,
   addSteamSeed,
   AdminApiError,
   deleteArticle,
@@ -180,6 +182,25 @@ export async function addSteamGamesAction(_prev: ActionResult | null, formData: 
     invalid.length > 0 && `읽지 못함 ${invalid.join(", ")}`,
   ].filter(Boolean);
   return { ok: invalid.length === 0, message: parts.join(" · ") };
+}
+
+/** itch.io 게임을 지금 받아 오고, 그 게임의 관리 화면으로 간다 (고정 노출·추천 글은 거기서) */
+export async function addItchGameAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const url = String(formData.get("url") ?? "").trim();
+  if (!url) return { ok: false, message: "itch.io 게임 주소를 넣어 주세요." };
+  let gameId: number;
+  try {
+    ({ gameId } = await addItchGame(url));
+  } catch (e) {
+    if (e instanceof AdminApiError) {
+      if (e.status === 400) return { ok: false, message: "itch.io 게임 주소가 아니에요. 예: https://작성자.itch.io/게임" };
+      if (e.status === 404) return { ok: false, message: "itch.io에서 게임을 찾지 못했어요 (삭제·비공개일 수 있어요)." };
+      return { ok: false, message: e.message };
+    }
+    throw e;
+  }
+  refreshPages();
+  redirect(`/admin/games/${gameId}`);
 }
 
 export async function unpublishArticleAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {

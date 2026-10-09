@@ -7,6 +7,7 @@ import type { GameStatus } from "@/lib/admin/types";
 import { formatCount, formatDate } from "@/lib/format";
 import { hideAction, unhideAction } from "./actions";
 import { ActionButton } from "./components/ActionButton";
+import { AddItchGameForm } from "./components/AddItchGameForm";
 import { AddSteamGamesForm } from "./components/AddSteamGamesForm";
 import { AdultBadge, ArticleStatusBadge, GameStatusBadge, VisibilityBadge } from "./components/StatusBadge";
 
@@ -89,6 +90,7 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
       </div>
 
       <AddSteamGamesForm />
+      <AddItchGameForm />
 
       <p className="text-sm text-muted">{result.totalElements.toLocaleString()}개</p>
 
@@ -129,7 +131,7 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
                       Steam {game.externalId} ↗
                     </a>
                   ) : (
-                    <span>{game.source}</span>
+                    <span>{game.source === "ITCH" ? "itch.io" : game.source}</span>
                   )}
                   {game.comingSoon ? <span>출시 예정</span> : game.releaseDate && <span>출시 {formatDate(game.releaseDate)}</span>}
                   <span>리뷰 {game.reviewCount == null ? "-" : formatCount(game.reviewCount)}</span>

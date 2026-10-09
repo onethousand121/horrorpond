@@ -1,5 +1,5 @@
 package com.horrorpond.ingestion.domain;
 
 public enum JobType {
-    DISCOVERY, ENRICHMENT, NORMALIZE, METRICS, TRANSLATE
+    DISCOVERY, ENRICHMENT, NORMALIZE, METRICS, TRANSLATE, ITCH
 }

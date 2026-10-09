@@ -61,9 +61,10 @@ export function GameCard({ game, locale, eager = false }: { game: GameSummary; l
           </Link>
         </h3>
         <p className="flex flex-wrap gap-x-3 text-xs text-muted">
+          {game.source === "ITCH" && <span>itch.io</span>}
           {release && <span>{release}</span>}
           {game.reviewCount != null && game.reviewCount > 0 && <span>
-              {dict.card.reviews} {formatCount(game.reviewCount, locale)}
+              {game.source === "ITCH" ? dict.card.ratings : dict.card.reviews} {formatCount(game.reviewCount, locale)}
             </span>}
         </p>
         {game.picked && game.oneLiner && <p className="text-sm text-foreground/85">{game.oneLiner}</p>}

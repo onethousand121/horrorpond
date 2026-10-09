@@ -69,6 +69,8 @@ export interface AdminGameDetail {
   publiclyVisible: boolean;
   genreSlugs: string[];
   steamUrl: string | null;
+  /** itch.io 게임 주소 (ITCH 게임만). 백엔드 배포 전 응답에는 없다 */
+  itchUrl?: string | null;
   article: AdminArticle | null;
   playVideos: PlayVideo[];
   achievements: AchievementGuide[];

@@ -134,3 +134,10 @@ export function replaceAchievements(
 export function addSteamSeed(appid: number): Promise<{ appid: number }> {
   return adminFetch(`/api/admin/ingestion/seeds`, { method: "POST", body: { appid } });
 }
+
+/**
+ * itch.io 게임을 주소로 바로 받는다 (인기 기준 없음). 400: itch.io 게임 주소가 아님, 404: 없는 게임.
+ */
+export function addItchGame(url: string): Promise<{ gameId: number }> {
+  return adminFetch(`/api/admin/ingestion/itch`, { method: "POST", body: { url } });
+}

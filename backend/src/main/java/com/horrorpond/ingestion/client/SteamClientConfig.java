@@ -16,6 +16,7 @@ import java.time.Duration;
 public class SteamClientConfig {
 
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
+    private static final String ITCH_USER_AGENT = "Mozilla/5.0 (compatible; lurkpond/1.0; +https://lurkpond.com)";
 
     @Bean
     public RestClient steamStoreRestClient(RestClient.Builder builder, IngestionProperties properties) {
@@ -30,6 +31,17 @@ public class SteamClientConfig {
         return builder
                 .baseUrl(properties.steamSpyBaseUrl())
                 .requestFactory(requestFactory(Duration.ofSeconds(30)))
+                .build();
+    }
+
+    /**
+     * itch.io는 게임마다 주소(작성자 하위 도메인)가 달라 baseUrl 없이 절대 주소로 부른다.
+     */
+    @Bean
+    public RestClient itchRestClient(RestClient.Builder builder) {
+        return builder
+                .defaultHeader(HttpHeaders.USER_AGENT, ITCH_USER_AGENT)
+                .requestFactory(requestFactory(Duration.ofSeconds(20)))
                 .build();
     }
 

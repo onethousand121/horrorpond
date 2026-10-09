@@ -71,3 +71,8 @@ spring:
 ingestion:
   scheduler:
     enabled: false
+  # 테스트에서는 itch.io를 부르지 않는다 (itch.io 테스트만 켠다)
+  itch:
+    base-url: https://itch.test
+    max-pages: 0
+    max-per-run: 0

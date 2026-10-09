@@ -80,7 +80,8 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
           <p className="flex flex-wrap gap-x-3 text-xs text-muted">
             {release && <span>{release}</span>}
             {game.reviewCount != null && game.reviewCount > 0 && <span>
-                {dict.card.steamReviews} {formatCount(game.reviewCount, locale)}
+                {game.source === "ITCH" ? dict.card.itchRatings : dict.card.steamReviews}{" "}
+                {formatCount(game.reviewCount, locale)}
               </span>}
           </p>
           <div className="flex flex-wrap gap-1.5">

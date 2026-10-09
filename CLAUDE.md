@@ -31,6 +31,10 @@
   한국어 자동 번역: 한국어 소개(short_description)에 한글이 없으면 TRANSLATE 단계(파이프라인 마지막)가 DeepL로 번역해
   game.short_description_ko_auto에 저장 (한국어 화면만 사용, "자동 번역" 표시). Steam 소개가 바뀌면 Game이 번역을 지운다.
   DEEPL_API_KEY 없으면 건너뜀. 이달 남은 한도 − monthly-reserve(2만 자) 안에서 한 번에 최대 15만 자, 공개·출시 예정·최근·리뷰 많은 순
+  itch.io(ITCH 단계, NORMALIZE 다음): 게임잼 작품이 너무 많아 공포 태그 평점순 목록(20페이지)에서 평가 수 ≥ min-ratings(500)인
+  게임만 itch_game_seed로 받고, 게임 페이지(HTML, 2s 간격, 하루 최대 100개, 7일마다 갱신)를 Game(source=ITCH)에 반영.
+  평가 수는 reviewCount 자리에 넣고(목록에서 매일 갱신, game_metric_daily store=ITCH), 노출 규칙은 Steam과 같다.
+  관리자는 itch.io 주소로 아무 게임이나 바로 추가(POST /api/admin/ingestion/itch) → 평가가 적으면 고정 노출로 공개
   지원 언어: appdetails supported_languages(한국어 이름, "*"는 음성)를 코드로(game.languages/audio_languages, ko·en·zh-Hans…).
   카드·상세에 "한국어/한국어 음성" 배지(한국어 화면만), 상세에 지원 언어 목록, 목록 필터 korean=true
   영어 텍스트(이름·짧은 소개·출시일)는 appdetails(l=english, filters=basic,release_date)로 받아 같은 스냅샷의 english 키에 붙인다.

@@ -17,6 +17,12 @@ public interface GameRepository extends JpaRepository<Game, Long> {
 
     boolean existsBySlug(String slug);
 
+    /** 한국어·영어 이름 중 하나가 같은(대소문자 무시) 게임이 그 출처에 있는지 */
+    @Query("""
+            select count(g) > 0 from Game g
+            where g.source = :source and (lower(g.title) = lower(:title) or lower(g.titleEn) = lower(:title))""")
+    boolean existsBySourceAndTitle(@Param("source") GameSource source, @Param("title") String title);
+
     Optional<Game> findBySlug(String slug);
 
     /**

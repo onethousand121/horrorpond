@@ -107,6 +107,8 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
   const languages = orderLanguages(game.languages ?? [], lang);
   const audioLanguages = game.audioLanguages ?? [];
   const steamLink = game.storeLinks.find((link) => link.store === "STEAM");
+  const itchLink = game.storeLinks.find((link) => link.store === "ITCH");
+  const isItch = game.source === "ITCH";
 
   // 같은 그림이 두 번 보이지 않게: 헤더 이미지(상단 히어로)와 첫 스크린샷(갤러리 큰 화면)을 피해 포스터를 고른다
   const trailerPoster = (screenshots[1] ?? screenshots[0])?.url ?? game.headerImageUrl;
@@ -194,7 +196,7 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
                 game.shortDescription && (
                   <section aria-label={t.about} className="space-y-2">
                     <h2 className="font-pixel text-[11px] text-muted">
-                      {t.aboutSteam}
+                      {isItch ? t.aboutItch : t.aboutSteam}
                       {game.shortDescriptionTranslated && <AutoTranslatedMark label={t.autoTranslated} />}
                     </h2>
                     <p className="leading-relaxed text-foreground/90">{game.shortDescription}</p>
@@ -254,7 +256,7 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
               )}
               {game.reviewCount != null && game.reviewCount > 0 && (
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted">{t.steamReviews}</dt>
+                  <dt className="text-muted">{isItch ? t.itchRatings : t.steamReviews}</dt>
                   <dd>{t.reviewCount(formatCount(game.reviewCount, lang))}</dd>
                 </div>
               )}
@@ -291,6 +293,16 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
                 className="glow-hover flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 font-bold text-accent-ink"
               >
                 {t.viewOnSteam}
+              </a>
+            )}
+            {itchLink && (
+              <a
+                href={itchLink.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="glow-hover flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 font-bold text-accent-ink"
+              >
+                {t.viewOnItch}
               </a>
             )}
           </section>
