@@ -22,6 +22,7 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -148,6 +149,34 @@ class AdminCurationApiTest {
                 .andExpect(jsonPath("$.content[*].sameTitleCount", contains(1, 1)));
         mvc.perform(admin(get("/api/admin/games").param("q", "unique")))
                 .andExpect(jsonPath("$.content[0].sameTitleCount").value(0));
+    }
+
+    @Test
+    void publishedPickCanBeUnpublishedAndDeleted() throws Exception {
+        Long id = steamCandidate(3, "Pick", "pick-3");
+        mvc.perform(admin(put("/api/admin/games/{id}/article", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"t\",\"oneLiner\":\"o\",\"body\":\"b\",\"highlights\":[\"h\"],\"sponsored\":false}"))
+                .andExpect(status().isOk());
+        mvc.perform(admin(post("/api/admin/games/{id}/publish", id))).andExpect(status().isOk());
+        mvc.perform(get("/api/games/pick-3")).andExpect(jsonPath("$.article.oneLiner").value("o"));
+
+        // 추천 내리기: 글은 초안으로 남고 사이트에서는 사라진다. 게임은 고정 노출 그대로
+        mvc.perform(admin(post("/api/admin/games/{id}/article/unpublish", id)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.hasArticle").value(true));
+        mvc.perform(get("/api/games/pick-3")).andExpect(jsonPath("$.article").doesNotExist());
+        mvc.perform(get("/api/games").param("picked", "true")).andExpect(jsonPath("$.content", hasSize(0)));
+
+        // 다시 공개할 수 있고, 삭제하면 글이 없어진다
+        mvc.perform(admin(post("/api/admin/games/{id}/publish", id))).andExpect(status().isOk());
+        mvc.perform(get("/api/games/pick-3")).andExpect(jsonPath("$.article.oneLiner").value("o"));
+        mvc.perform(admin(delete("/api/admin/games/{id}/article", id)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.hasArticle").value(false));
+        mvc.perform(get("/api/games/pick-3")).andExpect(jsonPath("$.article").doesNotExist());
+        mvc.perform(admin(post("/api/admin/games/{id}/article/unpublish", id))).andExpect(status().isNotFound());
     }
 
     @Test

@@ -4,11 +4,13 @@ import { revalidatePath, updateTag } from "next/cache";
 import {
   addSteamSeed,
   AdminApiError,
+  deleteArticle,
   hideGame,
   publishGame,
   replaceAchievements,
   replacePlayVideos,
   unhideGame,
+  unpublishArticle,
   updateCuration,
   upsertArticle,
 } from "@/lib/admin/api";
@@ -178,4 +180,14 @@ export async function addSteamGamesAction(_prev: ActionResult | null, formData: 
     invalid.length > 0 && `읽지 못함 ${invalid.join(", ")}`,
   ].filter(Boolean);
   return { ok: invalid.length === 0, message: parts.join(" · ") };
+}
+
+export async function unpublishArticleAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const id = gameId(formData);
+  return run(() => unpublishArticle(id), "추천을 내렸습니다. 글은 초안으로 남아 있어 다시 공개할 수 있습니다.");
+}
+
+export async function deleteArticleAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const id = gameId(formData);
+  return run(() => deleteArticle(id), "추천 글을 삭제했습니다.");
 }

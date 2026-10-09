@@ -88,6 +88,16 @@ export function updateCuration(id: number, body: { slug: string; genreSlugs: str
   return adminFetch<AdminGame>(`/api/admin/games/${id}/curation`, { method: "PUT", body });
 }
 
+/** 추천 내리기: 글은 초안으로 남는다 */
+export function unpublishArticle(id: number): Promise<AdminGame> {
+  return adminFetch<AdminGame>(`/api/admin/games/${id}/article/unpublish`, { method: "POST" });
+}
+
+/** 추천 글 삭제 */
+export function deleteArticle(id: number): Promise<AdminGame> {
+  return adminFetch<AdminGame>(`/api/admin/games/${id}/article`, { method: "DELETE" });
+}
+
 export function upsertArticle(
   id: number,
   body: Pick<AdminArticle, "title" | "oneLiner" | "body" | "highlights" | "sponsored" | "sponsorDisclosure">,
