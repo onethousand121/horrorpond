@@ -18,7 +18,7 @@
   (관리 화면에서 목록 전체를 한 번에 저장, 유튜브 주소는 YoutubeVideoId가 검증).
   성인 게임(adult)은 자동 노출 제외, 고정 노출해도 이미지 흐림 + 19 표시, 상세는 소개·미디어 없이 Steam 링크만, noindex·사이트맵 제외 장르 = 큐레이터 지정 장르 ∪ SteamSpy 태그 매핑(genre.steam_tags)
 - 장르: 자체 택소노미(curator 관리) + SteamSpy 태그 자동 매핑. Steam genres/categories는 참고용 raw 데이터로만 보관
-- 수집: discovery(Steam 스토어 검색: Horror 최신 출시 300 + 인기 출시 예정 200, SteamSpy tag 전체) → enrichment(appdetails, 1.5s throttle, 429→60s backoff)
+- 수집: discovery(Steam 스토어 검색: Horror 전체 최신 출시순(약 1.5만, 중간 실패 시 받은 데까지) + 인기 출시 예정 200, SteamSpy tag 전체(2025년 이후 누락 많음)) → enrichment(appdetails, 1.5s throttle, 429→60s backoff)
         → raw_snapshot(JSONB) 저장 → normalize(별도 단계, 재실행 가능)
   enrichment 우선순위: MANUAL → STEAM_SEARCH(신작) → STEAMSPY_TAG → 갱신 → 재시도
   enrichment는 자동 발견(SteamSpy/검색) seed를 먼저 SteamSpy appdetails(1s 간격) 상위 태그로 판정해

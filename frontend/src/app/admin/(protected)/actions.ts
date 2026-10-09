@@ -2,6 +2,7 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import {
+  addSteamSeed,
   AdminApiError,
   hideGame,
   publishGame,
@@ -134,4 +135,47 @@ export async function hideAction(_prev: ActionResult | null, formData: FormData)
 export async function unhideAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const id = gameId(formData);
   return run(() => unhideGame(id), "숨김을 해제했습니다. 자동 노출 기준을 만족하면 다시 보입니다.");
+}
+
+/** Steam 상점 주소(…/app/123/…) 또는 숫자 appid. 못 읽으면 null */
+function parseSteamAppId(line: string): number | null {
+  const match = line.match(/store\.steampowered\.com\/app\/(\d+)/) ?? line.match(/^(\d{1,10})$/);
+  const appid = match ? Number(match[1]) : NaN;
+  return Number.isInteger(appid) && appid > 0 ? appid : null;
+}
+
+const MAX_SEEDS_PER_SUBMIT = 30;
+
+export async function addSteamGamesAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const lines = String(formData.get("steam") ?? "")
+    .split(/\s+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, MAX_SEEDS_PER_SUBMIT);
+  if (lines.length === 0) return { ok: false, message: "Steam 상점 주소나 appid를 넣어 주세요." };
+
+  const added: number[] = [];
+  const collected: number[] = [];
+  const invalid: string[] = [];
+  for (const line of lines) {
+    const appid = parseSteamAppId(line);
+    if (appid === null) {
+      invalid.push(line);
+      continue;
+    }
+    try {
+      await addSteamSeed(appid);
+      added.push(appid);
+    } catch (e) {
+      if (e instanceof AdminApiError && e.status === 409) collected.push(appid);
+      else if (e instanceof AdminApiError) invalid.push(`${appid} (${e.message})`);
+      else throw e;
+    }
+  }
+  const parts = [
+    added.length > 0 && `${added.length}개 추가 (다음 수집 때 가장 먼저 들어와요)`,
+    collected.length > 0 && `이미 수집됨 ${collected.join(", ")} (검색해서 고정 노출하세요)`,
+    invalid.length > 0 && `읽지 못함 ${invalid.join(", ")}`,
+  ].filter(Boolean);
+  return { ok: invalid.length === 0, message: parts.join(" · ") };
 }

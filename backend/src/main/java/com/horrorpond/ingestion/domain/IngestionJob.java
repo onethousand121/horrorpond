@@ -63,6 +63,21 @@ public class IngestionJob {
         return job;
     }
 
+    public boolean isRunning() {
+        return status == JobStatus.RUNNING;
+    }
+
+    /**
+     * 실행 중 진행 상황. 끝날 때 succeed가 최종 값으로 덮어쓴다.
+     */
+    public void progress(int processed, int failed) {
+        if (status != JobStatus.RUNNING) {
+            throw new DomainStateException("Job is already finished: status=" + status);
+        }
+        this.processedCount = processed;
+        this.failedCount = failed;
+    }
+
     public void succeed(int processed, int failed, Instant now) {
         finish(JobStatus.SUCCEEDED, now);
         this.processedCount = processed;

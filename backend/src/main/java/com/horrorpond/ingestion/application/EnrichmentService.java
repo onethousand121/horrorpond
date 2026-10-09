@@ -54,7 +54,7 @@ public class EnrichmentService {
     public Long run(TriggerType trigger) {
         Long jobId = jobRecorder.start(JobType.ENRICHMENT, trigger);
         try {
-            Outcome outcome = enrich(selectTargets());
+            Outcome outcome = enrich(jobId, selectTargets());
             if (outcome.abortReason() != null) {
                 jobRecorder.fail(jobId, outcome.abortReason());
             } else {
@@ -111,7 +111,7 @@ public class EnrichmentService {
      * 새 아이템을 시작하기 전마다 경과 시간을 확인한다. 429 대기가 누적돼도 락 유지 시간 안에서 끝내기 위해,
      * 예산(lockAtMostFor × 0.8 − 리뷰 수 기록 몫)을 넘으면 남은 아이템은 다음 실행으로 넘기고 정상 종료한다.
      */
-    private Outcome enrich(List<SteamAppSeed> seeds) {
+    private Outcome enrich(Long jobId, List<SteamAppSeed> seeds) {
         Instant startedAt = clock.instant();
         Duration budget = properties.enrichmentTimeBudget();
         int processed = 0;
@@ -124,6 +124,7 @@ public class EnrichmentService {
                 log.warn("Enrichment time budget reached, processed {} / remaining {}", i, seeds.size() - i);
                 break;
             }
+            jobRecorder.progress(jobId, processed, failed);
             SteamAppSeed seed = seeds.get(i);
             int appid = seed.getAppid();
             // SteamSpy 태그: 모든 seed가 한 번 받는다(장르 자동 분류). SteamSpy로 발견한 seed는 이 태그로 공포 판정도 한다

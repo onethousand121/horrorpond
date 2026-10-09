@@ -39,7 +39,7 @@ public class ReviewMetricsService {
     public Long run(TriggerType trigger) {
         Long jobId = jobRecorder.start(JobType.METRICS, trigger);
         try {
-            Outcome outcome = record(selectTargets());
+            Outcome outcome = record(jobId, selectTargets());
             if (outcome.abortReason() != null) {
                 jobRecorder.fail(jobId, outcome.abortReason());
             } else {
@@ -62,12 +62,13 @@ public class ReviewMetricsService {
                 config.minReviews(), config.maxPerRun());
     }
 
-    private Outcome record(List<SteamMetricTarget> targets) {
+    private Outcome record(Long jobId, List<SteamMetricTarget> targets) {
         LocalDate today = today();
         int processed = 0;
         int failed = 0;
         int consecutiveRateLimits = 0;
         for (SteamMetricTarget target : targets) {
+            jobRecorder.progress(jobId, processed, failed);
             int appid = Integer.parseInt(target.getAppid());
             while (true) {
                 try {

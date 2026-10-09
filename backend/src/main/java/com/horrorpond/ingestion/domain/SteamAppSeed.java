@@ -1,5 +1,6 @@
 package com.horrorpond.ingestion.domain;
 
+import com.horrorpond.common.domain.DomainStateException;
 import com.horrorpond.common.domain.DomainValidationException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -112,6 +113,19 @@ public class SteamAppSeed implements Persistable<Integer> {
         }
         this.fetchStatus = status;
         this.lastFetchedAt = Objects.requireNonNull(now, "now");
+    }
+
+    /**
+     * 관리자가 이미 발견된(아직 수집 안 된) 게임을 직접 요청했다: 수동 추가처럼 가장 먼저, 공포 판정 없이 수집한다.
+     * (자동 발견에서 공포가 아니라고 걸러졌거나 실패가 쌓인 seed도 다시 받는다)
+     */
+    public void requestManually() {
+        if (fetchStatus == FetchStatus.OK) {
+            throw new DomainStateException("Already collected: appid=" + appid);
+        }
+        this.discoveredBy = DiscoveredBy.MANUAL;
+        this.fetchStatus = FetchStatus.PENDING;
+        this.failCount = 0;
     }
 
     public void markFailed(Instant now) {

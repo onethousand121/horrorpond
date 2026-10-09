@@ -117,3 +117,10 @@ export function replaceAchievements(
 ) {
   return adminFetch<unknown>(`/api/admin/games/${id}/achievements`, { method: "PUT", body: { achievements } });
 }
+
+/**
+ * Steam 게임 수동 추가(다음 수집에서 가장 먼저 받는다). 이미 수집된 게임이면 409(AdminApiError).
+ */
+export function addSteamSeed(appid: number): Promise<{ appid: number }> {
+  return adminFetch(`/api/admin/ingestion/seeds`, { method: "POST", body: { appid } });
+}

@@ -53,16 +53,25 @@ public class SteamAppDetailsParser {
             DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH),
             DateTimeFormatter.ofPattern("d MMM, yyyy", Locale.ENGLISH));
 
+    /** 이름이 없어 게임으로 만들 수 없는 앱 (normalize가 건너뛰고 반영 완료로 표시한다) */
+    static final String TYPE_UNNAMED = "game-without-name";
+
     public ParsedSteamApp parse(String dataJson) {
         JsonNode root = JSON.readTree(dataJson);
         String type = text(root, "type");
         if (!TYPE_GAME.equals(type)) {
             return new ParsedSteamApp(type, null, List.of(), List.of(), null);
         }
+        ParsedSteamApp.EnglishText english = english(root.get(AppDetailsResult.Found.ENGLISH));
+        // 한국어 응답에 이름이 비어 있는 게임이 있다. 영어 이름으로 대신하고, 둘 다 없으면 게임으로 만들지 않는다
+        String title = firstNonBlank(text(root, "name"), english == null ? null : english.title());
+        if (title == null) {
+            return new ParsedSteamApp(TYPE_UNNAMED, null, List.of(), List.of(), null);
+        }
         JsonNode release = root.path("release_date");
         String releaseDateText = text(release, "date");
         SteamGameData data = new SteamGameData(
-                text(root, "name"),
+                title,
                 cleanDescription(text(root, "short_description")),
                 text(root, "header_image"),
                 parseReleaseDate(releaseDateText),
@@ -73,8 +82,14 @@ public class SteamAppDetailsParser {
                 isAdult(root),
                 media(root),
                 List.of());
-        return new ParsedSteamApp(type, data, names(root, "developers"), names(root, "publishers"),
-                english(root.get(AppDetailsResult.Found.ENGLISH)));
+        return new ParsedSteamApp(type, data, names(root, "developers"), names(root, "publishers"), english);
+    }
+
+    private static String firstNonBlank(String first, String second) {
+        if (first != null && !first.isBlank()) {
+            return first;
+        }
+        return second != null && !second.isBlank() ? second : null;
     }
 
     private static ParsedSteamApp.EnglishText english(JsonNode english) {

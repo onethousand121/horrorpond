@@ -7,6 +7,7 @@ import type { GameStatus } from "@/lib/admin/types";
 import { formatCount, formatDate } from "@/lib/format";
 import { hideAction, unhideAction } from "./actions";
 import { ActionButton } from "./components/ActionButton";
+import { AddSteamGamesForm } from "./components/AddSteamGamesForm";
 import { AdultBadge, ArticleStatusBadge, GameStatusBadge, VisibilityBadge } from "./components/StatusBadge";
 
 const TABS = [
@@ -86,6 +87,8 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
           </button>
         </form>
       </div>
+
+      <AddSteamGamesForm />
 
       <p className="text-sm text-muted">{result.totalElements.toLocaleString()}개</p>
 
