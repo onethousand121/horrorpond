@@ -91,7 +91,7 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
             action={publishAction}
             gameId={game.id}
             variant="primary"
-            label={game.status === "PUBLISHED" ? "글 공개 반영" : "고정 노출"}
+            label={game.status === "PUBLISHED" ? "추천 글 공개 반영" : "고정 노출 + 추천 글 공개"}
             pendingLabel="처리 중…"
           />
           {game.status === "HIDDEN" ? (
@@ -109,8 +109,8 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
         <p className="text-xs text-muted">
           수집된 공포게임은 성인 콘텐츠가 아니면 출시 예정, 출시 후 10일 이내, 또는 리뷰 10개 이상일 때 자동으로
           노출됩니다.
-          고정 노출은 이 기준과 상관없이 항상 보여줍니다. 장점 포인트가 있는 글이 있으면 &quot;{"재일 추천"}&quot;으로
-          함께 공개됩니다. 모든 변경은 사이트에 바로 반영됩니다.
+          고정 노출은 이 기준과 상관없이 항상 보여줍니다. 아래 추천 글은 저장만 하면 초안이고, 이 버튼을 눌러야
+          &quot;주인장 추천&quot;으로 공개됩니다(장점 포인트 1개 이상 필요). 글을 고친 뒤에도 다시 누르면 반영됩니다.
         </p>
       </section>
 
