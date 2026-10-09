@@ -185,6 +185,23 @@ class PublicGameApiTest {
     }
 
     @Test
+    void trendingRanksRecentReleasesByReviewsPerDay() throws Exception {
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+        // 하루 평균: 3000/31 ≈ 97, 2000/11 ≈ 182, 출시 이틀째 400건은 7일로 나눠 ≈ 57
+        create(spec("month-old").releaseDate(today.minusDays(30)).reviewCount(3000));
+        create(spec("ten-days").releaseDate(today.minusDays(10)).reviewCount(2000));
+        create(spec("day-two").releaseDate(today.minusDays(1)).reviewCount(400));
+        create(spec("classic").releaseDate(today.minusYears(5)).reviewCount(90000)); // 90일 밖
+        create(spec("no-reviews").releaseDate(today.minusDays(2)).reviewCount(0));
+        create(spec("upcoming").comingSoon(true).releaseDate(today.plusDays(3)));
+
+        mvc.perform(get("/api/games").param("sort", "TRENDING"))
+                .andExpect(jsonPath("$.content[*].slug", contains("ten-days", "month-old", "day-two")));
+        mvc.perform(get("/api/games").param("sort", "POPULAR"))
+                .andExpect(jsonPath("$.content[0].slug").value("classic"));
+    }
+
+    @Test
     void newReleasesWithoutReviewsAreVisibleForTenDays() throws Exception {
         LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
         create(spec("day-ten").gameStatus(GameStatus.CANDIDATE).releaseDate(today.minusDays(10)));

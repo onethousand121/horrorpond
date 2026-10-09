@@ -5,6 +5,14 @@ import { useState } from "react";
 import type { Media } from "@/lib/types";
 import { getDictionary, type Locale } from "@/lib/i18n";
 
+const preloaded = new Set<string>();
+
+function preload(url: string) {
+  if (preloaded.has(url)) return;
+  preloaded.add(url);
+  new window.Image().src = url;
+}
+
 /** 스크린샷 썸네일 목록. 썸네일을 누르면 위쪽 큰 이미지가 바뀐다. */
 export function MediaGallery({ screenshots, title, locale }: { screenshots: Media[]; title: string; locale: Locale }) {
   const t = getDictionary(locale).media;
@@ -16,7 +24,12 @@ export function MediaGallery({ screenshots, title, locale }: { screenshots: Medi
   return (
     <div className="space-y-3">
       <div className="relative aspect-video overflow-hidden rounded-lg bg-surface">
+        {/* 큰 원본(1920px)을 받는 동안 이미 받아 둔 썸네일을 먼저 보여준다 */}
+        {current.thumbnailUrl && (
+          <Image src={current.thumbnailUrl} alt="" fill aria-hidden className="object-contain" />
+        )}
         <Image
+          key={current.url}
           src={current.url}
           alt={t.screenshot(title, selected + 1)}
           fill
@@ -31,6 +44,9 @@ export function MediaGallery({ screenshots, title, locale }: { screenshots: Medi
               <button
                 type="button"
                 onClick={() => setSelected(index)}
+                // 마우스를 올리면 누르기 전에 큰 이미지를 미리 받아 둔다
+                onPointerEnter={() => preload(shot.url)}
+                onFocus={() => preload(shot.url)}
                 aria-label={t.showScreenshot(index + 1)}
                 aria-pressed={index === selected}
                 className={`relative block h-[68px] w-[120px] overflow-hidden rounded border-2 ${

@@ -6,8 +6,8 @@
 export type DeveloperRole = "DEVELOPER" | "PUBLISHER";
 export type MediaType = "SCREENSHOT" | "TRAILER";
 export type Store = "STEAM" | "ITCH" | "HUMBLE" | "FANATICAL" | "GMG";
-/** 백엔드 CuratedGameSort: 최근 추가 / 최신 출시 / 인기(Steam 리뷰 수) */
-export type GameSort = "LATEST" | "RELEASE" | "POPULAR";
+/** 백엔드 CuratedGameSort: 최근 추가 / 최신 출시 / 인기(누적 Steam 리뷰 수) / 지금 뜨는(최근 출시작의 하루 평균 리뷰 수) */
+export type GameSort = "LATEST" | "RELEASE" | "POPULAR" | "TRENDING";
 /** 백엔드 ReleaseWindow: 출시 예정 / 최근 90일 출시 / 오늘 포함 최근 7일 출시 */
 export type ReleaseWindow = "UPCOMING" | "RECENT" | "TODAY" | "TOMORROW";
 

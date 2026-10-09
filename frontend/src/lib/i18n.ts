@@ -72,7 +72,8 @@ const ko = {
     statTomorrow: ["내일 출시 예정 ", "개"] as [string, string],
     quickFilters: "빠른 필터",
     coopOnly: "협동만 보기",
-    popular: "현재 인기 있는 공포게임",
+    trending: "지금 뜨는 공포게임",
+    steady: "꾸준히 사랑받는 명작",
     recent: "최근 출시",
     upcoming: "출시 예정",
     videos: (name: string) => `${name}의 최근 영상`,
@@ -80,8 +81,8 @@ const ko = {
     channel: "채널 가기",
   },
   showcase: {
-    rank: (n: number) => `인기 ${n}위`,
-    choose: "인기 게임 선택",
+    rank: (n: number) => `지금 뜨는 ${n}위`,
+    choose: "지금 뜨는 게임 선택",
   },
   card: {
     upcoming: "출시 예정",
@@ -112,7 +113,7 @@ const ko = {
     metaDescription: "출시 예정작부터 인기작까지, Steam 공포게임 전체 목록",
     heading: "공포게임",
     viewNav: "보기",
-    views: { popular: "인기", recent: "최근 출시", upcoming: "출시 예정", latest: "새로 추가", picked: "류재일 추천" },
+    views: { trending: "지금 뜨는", popular: "명작·스테디셀러", recent: "최근 출시", upcoming: "출시 예정", latest: "새로 추가", picked: "류재일 추천" },
     empty: "아직 게임이 없습니다.",
   },
   coop: {
@@ -191,7 +192,8 @@ const en: Dictionary = {
     statTomorrow: ["", " out tomorrow"],
     quickFilters: "Quick filters",
     coopOnly: "Co-op only",
-    popular: "Popular right now",
+    trending: "Trending now",
+    steady: "All-time favorites",
     recent: "New releases",
     upcoming: "Coming soon",
     videos: (name: string) => `Latest videos from ${name}`,
@@ -199,8 +201,8 @@ const en: Dictionary = {
     channel: "Channel",
   },
   showcase: {
-    rank: (n: number) => `#${n} popular`,
-    choose: "Choose a popular game",
+    rank: (n: number) => `#${n} trending`,
+    choose: "Choose a trending game",
   },
   card: {
     upcoming: "Coming soon",
@@ -231,7 +233,7 @@ const en: Dictionary = {
     metaDescription: "Every horror game on Steam, from upcoming releases to popular hits",
     heading: "Horror games",
     viewNav: "View",
-    views: { popular: "Popular", recent: "New releases", upcoming: "Coming soon", latest: "Recently added", picked: "Jaeil's Picks" },
+    views: { trending: "Trending", popular: "All-time favorites", recent: "New releases", upcoming: "Coming soon", latest: "Recently added", picked: "Jaeil's Picks" },
     empty: "No games yet.",
   },
   coop: {

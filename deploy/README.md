@@ -11,6 +11,15 @@
          └──────────────── 서버 1대 (Docker Compose) ────────────────┘
 ```
 
+현재 운영 주소 (아래 단계의 `<Public IP>.sslip.io`는 도메인 없이 처음 띄울 때의 예시):
+
+| 용도 | 주소 |
+|---|---|
+| 사이트 (Vercel) | https://lurkpond.com (www는 308 리디렉트) |
+| API (`API_DOMAIN`) | https://api.lurkpond.com → Lightsail 고정 IP |
+| 문의 메일 | contact@lurkpond.com (Cloudflare Email Routing으로 개인 메일함에 전달) |
+| DNS | Cloudflare. Vercel·API 레코드는 프록시 끔(DNS only) |
+
 - **무중단 배포**: `deploy.sh`가 쉬고 있는 슬롯(blue/green)에 새 버전을 띄우고, readiness가 UP이 되면 기존 슬롯을 graceful shutdown 합니다. Caddy는 readiness가 UP인 슬롯으로만 보내고, 종료 중인 슬롯으로 간 요청은 다른 슬롯으로 재시도합니다. 새 버전이 뜨지 않으면 새 슬롯만 내리고 기존 버전이 계속 서비스합니다.
 - **CI/CD**: `main`에 push → 백엔드 전체 테스트 + 프론트 lint/타입/빌드 → 통과하면 jar를 서버로 올려 `deploy.sh` 실행.
 - **비공개 운영**: 프론트는 `SITE_INDEXING=true`가 아니면 모든 페이지가 noindex이고 robots.txt가 전체를 막습니다.
