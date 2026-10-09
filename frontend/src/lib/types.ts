@@ -6,8 +6,8 @@
 export type DeveloperRole = "DEVELOPER" | "PUBLISHER";
 export type MediaType = "SCREENSHOT" | "TRAILER";
 export type Store = "STEAM" | "ITCH" | "HUMBLE" | "FANATICAL" | "GMG";
-/** 백엔드 CuratedGameSort: 최근 추가 / 최신 출시 / 인기(Steam 리뷰 수) */
-export type GameSort = "LATEST" | "RELEASE" | "POPULAR";
+/** 백엔드 CuratedGameSort: 최근 추가 / 최신 출시 / 인기(누적 Steam 리뷰 수) / 지금 뜨는(최근 출시작의 하루 평균 리뷰 수) */
+export type GameSort = "LATEST" | "RELEASE" | "POPULAR" | "TRENDING";
 /** 백엔드 ReleaseWindow: 출시 예정 / 최근 90일 출시 / 오늘 포함 최근 7일 출시 */
 export type ReleaseWindow = "UPCOMING" | "RECENT" | "TODAY" | "TOMORROW";
 
@@ -50,8 +50,10 @@ export interface GameSummary {
   releaseDate: string | null;
   /** Steam 원문 (예: "2027년 4분기") */
   releaseDateText: string | null;
-  /** Steam 짧은 소개 */
+  /** Steam 짧은 소개 (한국어 소개가 없으면 자동 번역) */
   shortDescription: string | null;
+  /** 소개가 자동 번역이면 true. 백엔드 배포 전 응답에는 없다 */
+  shortDescriptionTranslated?: boolean;
   comingSoon: boolean;
   coop: boolean;
   /** 성인 콘텐츠 (고정 노출한 경우만 목록에 나온다). 이미지를 흐리게, 소개는 숨긴다 */
@@ -106,6 +108,7 @@ export interface GameDetail {
   slug: string;
   title: string;
   shortDescription: string | null;
+  shortDescriptionTranslated?: boolean;
   headerImageUrl: string | null;
   /** yyyy-MM-dd */
   releaseDate: string | null;

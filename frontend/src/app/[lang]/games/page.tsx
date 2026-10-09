@@ -14,6 +14,7 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/games">): 
 }
 
 const VIEWS = [
+  { key: "trending", params: { sort: "TRENDING" } },
   { key: "popular", params: { sort: "POPULAR" } },
   { key: "recent", params: { release: "RECENT", sort: "RELEASE" } },
   { key: "upcoming", params: { release: "UPCOMING" } },
@@ -24,7 +25,7 @@ const VIEWS = [
 type ViewKey = (typeof VIEWS)[number]["key"];
 
 function parseView(value: string | string[] | undefined): ViewKey {
-  return VIEWS.some((v) => v.key === value) ? (value as ViewKey) : "popular";
+  return VIEWS.some((v) => v.key === value) ? (value as ViewKey) : "trending";
 }
 
 /** URL의 ?page는 1부터. 잘못된 값은 1페이지로 본다. */
@@ -41,7 +42,7 @@ function parseSearch(value: string | string[] | undefined): string {
 function href(locale: Locale, view: ViewKey, page: number, q: string): string {
   const params = new URLSearchParams();
   if (q) params.set("q", q);
-  if (view !== "popular") params.set("view", view);
+  if (view !== "trending") params.set("view", view);
   if (page > 1) params.set("page", String(page));
   const query = params.toString();
   return localePath(locale, query ? `/games?${query}` : "/games");

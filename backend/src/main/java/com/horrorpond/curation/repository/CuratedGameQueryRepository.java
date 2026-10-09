@@ -13,6 +13,7 @@ import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +52,7 @@ public class CuratedGameQueryRepository {
                 .select(Projections.constructor(CuratedGameRow.class,
                         game.id, game.slug, game.title, game.titleEn, game.headerImageUrl, game.releaseDate,
                         game.releaseDateText, game.releaseDateTextEn, game.shortDescription, game.shortDescriptionEn,
+                        game.shortDescriptionKoAuto,
                         game.comingSoon, game.coop, game.adult, game.reviewCount, game.tags,
                         article.id.isNotNull(), article.oneLiner, article.highlights, article.sponsored.coalesce(false),
                         JPAExpressions.selectOne().from(playVideo).where(playVideo.gameId.eq(game.id)).exists(),
@@ -130,6 +132,10 @@ public class CuratedGameQueryRepository {
         if (query.genre() != null) {
             where.and(inGenre(query.genre()));
         }
+        if (query.sort() == CuratedGameSort.TRENDING) {
+            where.and(game.releaseDate.between(query.today().minusDays(CuratedGameSort.TRENDING_DAYS), query.today()))
+                    .and(game.reviewCount.gt(0));
+        }
         return where;
     }
 
@@ -168,7 +174,18 @@ public class CuratedGameQueryRepository {
                     : new OrderSpecifier<?>[]{game.createdAt.desc(), game.id.desc()};
             case RELEASE -> new OrderSpecifier<?>[]{game.releaseDate.desc().nullsLast(), game.id.desc()};
             case POPULAR -> new OrderSpecifier<?>[]{game.reviewCount.desc().nullsLast(), game.id.desc()};
+            case TRENDING -> new OrderSpecifier<?>[]{reviewsPerDay(query.today()).desc(), game.id.desc()};
         };
+    }
+
+    /**
+     * 출시 후 하루 평균 리뷰 수. 날짜 뺄셈은 HQL의 "by day"로 일수(정수)로 바꾼다.
+     */
+    private static NumberExpression<Double> reviewsPerDay(LocalDate today) {
+        return Expressions.numberTemplate(Double.class,
+                "coalesce({0}, 0) * 1.0 / greatest((({1} - {2}) by day) + 1, {3})",
+                game.reviewCount, Expressions.constant(today), game.releaseDate,
+                Expressions.constant(CuratedGameSort.TRENDING_MIN_DAYS));
     }
 
     /**
@@ -197,6 +214,7 @@ public class CuratedGameQueryRepository {
             String releaseDateTextEn,
             String shortDescription,
             String shortDescriptionEn,
+            String shortDescriptionKoAuto,
             boolean comingSoon,
             boolean coop,
             boolean adult,

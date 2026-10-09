@@ -43,12 +43,15 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
   await connection();
   const dict = getDictionary(lang);
   const t = dict.home;
-  const [stats, genres, popular, recent, upcoming, videos] = await Promise.all([
+  const [stats, genres, trending, recent, upcoming, steady, videos] = await Promise.all([
     getStats(),
     getGenres(lang),
-    getGames({ sort: "POPULAR", size: SHOWCASE, lang }),
+    // 지금 뜨는: 최근 90일 출시작을 하루 평균 리뷰 수로. 누적 리뷰 수(스테디셀러)는 아래쪽 줄로 따로 보여준다
+    // 배포 순서상 백엔드가 TRENDING을 모르는 몇 분 동안은 누적 인기순으로 대신 보여준다
+    getGames({ sort: "TRENDING", size: SHOWCASE, lang }).catch(() => getGames({ sort: "POPULAR", size: SHOWCASE, lang })),
     getGames({ release: "RECENT", sort: "RELEASE", size: ROW, lang }),
     getGames({ release: "UPCOMING", size: ROW, lang }),
+    getGames({ sort: "POPULAR", size: ROW, lang }),
     getFreshVideos(VIDEOS, VIDEO_FRESH_DAYS),
   ]);
 
@@ -99,10 +102,10 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         </nav>
       </section>
 
-      {popular.content.length > 0 && (
+      {trending.content.length > 0 && (
         <section className="space-y-4">
-          <SectionHeader title={t.popular} href={localePath(lang, "/games?view=popular")} more={t.more} />
-          <PopularShowcase games={popular.content} locale={lang} />
+          <SectionHeader title={t.trending} href={localePath(lang, "/games")} more={t.more} />
+          <PopularShowcase games={trending.content} locale={lang} />
         </section>
       )}
 
@@ -117,6 +120,13 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section className="space-y-4">
           <SectionHeader title={t.upcoming} href={localePath(lang, "/games?view=upcoming")} more={t.more} />
           <GameRow games={upcoming.content} locale={lang} />
+        </section>
+      )}
+
+      {steady.content.length > 0 && (
+        <section className="space-y-4">
+          <SectionHeader title={t.steady} href={localePath(lang, "/games?view=popular")} more={t.more} />
+          <GameRow games={steady.content} locale={lang} />
         </section>
       )}
 

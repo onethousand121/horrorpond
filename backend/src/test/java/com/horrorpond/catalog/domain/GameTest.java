@@ -1,6 +1,7 @@
 package com.horrorpond.catalog.domain;
 
 import com.horrorpond.common.domain.DomainStateException;
+import com.horrorpond.common.domain.Language;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -157,6 +158,37 @@ class GameTest {
         game.unhide();
 
         assertThat(game.getStatus()).isEqualTo(GameStatus.CANDIDATE);
+    }
+
+    @Test
+    void koreanAutoTranslationShowsOnlyOnKoreanPagesAndIsClearedWhenSteamTextChanges() {
+        Game game = Game.candidateFromSteam(1, "Title", "title-1");
+        game.applySteamData(description("A haunted house."));
+
+        assertThat(game.applyKoreanTranslation("Old text", "번역")).as("원문이 다르면 버린다").isFalse();
+        assertThat(game.applyKoreanTranslation("A haunted house.", " 유령의 집. ")).isTrue();
+        assertThat(game.shortDescription(Language.KO)).isEqualTo("유령의 집.");
+        assertThat(game.isShortDescriptionAutoTranslated(Language.KO)).isTrue();
+        assertThat(game.shortDescription(Language.EN)).isEqualTo("A haunted house.");
+        assertThat(game.isShortDescriptionAutoTranslated(Language.EN)).isFalse();
+
+        game.applySteamData(description("A haunted house."));
+        assertThat(game.getShortDescriptionKoAuto()).as("같은 원문이면 번역 유지").isEqualTo("유령의 집.");
+        game.applySteamData(description("한국어 소개가 생겼다"));
+        assertThat(game.getShortDescriptionKoAuto()).isNull();
+        assertThat(game.applyKoreanTranslation("한국어 소개가 생겼다", "번역")).as("한국어 소개는 번역 안 함").isFalse();
+    }
+
+    @Test
+    void containsHangul() {
+        assertThat(Game.containsHangul("Outlast 2는 공포 게임")).isTrue();
+        assertThat(Game.containsHangul("Outlast 2")).isFalse();
+        assertThat(Game.containsHangul("ホラーゲーム")).isFalse();
+        assertThat(Game.containsHangul(null)).isFalse();
+    }
+
+    private static SteamGameData description(String text) {
+        return new SteamGameData("Title", text, null, null, null, false, false, null, false, List.of(), List.of());
     }
 
     private static SteamGameData steamData(String title, Developer dev) {
