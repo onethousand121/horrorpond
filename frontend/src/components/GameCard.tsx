@@ -71,7 +71,7 @@ export function GameCard({ game, locale, eager = false }: { game: GameSummary; l
         {(game.picked || game.reviewed) && game.oneLiner && <p className="text-sm text-foreground/85">{game.oneLiner}</p>}
         {(game.picked || game.reviewed) && <HighlightList items={game.highlights.slice(0, CARD_HIGHLIGHTS)} compact />}
         <div className="mt-auto flex flex-wrap gap-1.5 pt-1">
-          <KoreanBadge locale={locale} languages={game.languages} audioLanguages={game.audioLanguages} />
+          <KoreanBadge locale={locale} languages={game.languages} />
           {game.coop && <CoopBadge locale={locale} />}
           {game.genres.slice(0, CARD_GENRES).map((genre) => (
             <GenreBadge key={genre.slug} genre={genre} locale={locale} />

@@ -117,7 +117,7 @@ const ko = {
     play: (title: string) => `${title} 재생`,
     chooseVideo: "영상 선택",
   },
-  badge: { coop: "협동", sponsored: "협찬", adult: "19", adultLabel: "성인 게임", korean: "한국어", koreanAudio: "한국어 음성" },
+  badge: { coop: "협동", sponsored: "협찬", adult: "19", adultLabel: "성인 게임", korean: "한국어" },
   adult: {
     title: "성인 게임",
     notice: "성인 콘텐츠가 포함된 게임이라 이 사이트에서는 이미지와 소개를 보여주지 않습니다. 자세한 내용은 Steam에서 연령 확인 후 볼 수 있습니다.",
@@ -149,7 +149,6 @@ const ko = {
     info: "게임 정보",
     releaseDate: "출시일",
     languages: "지원 언어",
-    audio: "음성",
     moreLanguages: (n: number) => `외 ${n}개`,
     steamReviews: "Steam 리뷰",
     itchRatings: "itch.io 평가",
@@ -259,7 +258,7 @@ const en: Dictionary = {
     play: (title: string) => `Play ${title}`,
     chooseVideo: "Choose a video",
   },
-  badge: { coop: "Co-op", sponsored: "Sponsored", adult: "18+", adultLabel: "Adult game", korean: "Korean", koreanAudio: "Korean audio" },
+  badge: { coop: "Co-op", sponsored: "Sponsored", adult: "18+", adultLabel: "Adult game", korean: "Korean" },
   adult: {
     title: "Adult game",
     notice: "This game contains adult content, so images and descriptions are not shown here. See the details on Steam after its age check.",
@@ -291,7 +290,6 @@ const en: Dictionary = {
     info: "Game info",
     releaseDate: "Release date",
     languages: "Languages",
-    audio: "audio",
     moreLanguages: (n: number) => `+${n} more`,
     steamReviews: "Steam reviews",
     itchRatings: "itch.io ratings",

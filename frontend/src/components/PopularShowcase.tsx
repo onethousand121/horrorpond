@@ -86,7 +86,7 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
               </span>}
           </p>
           <div className="flex flex-wrap gap-1.5">
-            <KoreanBadge locale={locale} languages={game.languages} audioLanguages={game.audioLanguages} />
+            <KoreanBadge locale={locale} languages={game.languages} />
             {game.coop && <CoopBadge locale={locale} />}
             {game.genres.map((genre) => (
               <GenreBadge key={genre.slug} genre={genre} locale={locale} />
