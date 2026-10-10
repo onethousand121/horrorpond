@@ -37,7 +37,7 @@
   평가 수는 reviewCount 자리에 넣고(목록에서 매일 갱신, game_metric_daily store=ITCH), 노출 규칙은 Steam과 같다.
   관리자는 itch.io 주소로 아무 게임이나 바로 추가(POST /api/admin/ingestion/itch) → 평가가 적으면 고정 노출로 공개
   지원 언어: appdetails supported_languages(한국어 이름, "*"는 음성)를 코드로(game.languages/audio_languages, ko·en·zh-Hans…).
-  카드·상세에 "한국어/한국어 음성" 배지(한국어 화면만), 상세에 지원 언어 목록, 목록 필터 korean=true
+  카드·상세에 "한국어" 배지(한국어 화면만), 상세에 지원 언어 목록, 목록 필터 korean=true. 음성 지원은 데이터만 두고 화면에 안 보인다
   영어 텍스트(이름·짧은 소개·출시일)는 appdetails(l=english, filters=basic,release_date)로 받아 같은 스냅샷의 english 키에 붙인다.
   공개 API는 lang=ko|en (영어 값이 없으면 한국어). 큐레이터 글은 한국어만
 - 트리거: @Scheduled 일 1회 + POST /api/admin/ingestion/run (X-Admin-Key)

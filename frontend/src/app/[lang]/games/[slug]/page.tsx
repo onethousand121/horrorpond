@@ -105,7 +105,6 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
   const developers = groupDevelopers(game.developers, lang);
   const releaseDate = formatReleaseDate(game, lang);
   const languages = orderLanguages(game.languages ?? [], lang);
-  const audioLanguages = game.audioLanguages ?? [];
   const steamLink = game.storeLinks.find((link) => link.store === "STEAM");
   const itchLink = game.storeLinks.find((link) => link.store === "ITCH");
   const isItch = game.source === "ITCH";
@@ -144,7 +143,7 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
         </div>
         <div className="relative -mt-10 space-y-3 px-4 sm:-mt-28 sm:px-8">
           <div className="flex flex-wrap gap-1.5">
-            <KoreanBadge locale={lang} languages={game.languages} audioLanguages={game.audioLanguages} />
+            <KoreanBadge locale={lang} languages={game.languages} />
             {game.coop && <CoopBadge locale={lang} />}
             {game.genres.map((genre) => (
               <GenreBadge key={genre.slug} genre={genre} locale={lang} linked />
@@ -267,11 +266,7 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
                   <dd className="text-right">
                     {languages
                       .slice(0, VISIBLE_LANGUAGES)
-                      .map((code) =>
-                        audioLanguages.includes(code)
-                          ? `${languageName(code, lang)}(${t.audio})`
-                          : languageName(code, lang),
-                      )
+                      .map((code) => languageName(code, lang))
                       .join(", ")}
                     {languages.length > VISIBLE_LANGUAGES && (
                       <span className="text-muted"> {t.moreLanguages(languages.length - VISIBLE_LANGUAGES)}</span>
