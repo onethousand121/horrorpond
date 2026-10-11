@@ -95,14 +95,21 @@ public class ItchIngestionService {
         IngestionProperties.Itch config = properties.itch();
         int discovered = 0;
         for (int page = 1; page <= config.maxPages(); page++) {
-            List<ItchListing> listings;
+            String content;
             try {
-                listings = parser.parseListing(client.fetchTopRatedHorrorPage(page));
+                content = client.fetchTopRatedHorrorPage(page);
             } catch (ItchTransientException e) {
                 log.warn("itch.io top-rated page {} failed, stopping discovery: {}", page, e.getMessage());
                 break;
             }
+            List<ItchListing> listings = parser.parseListing(content);
             if (listings.isEmpty()) {
+                int cells = parser.countListingCells(content);
+                if (cells > 0) {
+                    // 게임 칸은 있는데 하나도 못 읽었다: 페이지 모양이 바뀌었다. 조용히 0개로 끝내지 않고 실패로 남긴다
+                    throw new ItchPageParseException("itch.io top-rated page " + page + " has " + cells
+                            + " game cells but none could be read (page layout changed?)");
+                }
                 break;
             }
             for (ItchListing listing : listings) {

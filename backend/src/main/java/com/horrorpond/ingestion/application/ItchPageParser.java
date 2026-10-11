@@ -35,20 +35,21 @@ public class ItchPageParser {
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
     // ===== 목록 =====
-    private static final Pattern CELL_START = Pattern.compile("<div data-game_id=\"(\\d+)\"");
+    private static final Pattern CELL_START = Pattern.compile("<div [^>]*data-game_id=\"(\\d+)\"");
+    /** 속성 순서는 페이지마다 다르다(href가 class보다 앞일 때도 있다). 주소는 태그 안에서 따로 꺼낸다 */
     private static final Pattern CELL_TITLE = Pattern.compile(
-            "<a [^>]*class=\"title game_link\"[^>]*href=\"([^\"]+)\"[^>]*>([^<]*)</a>");
+            "<a ((?=[^>]*class=\"title game_link\")[^>]*)>([^<]*)</a>");
     private static final Pattern CELL_RATING_COUNT = Pattern.compile("class=\"rating_count\">\\(([\\d,]+)");
 
     // ===== 게임 페이지 =====
     private static final Pattern META = Pattern.compile("<meta\\s[^>]*>");
     private static final Pattern ATTRIBUTE = Pattern.compile("([a-zA-Z:_-]+)=\"([^\"]*)\"");
     private static final Pattern LD_JSON = Pattern.compile(
-            "<script type=\"application/ld\\+json\">(.*?)</script>", Pattern.DOTALL);
+            "<script [^>]*type=\"application/ld\\+json\"[^>]*>(.*?)</script>", Pattern.DOTALL);
     private static final Pattern INFO_ROW = Pattern.compile("<tr><td>([^<]+)</td><td>(.*?)</td></tr>", Pattern.DOTALL);
     private static final Pattern LINK_TEXT = Pattern.compile("<a [^>]*>([^<]+)</a>");
     private static final Pattern LANGUAGE_LINK = Pattern.compile("href=\"[^\"]*/games/lang-([a-z0-9-]+)\"");
-    private static final Pattern ABBR_TITLE = Pattern.compile("<abbr title=\"([^\"]+)\"");
+    private static final Pattern ABBR_TITLE = Pattern.compile("<abbr [^>]*title=\"([^\"]+)\"");
     private static final Pattern SCREENSHOT = Pattern.compile("<a (?=[^>]*data-image_lightbox)([^>]*)>\\s*<img ([^>]*)>");
     private static final DateTimeFormatter ITCH_DATE = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.ENGLISH);
     private static final DateTimeFormatter EN_DATE = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH);
@@ -66,6 +67,19 @@ public class ItchPageParser {
             Map.entry("cs", "cs"), Map.entry("da", "da"), Map.entry("nl", "nl"), Map.entry("fi", "fi"),
             Map.entry("el", "el"), Map.entry("hu", "hu"), Map.entry("no", "no"), Map.entry("nb", "no"),
             Map.entry("ro", "ro"), Map.entry("sv", "sv"), Map.entry("bg", "bg"));
+
+    /** 목록 HTML의 게임 칸 수 (읽은 결과와 비교해 페이지 모양이 바뀐 걸 알아챈다) */
+    public int countListingCells(String contentHtml) {
+        if (contentHtml == null) {
+            return 0;
+        }
+        Matcher start = CELL_START.matcher(contentHtml);
+        int count = 0;
+        while (start.find()) {
+            count++;
+        }
+        return count;
+    }
 
     /**
      * 목록 JSON의 content(게임 칸 HTML). 칸마다 게임 id, 주소, 이름, 평가 수(평점순 목록에만 있다).
@@ -92,7 +106,7 @@ public class ItchPageParser {
                 continue;
             }
             long itchId = Long.parseLong(id.group(1));
-            String url = HtmlUtils.htmlUnescape(title.group(1));
+            String url = attributes(title.group(1)).get("href");
             if (!seen.add(itchId) || !ItchUrls.isGameUrl(url)) {
                 continue;
             }

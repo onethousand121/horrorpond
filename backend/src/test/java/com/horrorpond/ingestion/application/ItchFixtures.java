@@ -23,6 +23,15 @@ public final class ItchFixtures {
                 .formatted(itchId, itchId, url, itchId, itchId, url, title, rating);
     }
 
+    /**
+     * 서버가 실제로 받은 모양: 이름 링크의 href가 class보다 앞에 온다 (2026-10-11 확인).
+     */
+    public static String listingCellHrefFirst(long itchId, String url, String title, Integer ratingCount) {
+        return listingCell(itchId, url, title, ratingCount).replace(
+                "<a data-action=\"game_grid\" data-label=\"game:" + itchId + ":title\" class=\"title game_link\" href=\"" + url + "\">",
+                "<a href=\"" + url + "\" class=\"title game_link\" data-label=\"game:" + itchId + ":title\" data-action=\"game_grid\">");
+    }
+
     /** 목록 JSON (format=json). content는 게임 칸 HTML */
     public static String listingJson(String... cells) {
         String content = String.join("", cells).replace("\\", "\\\\").replace("\"", "\\\"").replace("/", "\\/");
