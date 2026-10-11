@@ -41,6 +41,8 @@
   영어 텍스트(이름·짧은 소개·출시일)는 appdetails(l=english, filters=basic,release_date)로 받아 같은 스냅샷의 english 키에 붙인다.
   공개 API는 lang=ko|en (영어 값이 없으면 한국어). 큐레이터 글은 한국어만
 - 트리거: @Scheduled 일 1회 + POST /api/admin/ingestion/run (X-Admin-Key)
+  실행이 끝나면 FAILED 단계가 있을 때만 알림 메일 1통(IngestionAlertNotifier → Resend HTTP API).
+  RESEND_API_KEY·ALERT_EMAIL_TO 환경변수가 없으면 로그만 남긴다
 - 관리 화면: Next.js /admin. Admin Key를 httpOnly 쿠키에 두고 서버에서만 백엔드 호출.
   변경 서버 액션은 updateTag("games")로 공개 페이지 캐시를 즉시 만료
 - 배포: 서버 1대 Docker Compose(PostgreSQL + Caddy + app-blue/app-green). deploy/README.md

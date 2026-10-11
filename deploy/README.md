@@ -153,6 +153,7 @@ curl https://<Public IP>.sslip.io/api/admin/ingestion/jobs -H "X-Admin-Key: <ADM
 한 번에 최대 1200건을 처리하고(1시간 이상), 이후 매일 04:00(KST)에 자동으로 이어서 수집합니다.
 `METRICS`는 최근 30일 출시작과 리뷰 10개 이상인 게임의 리뷰 수를 하루 최대 400개 기록합니다(약 10분, 트렌드 계산용).
 마지막 `TRANSLATE`는 `DEEPL_API_KEY`가 있을 때만 돌고, 한국어 소개가 없는 게임 소개를 하루 최대 15만 자까지 번역합니다(DeepL 무료 월 50만 자).
+수집이 끝났을 때 실패한 단계가 있으면 `RESEND_API_KEY`와 `ALERT_EMAIL_TO`가 있을 때 알림 메일이 한 통 옵니다(없으면 로그만 남김).
 번역만 바로 돌리려면 `{"steps":["TRANSLATE"]}`로 호출합니다. 클라우드 IP에서 Steam/SteamSpy 호출이 막히는지 이때 job 결과(`failedCount`, `errorMessage`)로 확인합니다.
 
 ## 운영
