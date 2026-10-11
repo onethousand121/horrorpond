@@ -26,6 +26,16 @@ class ItchPageParserTest {
     }
 
     @Test
+    void readsTitleLinksWhateverTheAttributeOrder() {
+        String cell = ItchFixtures.listingCellHrefFirst(5, "https://garula.itch.io/the-freak-circus", "The Freak Circus", 11241);
+        assertThat(cell).contains("<a href=\"https://garula.itch.io/the-freak-circus\" class=\"title game_link\"");
+
+        assertThat(parser.parseListing(cell)).containsExactly(
+                new ItchListing(5, "https://garula.itch.io/the-freak-circus", "The Freak Circus", 11241));
+        assertThat(parser.countListingCells(cell)).isEqualTo(1);
+    }
+
+    @Test
     void emptyListing() {
         assertThat(parser.parseListing("")).isEmpty();
         assertThat(parser.parseListing(null)).isEmpty();

@@ -107,7 +107,7 @@ class ItchIngestionIntegrationTest {
     @Test
     void collectsOnlyPopularGamesFromTopRatedList() {
         expectListing(1,
-                ItchFixtures.listingCell(10, "https://dev.itch.io/night-shift", "Night Shift", 900),
+                ItchFixtures.listingCellHrefFirst(10, "https://dev.itch.io/night-shift", "Night Shift", 900),
                 ItchFixtures.listingCell(11, "https://jam.itch.io/tiny-jam", "Tiny Jam", 120),   // 평가 적음 → 제외
                 ItchFixtures.listingCell(12, "https://new.itch.io/no-ratings", "No Ratings", null));
         expectListing(2, ItchFixtures.listingCell(13, "https://big.itch.io/classic", "Classic", 5000));
@@ -141,6 +141,22 @@ class ItchIngestionIntegrationTest {
             assertThat(exposurePolicy.isVisible(game)).isTrue();
         });
         assertThat(ratingRecordedToday(10)).isEqualTo(900);
+    }
+
+    @Test
+    void unreadableListingFailsTheJobInsteadOfFindingNothing() {
+        // 칸은 있는데 이름 링크가 없다 = 페이지 모양이 바뀌었다
+        SERVER.expect(once(), requestTo(SteamMockServer.itchTopRatedUrl(1)))
+                .andRespond(withSuccess(ItchFixtures.listingJson(
+                        "<div data-game_id=\"10\" class=\"game_cell\"><span>no link</span></div>"),
+                        MediaType.APPLICATION_JSON));
+
+        Long jobId = itchService.run(TriggerType.MANUAL);
+        SERVER.verify();
+
+        IngestionJob job = jobRepository.findById(jobId).orElseThrow();
+        assertThat(job.getStatus()).isEqualTo(JobStatus.FAILED);
+        assertThat(job.getErrorMessage()).contains("none could be read");
     }
 
     @Test
