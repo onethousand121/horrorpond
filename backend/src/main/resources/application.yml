@@ -29,6 +29,10 @@ curation:
     min-reviews: 10
     new-release-days: 10
 
+# 수집 실패 알림 메일(Resend). 키는 환경변수 RESEND_API_KEY, 받는 주소는 ALERT_EMAIL_TO. 둘 중 하나라도 없으면 보내지 않는다
+alert:
+  email-to: ${ALERT_EMAIL_TO:}
+
 ingestion:
   # ShedLock 락 유지 시간. SchedulingConfig(@EnableSchedulerLock)와 수동 트리거가 함께 쓴다
   lock-at-most-for: PT2H

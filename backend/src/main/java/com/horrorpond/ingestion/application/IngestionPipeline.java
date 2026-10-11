@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -13,6 +14,7 @@ import java.util.List;
  * 수집 단계를 discovery → enrichment → normalize → itch(itch.io) → metrics(리뷰 수 기록) → translate(한국어 자동 번역)
  * 순서로 실행한다. 번역이 마지막이라 그날 들어온 itch.io 게임 소개도 함께 번역된다.
  * 앞 단계가 실패해도 다음 단계는 진행한다 (각 단계는 자기 job에 결과를 남긴다).
+ * 모두 끝나면 실패한 단계가 있을 때만 관리자에게 알림 메일을 보낸다 ({@link IngestionAlertNotifier}).
  */
 @Slf4j
 @Component
@@ -29,27 +31,39 @@ public class IngestionPipeline {
     private final ReviewMetricsService reviewMetricsService;
     private final TranslationService translationService;
     private final ItchIngestionService itchIngestionService;
+    private final IngestionAlertNotifier alertNotifier;
 
     /**
      * 요청 순서와 무관하게 정해진 단계 순서로, 중복 없이 실행한다.
      */
     public void runSteps(Collection<JobType> steps, TriggerType trigger) {
+        List<Long> jobIds = new ArrayList<>();
+        List<String> unexpected = new ArrayList<>();
         for (JobType step : ALL_STEPS) {
             if (!steps.contains(step)) {
                 continue;
             }
             try {
-                switch (step) {
+                Long jobId = switch (step) {
                     case DISCOVERY -> discoveryService.run(trigger);
                     case ENRICHMENT -> enrichmentService.run(trigger);
                     case NORMALIZE -> normalizeService.run(trigger);
                     case ITCH -> itchIngestionService.run(trigger);
                     case METRICS -> reviewMetricsService.run(trigger);
                     case TRANSLATE -> translationService.run(trigger);
+                };
+                if (jobId != null) {
+                    jobIds.add(jobId);
                 }
             } catch (RuntimeException e) {
                 log.error("Ingestion step {} failed unexpectedly; continuing with next step", step, e);
+                unexpected.add(step + ": " + IngestionJobRecorder.describe(e));
             }
+        }
+        try {
+            alertNotifier.notifyIfFailed(trigger, jobIds, unexpected);
+        } catch (RuntimeException e) {
+            log.error("Failed to send ingestion alert", e);
         }
     }
 }
