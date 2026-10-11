@@ -6,6 +6,7 @@ import com.horrorpond.catalog.domain.GameStatus;
 import com.horrorpond.catalog.domain.Genre;
 import com.horrorpond.catalog.domain.Store;
 import com.horrorpond.catalog.domain.StoreLink;
+import com.horrorpond.catalog.domain.TrendingOverride;
 import com.horrorpond.curation.application.GameGuideResponses.AchievementGuideResponse;
 import com.horrorpond.curation.application.GameGuideResponses.PlayVideoResponse;
 import com.horrorpond.curation.domain.CurationArticle;
@@ -39,7 +40,9 @@ public record AdminGameDetailResponse(
         List<PlayVideoResponse> playVideos,
         List<AchievementGuideResponse> achievements,
         /** itch.io 게임 주소 (ITCH 게임만) */
-        String itchUrl
+        String itchUrl,
+        /** "지금 뜨는" 고정(PINNED)·제외(EXCLUDED). null이면 자동 */
+        TrendingOverride trendingOverride
 ) {
 
     static AdminGameDetailResponse of(Game game, CurationArticle article, ExposurePolicy policy,
@@ -52,7 +55,7 @@ public record AdminGameDetailResponse(
                 game.isComingSoon(), game.isCoop(), game.getReviewCount(), game.isAdult(), List.copyOf(game.getTags()),
                 game.getStatus(), policy.isVisible(game), genreSlugs, steamUrl,
                 article == null ? null : AdminArticleResponse.from(article), playVideos, achievements,
-                storeUrl(game, Store.ITCH));
+                storeUrl(game, Store.ITCH), game.getTrendingOverride());
     }
 
     private static String storeUrl(Game game, Store store) {

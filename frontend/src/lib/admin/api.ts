@@ -3,7 +3,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import type { ErrorResponse, PageResponse } from "../types";
 import { requireAdminKey } from "./session";
-import type { AdminArticle, AdminGame, AdminGameDetail, GameStatus } from "./types";
+import type { AdminArticle, AdminGame, AdminGameDetail, GameStatus, TrendingOverride } from "./types";
 
 export class AdminApiError extends Error {
   constructor(
@@ -107,6 +107,11 @@ export function upsertArticle(
 
 export function publishGame(id: number) {
   return adminFetch<AdminGame>(`/api/admin/games/${id}/publish`, { method: "POST" });
+}
+
+/** "지금 뜨는" 고정·제외 (null이면 자동 기준으로 되돌림) */
+export function changeTrendingOverride(id: number, override: TrendingOverride | null) {
+  return adminFetch<unknown>(`/api/admin/games/${id}/trending`, { method: "PUT", body: { override } });
 }
 
 export function hideGame(id: number) {

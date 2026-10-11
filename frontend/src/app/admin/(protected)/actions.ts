@@ -6,6 +6,7 @@ import {
   addItchGame,
   addSteamSeed,
   AdminApiError,
+  changeTrendingOverride,
   deleteArticle,
   hideGame,
   publishGame,
@@ -133,6 +134,21 @@ async function youtubeTitle(url: string): Promise<string> {
 export async function publishAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const id = gameId(formData);
   return run(() => publishGame(id), "고정 노출했습니다. 사이트에 바로 반영됩니다.");
+}
+
+export async function pinTrendingAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const id = gameId(formData);
+  return run(() => changeTrendingOverride(id, "PINNED"), "'지금 뜨는' 맨 앞에 고정했습니다.");
+}
+
+export async function excludeTrendingAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const id = gameId(formData);
+  return run(() => changeTrendingOverride(id, "EXCLUDED"), "'지금 뜨는'에서 뺐습니다.");
+}
+
+export async function resetTrendingAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const id = gameId(formData);
+  return run(() => changeTrendingOverride(id, null), "'지금 뜨는'을 자동 기준으로 되돌렸습니다.");
 }
 
 export async function hideAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {

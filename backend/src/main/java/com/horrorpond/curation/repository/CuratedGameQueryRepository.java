@@ -1,6 +1,8 @@
 package com.horrorpond.curation.repository;
 
 import com.horrorpond.catalog.domain.GameSource;
+import com.horrorpond.catalog.domain.QGameMetricDaily;
+import com.horrorpond.catalog.domain.TrendingOverride;
 import com.horrorpond.catalog.domain.QGame;
 import com.horrorpond.catalog.domain.QGenre;
 import com.horrorpond.curation.domain.ArticleKind;
@@ -151,8 +153,12 @@ public class CuratedGameQueryRepository {
             where.and(inGenre(query.genre()));
         }
         if (query.sort() == CuratedGameSort.TRENDING) {
-            where.and(game.releaseDate.between(query.today().minusDays(CuratedGameSort.TRENDING_DAYS), query.today()))
-                    .and(game.reviewCount.gt(0));
+            BooleanExpression horror = game.source.eq(GameSource.ITCH)
+                    .or(Expressions.booleanTemplate("function('horror_in_top_tags', {0}, {1}) = true",
+                            game.tags, Expressions.constant(CuratedGameSort.TRENDING_HORROR_TAG_RANK)));
+            BooleanExpression pinned = game.trendingOverride.eq(TrendingOverride.PINNED);
+            where.and(game.trendingOverride.isNull().or(game.trendingOverride.ne(TrendingOverride.EXCLUDED)))
+                    .and(pinned.or(horror.and(recentReviewGrowth(query.today()).gt(0))));
         }
         return where;
     }
@@ -197,18 +203,29 @@ public class CuratedGameQueryRepository {
                     : new OrderSpecifier<?>[]{game.createdAt.desc(), game.id.desc()};
             case RELEASE -> new OrderSpecifier<?>[]{game.releaseDate.desc().nullsLast(), game.id.desc()};
             case POPULAR -> new OrderSpecifier<?>[]{game.reviewCount.desc().nullsLast(), game.id.desc()};
-            case TRENDING -> new OrderSpecifier<?>[]{reviewsPerDay(query.today()).desc(), game.id.desc()};
+            case TRENDING -> new OrderSpecifier<?>[]{
+                    new CaseBuilder().when(game.trendingOverride.eq(TrendingOverride.PINNED)).then(0).otherwise(1).asc(),
+                    recentReviewGrowth(query.today()).desc().nullsLast(), game.id.desc()};
         };
     }
 
     /**
-     * 출시 후 하루 평균 리뷰 수. 날짜 뺄셈은 HQL의 "by day"로 일수(정수)로 바꾼다.
+     * 최근 7일 동안 늘어난 리뷰 수 = 지금 리뷰 수 − 7~14일 전 기록 중 가장 큰 값.
+     * 그 기간 기록이 없으면, 출시한 지 7일이 안 된 게임은 0에서 세고 나머지는 null(목록에서 빠짐)이다.
      */
-    private static NumberExpression<Double> reviewsPerDay(LocalDate today) {
-        return Expressions.numberTemplate(Double.class,
-                "coalesce({0}, 0) * 1.0 / greatest((({1} - {2}) by day) + 1, {3})",
-                game.reviewCount, Expressions.constant(today), game.releaseDate,
-                Expressions.constant(CuratedGameSort.TRENDING_MIN_DAYS));
+    private static NumberExpression<Integer> recentReviewGrowth(LocalDate today) {
+        QGameMetricDaily metric = QGameMetricDaily.gameMetricDaily;
+        LocalDate windowStart = today.minusDays(CuratedGameSort.TRENDING_WINDOW_DAYS);
+        var baseline = JPAExpressions.select(metric.reviewCount.max())
+                .from(metric)
+                .where(metric.id.gameId.eq(game.id),
+                        metric.id.capturedOn.between(today.minusDays(CuratedGameSort.TRENDING_BASELINE_MAX_DAYS),
+                                windowStart));
+        NumberExpression<Integer> newReleaseBaseline = new CaseBuilder()
+                .when(game.releaseDate.goe(windowStart)).then(0)
+                .otherwise(Expressions.nullExpression(Integer.class));
+        return Expressions.numberTemplate(Integer.class, "coalesce({0}, 0) - coalesce({1}, {2})",
+                game.reviewCount, baseline, newReleaseBaseline);
     }
 
     /**

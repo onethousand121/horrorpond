@@ -5,7 +5,16 @@ import { notFound } from "next/navigation";
 import { getAdminGame } from "@/lib/admin/api";
 import { getGenres } from "@/lib/api";
 import { formatCount, formatDate } from "@/lib/format";
-import { deleteArticleAction, hideAction, publishAction, unhideAction, unpublishArticleAction } from "../../actions";
+import {
+  deleteArticleAction,
+  excludeTrendingAction,
+  hideAction,
+  pinTrendingAction,
+  publishAction,
+  resetTrendingAction,
+  unhideAction,
+  unpublishArticleAction,
+} from "../../actions";
 import { ActionButton } from "../../components/ActionButton";
 import { ArticleForm } from "../../components/ArticleForm";
 import { CurationForm } from "../../components/CurationForm";
@@ -121,6 +130,32 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
           고정 노출은 이 기준과 상관없이 항상 보여줍니다. 아래 글은 저장만 하면 초안이고, 이 버튼을 눌러야 공개됩니다.
           추천은 &quot;주인장 추천&quot;으로(장점 포인트 1개 이상 필요), 후기는 &quot;플레이 후기&quot;로 올라갑니다.
           글을 고친 뒤에도 다시 누르면 반영됩니다.
+        </p>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-semibold">지금 뜨는</h2>
+        <p className="text-sm text-muted">
+          {game.trendingOverride === "PINNED"
+            ? "맨 앞에 고정됨"
+            : game.trendingOverride === "EXCLUDED"
+              ? "목록에서 빠짐"
+              : "자동 (최근 7일 리뷰 증가량 + 상위 태그에 Horror)"}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {game.trendingOverride !== "PINNED" && (
+            <ActionButton action={pinTrendingAction} gameId={game.id} label="맨 앞에 고정" />
+          )}
+          {game.trendingOverride !== "EXCLUDED" && (
+            <ActionButton action={excludeTrendingAction} gameId={game.id} label="목록에서 빼기" />
+          )}
+          {game.trendingOverride && (
+            <ActionButton action={resetTrendingAction} gameId={game.id} label="자동으로 되돌리기" />
+          )}
+        </div>
+        <p className="text-xs text-muted">
+          유튜브에서 뜨는 게임처럼 자동 기준이 놓친 게임은 고정하고, 공포가 아니거나 이미 식은 게임은 빼 주세요.
+          고정은 직접 풀기 전까지 유지됩니다.
         </p>
       </section>
 

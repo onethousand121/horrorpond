@@ -218,6 +218,27 @@ class AdminCurationApiTest {
     }
 
     @Test
+    void trendingCanBePinnedExcludedAndReset() throws Exception {
+        Long id = steamCandidate(5, "Trend", "trend-5");
+        mvc.perform(admin(get("/api/admin/games/{id}", id)))
+                .andExpect(jsonPath("$.trendingOverride").doesNotExist());
+
+        mvc.perform(admin(put("/api/admin/games/{id}/trending", id))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"override\":\"PINNED\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.trendingOverride").value("PINNED"));
+        mvc.perform(admin(put("/api/admin/games/{id}/trending", id))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"override\":\"EXCLUDED\"}"))
+                .andExpect(jsonPath("$.trendingOverride").value("EXCLUDED"));
+        mvc.perform(admin(put("/api/admin/games/{id}/trending", id))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"override\":null}"))
+                .andExpect(jsonPath("$.trendingOverride").doesNotExist());
+        mvc.perform(admin(put("/api/admin/games/{id}/trending", id))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"override\":\"TOP\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void publishWithoutArticlePinsGameOnly() throws Exception {
         Long id = steamCandidate(1, "No Article", "no-article-1");
         mvc.perform(admin(get("/api/admin/games/{id}", id)))

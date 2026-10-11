@@ -122,6 +122,11 @@ public class Game extends BaseTimeEntity {
 
     private Instant publishedAt;
 
+    /** "지금 뜨는" 큐레이터 조정. null이면 자동 */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private TrendingOverride trendingOverride;
+
     @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC")
     private List<GameMedia> media = new ArrayList<>();
@@ -372,6 +377,11 @@ public class Game extends BaseTimeEntity {
         Objects.requireNonNull(genres, "genres");
         this.genres.clear();
         this.genres.addAll(genres);
+    }
+
+    /** "지금 뜨는"에 고정하거나 빼거나(null이면 자동 기준으로 되돌린다) */
+    public void changeTrendingOverride(TrendingOverride override) {
+        this.trendingOverride = override;
     }
 
     public void hide() {

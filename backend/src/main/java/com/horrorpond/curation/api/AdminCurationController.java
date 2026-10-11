@@ -3,6 +3,8 @@ package com.horrorpond.curation.api;
 import com.horrorpond.catalog.domain.GameStatus;
 import com.horrorpond.common.web.PageResponse;
 import com.horrorpond.curation.application.AdminArticleResponse;
+import com.horrorpond.catalog.domain.TrendingOverride;
+import com.horrorpond.curation.application.AdminGameDetailResponse;
 import com.horrorpond.curation.domain.ArticleKind;
 import com.horrorpond.curation.application.AdminGameDetailResponse;
 import com.horrorpond.curation.application.AdminGameResponse;
@@ -111,6 +113,18 @@ public class AdminCurationController {
     @DeleteMapping("/{id}/article")
     public AdminGameResponse deleteArticle(@PathVariable Long id) {
         return curationService.deleteArticle(id);
+    }
+
+    /**
+     * "지금 뜨는" 고정(PINNED)·제외(EXCLUDED). override가 null이면 자동 기준으로 되돌린다.
+     */
+    @PutMapping("/{id}/trending")
+    public AdminGameDetailResponse changeTrendingOverride(@PathVariable Long id,
+                                                          @RequestBody TrendingOverrideRequest request) {
+        return curationService.changeTrendingOverride(id, request.override());
+    }
+
+    public record TrendingOverrideRequest(TrendingOverride override) {
     }
 
     @PostMapping("/{id}/hide")

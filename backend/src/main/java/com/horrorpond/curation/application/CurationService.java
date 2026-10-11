@@ -1,6 +1,7 @@
 package com.horrorpond.curation.application;
 
 import com.horrorpond.catalog.domain.Game;
+import com.horrorpond.catalog.domain.TrendingOverride;
 import com.horrorpond.catalog.domain.GameSource;
 import com.horrorpond.catalog.domain.GameStatus;
 import com.horrorpond.catalog.domain.Genre;
@@ -113,6 +114,14 @@ public class CurationService {
         Game game = findGame(gameId);
         articleRepository.findByGameId(gameId).ifPresent(articleRepository::delete);
         return AdminGameResponse.of(game, null, exposurePolicy);
+    }
+
+    /**
+     * "지금 뜨는" 고정/제외. null이면 자동 기준으로 되돌린다.
+     */
+    public AdminGameDetailResponse changeTrendingOverride(Long gameId, TrendingOverride override) {
+        findGame(gameId).changeTrendingOverride(override);
+        return getDetail(gameId);
     }
 
     public AdminGameResponse hide(Long gameId) {

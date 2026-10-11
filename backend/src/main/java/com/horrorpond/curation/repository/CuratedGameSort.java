@@ -14,12 +14,15 @@ public enum CuratedGameSort {
      */
     POPULAR,
     /**
-     * 지금 뜨는 순: 최근 {@link #TRENDING_DAYS}일 안에 출시한 게임만, 출시 후 하루 평균 리뷰 수 desc.
-     * 출시 직후 며칠은 분모를 {@link #TRENDING_MIN_DAYS}일로 잡아 리뷰 몇 개로 1위가 되지 않게 한다.
-     * (리뷰 수 이력 game_metric_daily가 쌓이면 최근 7일 증가량 기준으로 바꾼다)
+     * 지금 뜨는 순: 최근 {@link #TRENDING_WINDOW_DAYS}일 동안 늘어난 리뷰 수(itch.io는 평가 수) desc.
+     * 기준점은 7~14일 전 기록 중 가장 큰 값이고, 출시한 지 7일이 안 된 게임은 0에서 센다. 기록이 없는 게임은 빠진다.
+     * 표가 많은 순 상위 {@link #TRENDING_HORROR_TAG_RANK}개 태그에 Horror 계열이 있어야 한다 (itch.io는 공포 목록에서만 받으므로 예외).
+     * 큐레이터가 고정한 게임(PINNED)은 맨 앞, 뺀 게임(EXCLUDED)은 나오지 않는다.
      */
     TRENDING;
 
-    public static final int TRENDING_DAYS = 90;
-    public static final int TRENDING_MIN_DAYS = 7;
+    public static final int TRENDING_WINDOW_DAYS = 7;
+    /** 기준점을 찾는 가장 오래된 기록 (리뷰 수 기록이 매일 모든 게임에 있지는 않다) */
+    public static final int TRENDING_BASELINE_MAX_DAYS = 14;
+    public static final int TRENDING_HORROR_TAG_RANK = 5;
 }
