@@ -14,9 +14,14 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between rounded border border-border bg-surface px-4 py-2 text-sm">
-        <Link href="/admin" className="font-medium">
-          큐레이션 관리
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/admin" className="font-medium">
+            큐레이션 관리
+          </Link>
+          <Link href="/admin/trending" className="text-muted hover:text-foreground">
+            지금 뜨는 조사 반영
+          </Link>
+        </div>
         <form action={logout}>
           <button type="submit" className="text-muted hover:text-foreground">
             로그아웃

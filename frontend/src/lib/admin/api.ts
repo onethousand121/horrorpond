@@ -109,9 +109,28 @@ export function publishGame(id: number) {
   return adminFetch<AdminGame>(`/api/admin/games/${id}/publish`, { method: "POST" });
 }
 
-/** "지금 뜨는" 고정·제외 (null이면 자동 기준으로 되돌림) */
-export function changeTrendingOverride(id: number, override: TrendingOverride | null) {
-  return adminFetch<unknown>(`/api/admin/games/${id}/trending`, { method: "PUT", body: { override } });
+/**
+ * "지금 뜨는" 고정·제외 (null이면 자동 기준으로 되돌림).
+ * @param auto 매주 조사 반영이 고정하면 true (다음 반영 때 결과에서 빠지면 풀린다)
+ */
+export function changeTrendingOverride(id: number, override: TrendingOverride | null, auto = false) {
+  return adminFetch<unknown>(`/api/admin/games/${id}/trending`, { method: "PUT", body: { override, auto } });
+}
+
+/** "지금 뜨는"에 고정된 게임. auto는 매주 조사 반영이 고정한 것 */
+export function getTrendingPins(): Promise<{ id: number; title: string; auto: boolean }[]> {
+  return adminFetch(`/api/admin/games/trending-pins`);
+}
+
+/** 상점 정보로 게임 찾기. 없으면 null */
+export async function lookupGame(by: { steamAppId: number } | { itchUrl: string }): Promise<AdminGameDetail | null> {
+  const query = "steamAppId" in by ? `steamAppId=${by.steamAppId}` : `itchUrl=${encodeURIComponent(by.itchUrl)}`;
+  try {
+    return await adminFetch<AdminGameDetail>(`/api/admin/games/lookup?${query}`);
+  } catch (e) {
+    if (e instanceof AdminApiError && e.status === 404) return null;
+    throw e;
+  }
 }
 
 export function hideGame(id: number) {

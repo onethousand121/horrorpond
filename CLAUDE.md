@@ -23,6 +23,8 @@
 - "지금 뜨는"(sort=TRENDING): 최근 7일 리뷰 증가량(지금 리뷰 수 − 7~14일 전 game_metric_daily 최댓값, 출시 7일 이내는 0부터) desc.
   기록 없는 게임은 빠짐. 상위 5개 태그에 Horror 계열 필요(DB 함수 horror_in_top_tags, itch는 예외).
   큐레이터 조정 game.trending_override: PINNED(맨 앞) / EXCLUDED(제외) — 관리 화면 "지금 뜨는" 칸
+  매주 반영: Perplexity 조사 JSON을 관리 화면 /admin/trending에 붙여넣기 → 서버 액션이 lookup(appid·itch 주소)·추가·
+  고정(trending_auto=true)·참고 영상(oEmbed 확인)·지난주 자동 고정 해제(결과 5개 이상일 때, 관리자 고정은 유지)
 - 장르: 자체 택소노미(curator 관리) + SteamSpy 태그 자동 매핑. Steam genres/categories는 참고용 raw 데이터로만 보관
 - 수집: discovery(Steam 스토어 검색: Horror 전체 최신 출시순(약 1.5만, 중간 실패 시 받은 데까지) + 인기 출시 예정 200, SteamSpy tag 전체(2025년 이후 누락 많음)) → enrichment(appdetails, 1.5s throttle, 429→60s backoff)
         → raw_snapshot(JSONB) 저장 → normalize(별도 단계, 재실행 가능)

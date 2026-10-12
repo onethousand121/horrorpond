@@ -44,7 +44,9 @@ public record AdminGameDetailResponse(
         /** "지금 뜨는" 고정(PINNED)·제외(EXCLUDED). null이면 자동 */
         TrendingOverride trendingOverride,
         /** 다른 채널의 참고 영상 */
-        List<PlayVideoResponse> referenceVideos
+        List<PlayVideoResponse> referenceVideos,
+        /** "지금 뜨는" 고정을 매주 조사 반영이 했으면 true */
+        boolean trendingAuto
 ) {
 
     static AdminGameDetailResponse of(Game game, CurationArticle article, ExposurePolicy policy,
@@ -58,7 +60,8 @@ public record AdminGameDetailResponse(
                 game.isComingSoon(), game.isCoop(), game.getReviewCount(), game.isAdult(), List.copyOf(game.getTags()),
                 game.getStatus(), policy.isVisible(game), genreSlugs, steamUrl,
                 article == null ? null : AdminArticleResponse.from(article), playVideos, achievements,
-                storeUrl(game, Store.ITCH), game.getTrendingOverride(), referenceVideos);
+                storeUrl(game, Store.ITCH), game.getTrendingOverride(), referenceVideos,
+                game.isTrendingAuto());
     }
 
     private static String storeUrl(Game game, Store store) {

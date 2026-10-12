@@ -133,10 +133,26 @@ public class AdminCurationController {
     @PutMapping("/{id}/trending")
     public AdminGameDetailResponse changeTrendingOverride(@PathVariable Long id,
                                                           @RequestBody TrendingOverrideRequest request) {
-        return curationService.changeTrendingOverride(id, request.override());
+        return curationService.changeTrendingOverride(id, request.override(), Boolean.TRUE.equals(request.auto()));
     }
 
-    public record TrendingOverrideRequest(TrendingOverride override) {
+    /**
+     * @param auto 매주 조사 반영이 고정하면 true (다음 반영 때 결과에서 빠지면 풀 수 있게 표시). 없으면 관리자 고정
+     */
+    public record TrendingOverrideRequest(TrendingOverride override, Boolean auto) {
+    }
+
+    /** "지금 뜨는"에 고정된 게임. auto=true는 매주 조사 반영이 고정한 것 */
+    @GetMapping("/trending-pins")
+    public List<CurationService.TrendingPin> trendingPins() {
+        return curationService.trendingPins();
+    }
+
+    /** 상점 정보로 게임 찾기: ?steamAppId=123 또는 ?itchUrl=https://작성자.itch.io/게임. 없으면 404 */
+    @GetMapping("/lookup")
+    public AdminGameDetailResponse lookup(@RequestParam(required = false) Integer steamAppId,
+                                          @RequestParam(required = false) String itchUrl) {
+        return curationService.lookup(steamAppId, itchUrl);
     }
 
     @PostMapping("/{id}/hide")

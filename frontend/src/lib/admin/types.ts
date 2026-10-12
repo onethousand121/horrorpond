@@ -77,6 +77,8 @@ export interface AdminGameDetail {
   itchUrl?: string | null;
   /** "지금 뜨는" 고정·제외. null이면 자동. 백엔드 배포 전 응답에는 없다 */
   trendingOverride?: TrendingOverride | null;
+  /** "지금 뜨는" 고정을 매주 조사 반영이 했으면 true (백엔드 배포 전 응답에는 없다) */
+  trendingAuto?: boolean;
   article: AdminArticle | null;
   playVideos: PlayVideo[];
   /** 다른 채널의 참고 영상 (백엔드 배포 전 응답에는 없다) */
