@@ -3,6 +3,8 @@ package com.horrorpond.curation.api;
 import com.horrorpond.catalog.domain.GameStatus;
 import com.horrorpond.common.web.PageResponse;
 import com.horrorpond.curation.application.AdminArticleResponse;
+import com.horrorpond.catalog.domain.TrendingOverride;
+import com.horrorpond.curation.application.AdminGameDetailResponse;
 import com.horrorpond.curation.domain.ArticleKind;
 import com.horrorpond.curation.application.AdminGameDetailResponse;
 import com.horrorpond.curation.application.AdminGameResponse;
@@ -86,6 +88,18 @@ public class AdminCurationController {
     }
 
     /**
+     * 참고 영상(다른 채널) 목록 전체를 바꾼다. 주인장 영상(/videos)은 그대로 둔다.
+     */
+    @PutMapping("/{id}/reference-videos")
+    public List<PlayVideoResponse> replaceReferenceVideos(@PathVariable Long id,
+                                                          @Valid @RequestBody ReferenceVideosRequest request) {
+        return gameGuideService.replaceReferenceVideos(id, request.videos().stream()
+                .map(video -> new GameGuideService.ReferenceVideoCommand(video.url(), video.title(),
+                        video.channelName()))
+                .toList());
+    }
+
+    /**
      * 업적 공략 목록 전체를 바꾼다 (순서 = 목록 순서, 빈 목록이면 모두 삭제).
      */
     @PutMapping("/{id}/achievements")
@@ -113,6 +127,18 @@ public class AdminCurationController {
         return curationService.deleteArticle(id);
     }
 
+    /**
+     * "지금 뜨는" 고정(PINNED)·제외(EXCLUDED). override가 null이면 자동 기준으로 되돌린다.
+     */
+    @PutMapping("/{id}/trending")
+    public AdminGameDetailResponse changeTrendingOverride(@PathVariable Long id,
+                                                          @RequestBody TrendingOverrideRequest request) {
+        return curationService.changeTrendingOverride(id, request.override());
+    }
+
+    public record TrendingOverrideRequest(TrendingOverride override) {
+    }
+
     @PostMapping("/{id}/hide")
     public AdminGameResponse hide(@PathVariable Long id) {
         return curationService.hide(id);
@@ -135,6 +161,13 @@ public class AdminCurationController {
     }
 
     public record PlayVideoItem(String url, String title) {
+    }
+
+    /** 채널 이름 필수·주소·개수는 도메인(PlayVideo)이 검증한다 */
+    public record ReferenceVideosRequest(@NotNull List<@NotNull ReferenceVideoItem> videos) {
+    }
+
+    public record ReferenceVideoItem(String url, String title, String channelName) {
     }
 
     /** 이름 필수·길이·개수는 도메인(AchievementGuide)이 검증한다 */

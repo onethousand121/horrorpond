@@ -212,6 +212,14 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
                   <PlayVideos videos={game.playVideos} locale={lang} />
                 </section>
               )}
+              {game.playVideos.length === 0 && (game.referenceVideos?.length ?? 0) > 0 && (
+                <section aria-label={dict.guide.referenceVideos} className="space-y-4">
+                  <hr className="divider" />
+                  <h2 className="font-pixel text-[22px]">{dict.guide.referenceVideos}</h2>
+                  <p className="text-sm text-muted">{dict.guide.referenceNote}</p>
+                  <PlayVideos videos={game.referenceVideos ?? []} locale={lang} />
+                </section>
+              )}
 
               {game.achievements.length > 0 && (
                 <section aria-label={dict.guide.achievements} className="space-y-4">

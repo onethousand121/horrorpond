@@ -7,6 +7,7 @@ import com.horrorpond.curation.application.GameGuideResponses.AchievementGuideRe
 import com.horrorpond.curation.application.GameGuideResponses.PlayVideoResponse;
 import com.horrorpond.curation.domain.AchievementGuide;
 import com.horrorpond.curation.domain.PlayVideo;
+import com.horrorpond.curation.domain.VideoKind;
 import com.horrorpond.curation.repository.AchievementGuideRepository;
 import com.horrorpond.curation.repository.PlayVideoRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,9 +30,20 @@ public class GameGuideService {
     private final PlayVideoRepository playVideoRepository;
     private final AchievementGuideRepository achievementGuideRepository;
 
+    /** 주인장 플레이 영상 */
     @Transactional(readOnly = true)
     public List<PlayVideoResponse> playVideos(Long gameId) {
-        return playVideoRepository.findByGameIdOrderBySortOrderAsc(gameId).stream()
+        return videos(gameId, VideoKind.KEEPER);
+    }
+
+    /** 다른 채널의 참고 영상 */
+    @Transactional(readOnly = true)
+    public List<PlayVideoResponse> referenceVideos(Long gameId) {
+        return videos(gameId, VideoKind.REFERENCE);
+    }
+
+    private List<PlayVideoResponse> videos(Long gameId, VideoKind kind) {
+        return playVideoRepository.findByGameIdAndKindOrderBySortOrderAsc(gameId, kind).stream()
                 .map(PlayVideoResponse::from)
                 .toList();
     }
@@ -51,7 +63,22 @@ public class GameGuideService {
         for (int i = 0; i < commands.size(); i++) {
             videos.add(PlayVideo.create(gameId, commands.get(i).url(), commands.get(i).title(), i));
         }
-        playVideoRepository.deleteByGameId(gameId);
+        playVideoRepository.deleteByGameIdAndKind(gameId, VideoKind.KEEPER);
+        return playVideoRepository.saveAll(videos).stream().map(PlayVideoResponse::from).toList();
+    }
+
+    /**
+     * 참고 영상 목록 전체를 바꾼다. 주인장 영상은 건드리지 않는다.
+     */
+    public List<PlayVideoResponse> replaceReferenceVideos(Long gameId, List<ReferenceVideoCommand> commands) {
+        requireGame(gameId);
+        requireAtMost(commands, PlayVideo.MAX_PER_GAME, "reference videos");
+        List<PlayVideo> videos = new ArrayList<>();
+        for (int i = 0; i < commands.size(); i++) {
+            ReferenceVideoCommand command = commands.get(i);
+            videos.add(PlayVideo.reference(gameId, command.url(), command.title(), command.channelName(), i));
+        }
+        playVideoRepository.deleteByGameIdAndKind(gameId, VideoKind.REFERENCE);
         return playVideoRepository.saveAll(videos).stream().map(PlayVideoResponse::from).toList();
     }
 
@@ -84,6 +111,12 @@ public class GameGuideService {
      * @param title 비어 있으면 제목 없음
      */
     public record PlayVideoCommand(String url, String title) {
+    }
+
+    /**
+     * @param channelName 영상을 올린 채널 이름 (필수, 사이트에 출처로 보인다)
+     */
+    public record ReferenceVideoCommand(String url, String title, String channelName) {
     }
 
     /**

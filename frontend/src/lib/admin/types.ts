@@ -5,6 +5,8 @@ import type { AchievementGuide, ArticleKind, PlayVideo } from "@/lib/types";
 export type GameSource = "STEAM" | "ITCH" | "MANUAL";
 export type GameStatus = "CANDIDATE" | "PUBLISHED" | "HIDDEN";
 export type ArticleStatus = "DRAFT" | "PUBLISHED";
+/** "지금 뜨는" 고정(맨 앞) / 제외 */
+export type TrendingOverride = "PINNED" | "EXCLUDED";
 
 /** 백엔드 CurationArticle 제약 (서버가 최종 검증한다) */
 export const ARTICLE_LIMITS = {
@@ -73,8 +75,12 @@ export interface AdminGameDetail {
   steamUrl: string | null;
   /** itch.io 게임 주소 (ITCH 게임만). 백엔드 배포 전 응답에는 없다 */
   itchUrl?: string | null;
+  /** "지금 뜨는" 고정·제외. null이면 자동. 백엔드 배포 전 응답에는 없다 */
+  trendingOverride?: TrendingOverride | null;
   article: AdminArticle | null;
   playVideos: PlayVideo[];
+  /** 다른 채널의 참고 영상 (백엔드 배포 전 응답에는 없다) */
+  referenceVideos?: PlayVideo[];
   achievements: AchievementGuide[];
 }
 

@@ -143,6 +143,8 @@ export interface GameDetail {
   article: Article | null;
   /** 플레이 영상. 없으면 빈 배열 (사이트에서 영역을 숨긴다) */
   playVideos: PlayVideo[];
+  /** 다른 채널의 참고 영상. 주인장 영상이 없을 때만 보여준다 (백엔드 배포 전 응답에는 없다) */
+  referenceVideos?: PlayVideo[];
   /** 업적 공략. 없으면 빈 배열 (사이트에서 영역을 숨긴다) */
   achievements: AchievementGuide[];
   /** 백엔드 배포 전 응답에는 없다 (그때는 Steam으로 본다) */
@@ -153,6 +155,8 @@ export interface GameDetail {
 export interface PlayVideo {
   youtubeId: string;
   title: string | null;
+  /** 참고 영상의 채널 이름. 주인장 영상은 null (백엔드 배포 전 응답에는 없다) */
+  channelName?: string | null;
 }
 
 /** 백엔드 GameGuideResponses.AchievementGuideResponse */

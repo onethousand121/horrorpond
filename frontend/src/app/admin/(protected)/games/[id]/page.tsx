@@ -5,11 +5,20 @@ import { notFound } from "next/navigation";
 import { getAdminGame } from "@/lib/admin/api";
 import { getGenres } from "@/lib/api";
 import { formatCount, formatDate } from "@/lib/format";
-import { deleteArticleAction, hideAction, publishAction, unhideAction, unpublishArticleAction } from "../../actions";
+import {
+  deleteArticleAction,
+  excludeTrendingAction,
+  hideAction,
+  pinTrendingAction,
+  publishAction,
+  resetTrendingAction,
+  unhideAction,
+  unpublishArticleAction,
+} from "../../actions";
 import { ActionButton } from "../../components/ActionButton";
 import { ArticleForm } from "../../components/ArticleForm";
 import { CurationForm } from "../../components/CurationForm";
-import { AchievementForm, PlayVideoForm } from "../../components/GuideForms";
+import { AchievementForm, PlayVideoForm, ReferenceVideoForm } from "../../components/GuideForms";
 import { AdultBadge, ArticleStatusBadge, GameStatusBadge, VisibilityBadge } from "../../components/StatusBadge";
 
 function parseId(id: string): number | null {
@@ -125,6 +134,32 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
       </section>
 
       <section className="space-y-3">
+        <h2 className="font-semibold">지금 뜨는</h2>
+        <p className="text-sm text-muted">
+          {game.trendingOverride === "PINNED"
+            ? "맨 앞에 고정됨"
+            : game.trendingOverride === "EXCLUDED"
+              ? "목록에서 빠짐"
+              : "자동 (최근 7일 리뷰 증가량 + 상위 태그에 Horror)"}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {game.trendingOverride !== "PINNED" && (
+            <ActionButton action={pinTrendingAction} gameId={game.id} label="맨 앞에 고정" />
+          )}
+          {game.trendingOverride !== "EXCLUDED" && (
+            <ActionButton action={excludeTrendingAction} gameId={game.id} label="목록에서 빼기" />
+          )}
+          {game.trendingOverride && (
+            <ActionButton action={resetTrendingAction} gameId={game.id} label="자동으로 되돌리기" />
+          )}
+        </div>
+        <p className="text-xs text-muted">
+          유튜브에서 뜨는 게임처럼 자동 기준이 놓친 게임은 고정하고, 공포가 아니거나 이미 식은 게임은 빼 주세요.
+          고정은 직접 풀기 전까지 유지됩니다.
+        </p>
+      </section>
+
+      <section className="space-y-3">
         <h2 className="font-semibold">주소와 장르</h2>
         <CurationForm game={game} genres={genres} />
       </section>
@@ -156,6 +191,19 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
         <p className="text-sm text-muted">없으면 사이트에 이 영역이 보이지 않습니다. 있으면 게임 카드에 &quot;플레이 영상&quot; 표시가 붙습니다.</p>
         {/* 저장 후 서버 값(가져온 유튜브 제목 등)으로 다시 그리도록 내용이 바뀌면 새로 마운트한다 */}
         <PlayVideoForm key={JSON.stringify(game.playVideos)} gameId={game.id} videos={game.playVideos} />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-semibold">참고 영상 (다른 채널)</h2>
+        <p className="text-sm text-muted">
+          내 플레이 영상이 없을 때만 사이트에 &quot;참고 영상 · 채널 이름&quot;으로 보입니다. 영상 뱃지와 주인장 추천 줄에는
+          들어가지 않아요. 공식 트레일러나 원 채널 영상만 넣어 주세요(재업로드 영상은 안 돼요).
+        </p>
+        <ReferenceVideoForm
+          key={JSON.stringify(game.referenceVideos ?? [])}
+          gameId={game.id}
+          videos={game.referenceVideos ?? []}
+        />
       </section>
 
       <section className="space-y-3">

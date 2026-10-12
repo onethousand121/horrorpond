@@ -218,6 +218,27 @@ class AdminCurationApiTest {
     }
 
     @Test
+    void trendingCanBePinnedExcludedAndReset() throws Exception {
+        Long id = steamCandidate(5, "Trend", "trend-5");
+        mvc.perform(admin(get("/api/admin/games/{id}", id)))
+                .andExpect(jsonPath("$.trendingOverride").doesNotExist());
+
+        mvc.perform(admin(put("/api/admin/games/{id}/trending", id))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"override\":\"PINNED\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.trendingOverride").value("PINNED"));
+        mvc.perform(admin(put("/api/admin/games/{id}/trending", id))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"override\":\"EXCLUDED\"}"))
+                .andExpect(jsonPath("$.trendingOverride").value("EXCLUDED"));
+        mvc.perform(admin(put("/api/admin/games/{id}/trending", id))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"override\":null}"))
+                .andExpect(jsonPath("$.trendingOverride").doesNotExist());
+        mvc.perform(admin(put("/api/admin/games/{id}/trending", id))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"override\":\"TOP\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void publishWithoutArticlePinsGameOnly() throws Exception {
         Long id = steamCandidate(1, "No Article", "no-article-1");
         mvc.perform(admin(get("/api/admin/games/{id}", id)))
@@ -305,6 +326,46 @@ class AdminCurationApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sponsored").value(true))
                 .andExpect(jsonPath("$.sponsorDisclosure").value("Key provided"));
+    }
+
+    @Test
+    void referenceVideosAreSeparateFromKeeperVideos() throws Exception {
+        Long id = steamCandidate(6, "Referenced", "referenced-6");
+        mvc.perform(admin(post("/api/admin/games/{id}/publish", id))).andExpect(status().isOk());
+
+        mvc.perform(admin(put("/api/admin/games/{id}/reference-videos", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"videos":[{"url":"https://youtu.be/dQw4w9WgXcQ","title":"Full playthrough","channelName":" Some Channel "}]}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].channelName").value("Some Channel"));
+
+        // 참고 영상은 따로 내려가고, 주인장 영상 뱃지·주인장 추천 줄에는 세지 않는다
+        mvc.perform(get("/api/games/referenced-6"))
+                .andExpect(jsonPath("$.playVideos", hasSize(0)))
+                .andExpect(jsonPath("$.referenceVideos[0].youtubeId").value("dQw4w9WgXcQ"))
+                .andExpect(jsonPath("$.referenceVideos[0].channelName").value("Some Channel"));
+        mvc.perform(get("/api/games").param("q", "Referenced"))
+                .andExpect(jsonPath("$.content[0].hasPlayVideo").value(false));
+        mvc.perform(get("/api/games").param("keeper", "true")).andExpect(jsonPath("$.content", hasSize(0)));
+
+        // 주인장 영상을 저장해도 참고 영상은 남는다 (반대도 마찬가지)
+        mvc.perform(admin(put("/api/admin/games/{id}/videos", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"videos\":[{\"url\":\"https://youtu.be/aBcDeFgHiJk\",\"title\":\"\"}]}"))
+                .andExpect(status().isOk());
+        mvc.perform(admin(get("/api/admin/games/{id}", id)))
+                .andExpect(jsonPath("$.playVideos", hasSize(1)))
+                .andExpect(jsonPath("$.playVideos[0].channelName").doesNotExist())
+                .andExpect(jsonPath("$.referenceVideos", hasSize(1)));
+        mvc.perform(get("/api/games").param("q", "Referenced"))
+                .andExpect(jsonPath("$.content[0].hasPlayVideo").value(true));
+
+        // 채널 이름이 없으면 400
+        mvc.perform(admin(put("/api/admin/games/{id}/reference-videos", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"videos\":[{\"url\":\"https://youtu.be/dQw4w9WgXcQ\",\"title\":\"x\"}]}"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

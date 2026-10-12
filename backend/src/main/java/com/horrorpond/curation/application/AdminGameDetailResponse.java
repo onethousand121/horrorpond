@@ -6,6 +6,7 @@ import com.horrorpond.catalog.domain.GameStatus;
 import com.horrorpond.catalog.domain.Genre;
 import com.horrorpond.catalog.domain.Store;
 import com.horrorpond.catalog.domain.StoreLink;
+import com.horrorpond.catalog.domain.TrendingOverride;
 import com.horrorpond.curation.application.GameGuideResponses.AchievementGuideResponse;
 import com.horrorpond.curation.application.GameGuideResponses.PlayVideoResponse;
 import com.horrorpond.curation.domain.CurationArticle;
@@ -39,12 +40,17 @@ public record AdminGameDetailResponse(
         List<PlayVideoResponse> playVideos,
         List<AchievementGuideResponse> achievements,
         /** itch.io 게임 주소 (ITCH 게임만) */
-        String itchUrl
+        String itchUrl,
+        /** "지금 뜨는" 고정(PINNED)·제외(EXCLUDED). null이면 자동 */
+        TrendingOverride trendingOverride,
+        /** 다른 채널의 참고 영상 */
+        List<PlayVideoResponse> referenceVideos
 ) {
 
     static AdminGameDetailResponse of(Game game, CurationArticle article, ExposurePolicy policy,
                                       List<PlayVideoResponse> playVideos,
-                                      List<AchievementGuideResponse> achievements) {
+                                      List<AchievementGuideResponse> achievements,
+                                      List<PlayVideoResponse> referenceVideos) {
         List<String> genreSlugs = game.getGenres().stream().map(Genre::getSlug).sorted().toList();
         String steamUrl = storeUrl(game, Store.STEAM);
         return new AdminGameDetailResponse(game.getId(), game.getSource(), game.getExternalId(), game.getSlug(),
@@ -52,7 +58,7 @@ public record AdminGameDetailResponse(
                 game.isComingSoon(), game.isCoop(), game.getReviewCount(), game.isAdult(), List.copyOf(game.getTags()),
                 game.getStatus(), policy.isVisible(game), genreSlugs, steamUrl,
                 article == null ? null : AdminArticleResponse.from(article), playVideos, achievements,
-                storeUrl(game, Store.ITCH));
+                storeUrl(game, Store.ITCH), game.getTrendingOverride(), referenceVideos);
     }
 
     private static String storeUrl(Game game, Store store) {

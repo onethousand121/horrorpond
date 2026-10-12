@@ -47,14 +47,17 @@ public record GameDetailResponse(
         /** 업적 공략. 없으면 빈 목록 */
         List<AchievementGuideResponse> achievements,
         /** STEAM | ITCH | MANUAL. ITCH면 reviewCount는 itch.io 평가 수 */
-        GameSource source
+        GameSource source,
+        /** 다른 채널의 참고 영상 (사이트는 주인장 영상이 없을 때만 보여준다). 없으면 빈 목록 */
+        List<PlayVideoResponse> referenceVideos
 ) {
 
     /**
      * 제목·소개·출시일 텍스트는 요청 언어로 (영어가 없으면 한국어). 큐레이터 글은 한국어만 있다.
      */
     static GameDetailResponse of(Game game, List<GenreSummary> genres, CurationArticle article, Language language,
-                                 List<PlayVideoResponse> playVideos, List<AchievementGuideResponse> achievements) {
+                                 List<PlayVideoResponse> playVideos, List<AchievementGuideResponse> achievements,
+                                 List<PlayVideoResponse> referenceVideos) {
         return new GameDetailResponse(
                 game.getSlug(), game.title(language), game.shortDescription(language),
                 game.isShortDescriptionAutoTranslated(language), game.getHeaderImageUrl(),
@@ -72,7 +75,8 @@ public record GameDetailResponse(
                 game.getStoreLinks().stream()
                         .map(link -> new StoreLinkResponse(link.getStore(), link.getUrl()))
                         .toList(),
-                article == null ? null : Article.from(article), playVideos, achievements, game.getSource());
+                article == null ? null : Article.from(article), playVideos, achievements, game.getSource(),
+                referenceVideos);
     }
 
     public record DeveloperCredit(String name, String slug, DeveloperRole role) {

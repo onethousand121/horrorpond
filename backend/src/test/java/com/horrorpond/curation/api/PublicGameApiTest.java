@@ -6,6 +6,7 @@ import com.horrorpond.catalog.domain.Game;
 import com.horrorpond.catalog.domain.GameStatus;
 import com.horrorpond.catalog.domain.MediaType;
 import com.horrorpond.catalog.domain.SteamGameData;
+import com.horrorpond.catalog.domain.TrendingOverride;
 import com.horrorpond.catalog.repository.DeveloperRepository;
 import com.horrorpond.catalog.repository.GameRepository;
 import com.horrorpond.catalog.repository.GenreRepository;
@@ -201,20 +202,30 @@ class PublicGameApiTest {
     }
 
     @Test
-    void trendingRanksRecentReleasesByReviewsPerDay() throws Exception {
+    void trendingRanksHorrorGamesByReviewsGainedThisWeek() throws Exception {
         LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
-        // 하루 평균: 3000/31 ≈ 97, 2000/11 ≈ 182, 출시 이틀째 400건은 7일로 나눠 ≈ 57
-        create(spec("month-old").releaseDate(today.minusDays(30)).reviewCount(3000));
-        create(spec("ten-days").releaseDate(today.minusDays(10)).reviewCount(2000));
-        create(spec("day-two").releaseDate(today.minusDays(1)).reviewCount(400));
-        create(spec("classic").releaseDate(today.minusYears(5)).reviewCount(90000)); // 90일 밖
-        create(spec("no-reviews").releaseDate(today.minusDays(2)).reviewCount(0));
+        LocalDate old = today.minusDays(60);
+        create(spec("rising").releaseDate(old).reviewCount(1500).tags("Horror", "Indie"));
+        metric("rising", today.minusDays(10), 1000);                          // +500
+        create(spec("cooled").releaseDate(old).reviewCount(3000).tags("Psychological Horror"));
+        metric("cooled", today.minusDays(8), 2990);                           // +10 (출시 초반엔 컸지만 지금은 식음)
+        metric("cooled", today.minusDays(30), 100);                           // 14일보다 오래된 기록은 안 본다
+        create(spec("new-hit").releaseDate(today.minusDays(3)).reviewCount(300)); // 출시 7일 이내: 0에서 셈, 태그 없음
+        create(spec("no-history").releaseDate(old).reviewCount(5000).tags("Horror"));     // 기준 기록 없음 → 제외
+        create(spec("not-horror").releaseDate(old).reviewCount(2000)
+                .tags("Action", "Roguelike", "Indie", "Pixel Graphics", "2D", "Horror")); // Horror가 6위 → 제외
+        metric("not-horror", today.minusDays(9), 1200);
+        create(spec("excluded").releaseDate(old).reviewCount(2000).tags("Horror")
+                .trendingOverride(TrendingOverride.EXCLUDED));
+        metric("excluded", today.minusDays(9), 1000);
+        create(spec("pinned").releaseDate(old).reviewCount(5).tags("Comedy")
+                .trendingOverride(TrendingOverride.PINNED));                  // 기준과 상관없이 맨 앞
         create(spec("upcoming").comingSoon(true).releaseDate(today.plusDays(3)));
 
         mvc.perform(get("/api/games").param("sort", "TRENDING"))
-                .andExpect(jsonPath("$.content[*].slug", contains("ten-days", "month-old", "day-two")));
+                .andExpect(jsonPath("$.content[*].slug", contains("pinned", "rising", "new-hit", "cooled")));
         mvc.perform(get("/api/games").param("sort", "POPULAR"))
-                .andExpect(jsonPath("$.content[0].slug").value("classic"));
+                .andExpect(jsonPath("$.content[0].slug").value("no-history"));
     }
 
     @Test
@@ -476,6 +487,7 @@ class PublicGameApiTest {
             game.replaceGenres(new HashSet<>(spec.genreSlugs.stream()
                     .map(slug -> genreRepository.findBySlug(slug).orElseThrow())
                     .toList()));
+            game.changeTrendingOverride(spec.trendingOverride);
             gameRepository.save(game);
 
             if (spec.articleStatus != null) {
@@ -496,6 +508,13 @@ class PublicGameApiTest {
                 game.hide();
             }
         });
+    }
+
+    /** 그날의 리뷰 수 기록 (트렌드 기준점) */
+    private void metric(String slug, LocalDate capturedOn, int reviewCount) {
+        jdbc.update("""
+                INSERT INTO game_metric_daily (game_id, store, captured_on, review_count)
+                SELECT id, 'STEAM', ?, ? FROM game WHERE slug = ?""", capturedOn, reviewCount, slug);
     }
 
     private Statistics statistics() {
@@ -523,6 +542,7 @@ class PublicGameApiTest {
         private List<String> languages = List.of();
         private List<String> audioLanguages = List.of();
         private String englishTitle;
+        private TrendingOverride trendingOverride;
 
         GameSpec(String slug) {
             this.slug = slug;
@@ -556,5 +576,7 @@ class PublicGameApiTest {
         GameSpec languages(List<String> all, List<String> audio) { languages = all; audioLanguages = audio; return this; }
 
         GameSpec englishTitle(String value) { englishTitle = value; return this; }
+
+        GameSpec trendingOverride(TrendingOverride value) { trendingOverride = value; return this; }
     }
 }

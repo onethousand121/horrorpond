@@ -50,7 +50,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
   const [stats, genres, trending, recent, upcoming, steady, pickPool, keeperPool, videos] = await Promise.all([
     getStats(),
     getGenres(lang),
-    // 지금 뜨는: 최근 90일 출시작을 하루 평균 리뷰 수로. 누적 리뷰 수(스테디셀러)는 바로 아래 줄로 따로 보여준다
+    // 지금 뜨는: 최근 7일 리뷰 증가량 순(관리자 고정 게임이 맨 앞). 누적 리뷰 수(스테디셀러)는 바로 아래 줄로 따로 보여준다
     // 배포 순서상 백엔드가 TRENDING을 모르는 몇 분 동안은 누적 인기순으로 대신 보여준다
     getGames({ sort: "TRENDING", size: SHOWCASE, lang }).catch(() => getGames({ sort: "POPULAR", size: SHOWCASE, lang })),
     getGames({ release: "RECENT", sort: "RELEASE", size: ROW, lang }),

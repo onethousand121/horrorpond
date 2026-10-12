@@ -85,6 +85,7 @@ public class PublicGameQueryService {
         GenreResolver resolver = new GenreResolver(genreRepository.findAllByOrderByDisplayOrderAsc());
         List<String> curatorSlugs = game.getGenres().stream().map(Genre::getSlug).toList();
         return GameDetailResponse.of(game, resolver.resolve(curatorSlugs, game.getTags(), language), article,
-                language, gameGuideService.playVideos(game.getId()), gameGuideService.achievements(game.getId()));
+                language, gameGuideService.playVideos(game.getId()), gameGuideService.achievements(game.getId()),
+                gameGuideService.referenceVideos(game.getId()));
     }
 }
