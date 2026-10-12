@@ -106,6 +106,9 @@ const ko = {
   },
   guide: {
     playVideos: "플레이 영상",
+    referenceVideos: "참고 영상",
+    referenceNote: "주인장이 아직 플레이하지 않은 게임이라 다른 채널의 영상을 소개해요.",
+    channel: (name: string) => `채널: ${name}`,
     playVideoN: (n: number) => `플레이 영상 ${n}`,
     achievements: "업적 공략",
     achievementCount: (n: number) => `업적 ${n}개`,
@@ -247,6 +250,9 @@ const en: Dictionary = {
   },
   guide: {
     playVideos: "Gameplay videos",
+    referenceVideos: "Gameplay from other channels",
+    referenceNote: "The keeper hasn't played this one yet, so here's a video from another channel.",
+    channel: (name: string) => `Channel: ${name}`,
     playVideoN: (n: number) => `Gameplay video ${n}`,
     achievements: "Achievement guides",
     achievementCount: (n: number) => `${n} achievements`,

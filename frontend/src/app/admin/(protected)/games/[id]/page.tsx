@@ -18,7 +18,7 @@ import {
 import { ActionButton } from "../../components/ActionButton";
 import { ArticleForm } from "../../components/ArticleForm";
 import { CurationForm } from "../../components/CurationForm";
-import { AchievementForm, PlayVideoForm } from "../../components/GuideForms";
+import { AchievementForm, PlayVideoForm, ReferenceVideoForm } from "../../components/GuideForms";
 import { AdultBadge, ArticleStatusBadge, GameStatusBadge, VisibilityBadge } from "../../components/StatusBadge";
 
 function parseId(id: string): number | null {
@@ -191,6 +191,19 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
         <p className="text-sm text-muted">없으면 사이트에 이 영역이 보이지 않습니다. 있으면 게임 카드에 &quot;플레이 영상&quot; 표시가 붙습니다.</p>
         {/* 저장 후 서버 값(가져온 유튜브 제목 등)으로 다시 그리도록 내용이 바뀌면 새로 마운트한다 */}
         <PlayVideoForm key={JSON.stringify(game.playVideos)} gameId={game.id} videos={game.playVideos} />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-semibold">참고 영상 (다른 채널)</h2>
+        <p className="text-sm text-muted">
+          내 플레이 영상이 없을 때만 사이트에 &quot;참고 영상 · 채널 이름&quot;으로 보입니다. 영상 뱃지와 주인장 추천 줄에는
+          들어가지 않아요. 공식 트레일러나 원 채널 영상만 넣어 주세요(재업로드 영상은 안 돼요).
+        </p>
+        <ReferenceVideoForm
+          key={JSON.stringify(game.referenceVideos ?? [])}
+          gameId={game.id}
+          videos={game.referenceVideos ?? []}
+        />
       </section>
 
       <section className="space-y-3">

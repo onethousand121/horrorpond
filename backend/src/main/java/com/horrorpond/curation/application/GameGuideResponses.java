@@ -12,12 +12,13 @@ public final class GameGuideResponses {
     }
 
     /**
-     * @param title 없으면 null
+     * @param title       없으면 null
+     * @param channelName 참고 영상의 채널 이름. 주인장 영상은 null
      */
-    public record PlayVideoResponse(String youtubeId, String title) {
+    public record PlayVideoResponse(String youtubeId, String title, String channelName) {
 
         static PlayVideoResponse from(PlayVideo video) {
-            return new PlayVideoResponse(video.getYoutubeId(), video.getTitle());
+            return new PlayVideoResponse(video.getYoutubeId(), video.getTitle(), video.getChannelName());
         }
     }
 

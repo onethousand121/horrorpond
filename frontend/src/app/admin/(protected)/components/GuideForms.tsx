@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { GUIDE_LIMITS } from "@/lib/admin/types";
 import type { AchievementGuide, PlayVideo } from "@/lib/types";
-import { saveAchievementsAction, savePlayVideosAction } from "../actions";
+import { saveAchievementsAction, savePlayVideosAction, saveReferenceVideosAction } from "../actions";
 import { ResultMessage } from "./ActionButton";
 
 const inputClass = "w-full rounded border border-border bg-background px-3 py-1.5 text-sm";
@@ -115,6 +115,70 @@ export function PlayVideoForm({ gameId, videos }: { gameId: number; videos: Play
       <p className="text-xs text-muted">
         최대 {GUIDE_LIMITS.playVideos}개, 위에서부터 보입니다. 주소가 빈 행은 저장하지 않습니다.
       </p>
+    </form>
+  );
+}
+
+/**
+ * 다른 채널의 참고 영상. 채널 이름은 사이트에 출처로 보인다(비우면 유튜브에서 가져온다).
+ * 주인장 영상이 있으면 사이트에 보이지 않는다.
+ */
+export function ReferenceVideoForm({ gameId, videos }: { gameId: number; videos: PlayVideo[] }) {
+  const [state, action, pending] = useActionState(saveReferenceVideosAction, null);
+  const { rows, update, add, remove, move } = useRows(
+    videos.map((v) => ({ url: youtubeUrl(v.youtubeId), title: v.title ?? "", channel: v.channelName ?? "" })),
+    { url: "", title: "", channel: "" },
+  );
+
+  return (
+    <form action={action} className="space-y-3">
+      <input type="hidden" name="gameId" value={gameId} />
+      {rows.map((row, i) => (
+        <div key={i} className="flex flex-col gap-2 rounded border border-border p-3 sm:flex-row sm:items-center">
+          <input
+            name="videoUrl"
+            value={row.url}
+            onChange={(e) => update(i, { url: e.target.value })}
+            placeholder="https://youtu.be/..."
+            className={`${inputClass} sm:w-72`}
+          />
+          <input
+            name="videoTitle"
+            value={row.title}
+            onChange={(e) => update(i, { title: e.target.value })}
+            maxLength={GUIDE_LIMITS.videoTitle}
+            placeholder="제목 (비우면 유튜브 제목)"
+            className={inputClass}
+          />
+          <input
+            name="videoChannel"
+            value={row.channel}
+            onChange={(e) => update(i, { channel: e.target.value })}
+            maxLength={100}
+            placeholder="채널 이름 (비우면 유튜브에서)"
+            className={`${inputClass} sm:w-48`}
+          />
+          <RowControls index={i} count={rows.length} onMove={(d) => move(i, d)} onRemove={() => remove(i)} />
+        </div>
+      ))}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={add}
+          disabled={rows.length >= GUIDE_LIMITS.playVideos}
+          className="rounded border border-dashed border-border px-3 py-1.5 text-sm text-muted hover:text-foreground disabled:opacity-40"
+        >
+          + 영상 추가
+        </button>
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded border border-border px-4 py-1.5 text-sm hover:border-foreground/40 disabled:opacity-50"
+        >
+          {pending ? "저장 중…" : "참고 영상 저장"}
+        </button>
+        {state && <ResultMessage result={state} />}
+      </div>
     </form>
   );
 }

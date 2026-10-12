@@ -126,6 +126,11 @@ export function replacePlayVideos(id: number, videos: { url: string; title: stri
   return adminFetch<unknown>(`/api/admin/games/${id}/videos`, { method: "PUT", body: { videos } });
 }
 
+/** 다른 채널의 참고 영상 목록 전체 저장 (주인장 영상은 그대로) */
+export function replaceReferenceVideos(id: number, videos: { url: string; title: string; channelName: string }[]) {
+  return adminFetch<unknown>(`/api/admin/games/${id}/reference-videos`, { method: "PUT", body: { videos } });
+}
+
 export function replaceAchievements(
   id: number,
   achievements: { name: string; description: string; videoUrl: string }[],

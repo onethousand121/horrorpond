@@ -22,6 +22,7 @@ export function PlayVideos({ videos, locale }: { videos: PlayVideo[]; locale: Lo
         title={titleOf(current, active)}
         playLabel={t.play(titleOf(current, active))}
       />
+      {current.channelName && <p className="text-xs text-muted">{t.channel(current.channelName)}</p>}
       {videos.length > 1 && (
         <ul aria-label={t.chooseVideo} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {videos.map((video, index) => (

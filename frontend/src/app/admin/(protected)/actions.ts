@@ -12,6 +12,7 @@ import {
   publishGame,
   replaceAchievements,
   replacePlayVideos,
+  replaceReferenceVideos,
   unhideGame,
   unpublishArticle,
   updateCuration,
@@ -114,6 +115,35 @@ export async function saveAchievementsAction(_prev: ActionResult | null, formDat
 
 /** 유튜브 영상 제목. 실패하면 빈 문자열(제목 없이 저장) */
 async function youtubeTitle(url: string): Promise<string> {
+  return (await youtubeInfo(url)).title;
+}
+
+/**
+ * 참고 영상 저장. 제목·채널 이름을 비워 두면 유튜브 oEmbed로 채운다. 채널 이름은 사이트에 출처로 보인다.
+ */
+export async function saveReferenceVideosAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const id = gameId(formData);
+  const urls = formData.getAll("videoUrl").map((v) => String(v).trim());
+  const titles = formData.getAll("videoTitle").map((v) => String(v).trim());
+  const channels = formData.getAll("videoChannel").map((v) => String(v).trim());
+  const rows = urls
+    .map((url, i) => ({ url, title: titles[i] ?? "", channelName: channels[i] ?? "" }))
+    .filter((row) => row.url);
+  const videos = await Promise.all(
+    rows.map(async (row) => {
+      if (row.title && row.channelName) return row;
+      const info = await youtubeInfo(row.url);
+      return { url: row.url, title: row.title || info.title, channelName: row.channelName || info.author };
+    }),
+  );
+  if (videos.some((video) => !video.channelName)) {
+    return { ok: false, message: "채널 이름을 찾지 못한 영상이 있어요. 채널 이름을 직접 적어 주세요." };
+  }
+  return run(() => replaceReferenceVideos(id, videos), `참고 영상 ${videos.length}개를 저장했습니다.`);
+}
+
+/** 유튜브 oEmbed(키 불필요)로 영상 제목과 채널 이름을 가져온다. 실패하면 빈 값 */
+async function youtubeInfo(url: string): Promise<{ title: string; author: string }> {
   try {
     // 영상 ID만 넣은 경우도 oEmbed가 알아보도록 주소로 바꾼다
     const target = /^[A-Za-z0-9_-]{11}$/.test(url) ? `https://www.youtube.com/watch?v=${url}` : url;
@@ -121,13 +151,14 @@ async function youtubeTitle(url: string): Promise<string> {
       cache: "no-store",
       signal: AbortSignal.timeout(5000),
     });
-    if (!res.ok) return "";
+    if (!res.ok) return { title: "", author: "" };
     const data: unknown = await res.json();
-    return typeof data === "object" && data !== null && "title" in data && typeof data.title === "string"
-      ? data.title.slice(0, 200)
-      : "";
+    if (typeof data !== "object" || data === null) return { title: "", author: "" };
+    const title = "title" in data && typeof data.title === "string" ? data.title.slice(0, 200) : "";
+    const author = "author_name" in data && typeof data.author_name === "string" ? data.author_name.slice(0, 100) : "";
+    return { title, author };
   } catch {
-    return "";
+    return { title: "", author: "" };
   }
 }
 

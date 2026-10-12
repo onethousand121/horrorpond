@@ -10,6 +10,7 @@ import com.horrorpond.curation.domain.ArticleStatus;
 import com.horrorpond.curation.domain.QAchievementGuide;
 import com.horrorpond.curation.domain.QCurationArticle;
 import com.horrorpond.curation.domain.QPlayVideo;
+import com.horrorpond.curation.domain.VideoKind;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.OrderSpecifier;
@@ -65,7 +66,7 @@ public class CuratedGameQueryRepository {
                         game.languages, game.audioLanguages,
                         isArticle(ArticleKind.PICK), article.oneLiner, article.highlights,
                         article.sponsored.coalesce(false),
-                        JPAExpressions.selectOne().from(playVideo).where(playVideo.gameId.eq(game.id)).exists(),
+                        keeperVideoExists(),
                         JPAExpressions.selectOne().from(achievementGuide)
                                 .where(achievementGuide.gameId.eq(game.id)).exists(),
                         game.source, isArticle(ArticleKind.REVIEW)))
@@ -136,7 +137,7 @@ public class CuratedGameQueryRepository {
         if (query.keeper()) {
             // 주인장 추천: 추천 글(후기는 제외)이 있거나 주인장 플레이 영상이 있는 게임
             where.and(article.kind.eq(ArticleKind.PICK)
-                    .or(JPAExpressions.selectOne().from(playVideo).where(playVideo.gameId.eq(game.id)).exists()));
+                    .or(keeperVideoExists()));
         }
         if (query.release() != null) {
             // Steam 데이터는 주기적으로 갱신되므로, 출시일이 지났는데 아직 출시 예정으로 남은 게임은 최근 출시로 본다
@@ -161,6 +162,13 @@ public class CuratedGameQueryRepository {
                     .and(pinned.or(horror.and(recentReviewGrowth(query.today()).gt(0))));
         }
         return where;
+    }
+
+    /** 주인장 플레이 영상이 있는지 (다른 채널의 참고 영상은 세지 않는다) */
+    private static BooleanExpression keeperVideoExists() {
+        return JPAExpressions.selectOne().from(playVideo)
+                .where(playVideo.gameId.eq(game.id), playVideo.kind.eq(VideoKind.KEEPER))
+                .exists();
     }
 
     /** 공개된 글이 그 종류면 true (글이 없으면 false) */

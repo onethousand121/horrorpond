@@ -79,6 +79,8 @@ export interface AdminGameDetail {
   trendingOverride?: TrendingOverride | null;
   article: AdminArticle | null;
   playVideos: PlayVideo[];
+  /** 다른 채널의 참고 영상 (백엔드 배포 전 응답에는 없다) */
+  referenceVideos?: PlayVideo[];
   achievements: AchievementGuide[];
 }
 
