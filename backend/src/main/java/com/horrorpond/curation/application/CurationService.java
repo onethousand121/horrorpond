@@ -1,10 +1,11 @@
 package com.horrorpond.curation.application;
 
 import com.horrorpond.catalog.domain.Game;
-import com.horrorpond.catalog.domain.TrendingOverride;
 import com.horrorpond.catalog.domain.GameSource;
 import com.horrorpond.catalog.domain.GameStatus;
 import com.horrorpond.catalog.domain.Genre;
+import com.horrorpond.catalog.domain.Store;
+import com.horrorpond.catalog.domain.TrendingOverride;
 import com.horrorpond.catalog.repository.GameRepository;
 import com.horrorpond.catalog.repository.GenreRepository;
 import com.horrorpond.common.domain.DomainStateException;
@@ -120,9 +121,38 @@ public class CurationService {
     /**
      * "지금 뜨는" 고정/제외. null이면 자동 기준으로 되돌린다.
      */
-    public AdminGameDetailResponse changeTrendingOverride(Long gameId, TrendingOverride override) {
-        findGame(gameId).changeTrendingOverride(override);
+    public AdminGameDetailResponse changeTrendingOverride(Long gameId, TrendingOverride override, boolean auto) {
+        findGame(gameId).changeTrendingOverride(override, auto);
         return getDetail(gameId);
+    }
+
+    /**
+     * 상점 정보로 게임을 찾는다 (매주 조사 반영용). Steam은 appid, itch.io는 상점 주소.
+     */
+    @Transactional(readOnly = true)
+    public AdminGameDetailResponse lookup(Integer steamAppId, String itchUrl) {
+        Game game;
+        if (steamAppId != null) {
+            game = gameRepository.findBySourceAndExternalId(GameSource.STEAM, String.valueOf(steamAppId))
+                    .orElseThrow(() -> new NotFoundException("Steam game not found: " + steamAppId));
+        } else if (itchUrl != null && !itchUrl.isBlank()) {
+            game = gameRepository.findByStoreLink(Store.ITCH, itchUrl.strip()).stream().findFirst()
+                    .orElseThrow(() -> new NotFoundException("itch.io game not found: " + itchUrl));
+        } else {
+            throw new DomainValidationException("steamAppId or itchUrl is required");
+        }
+        return getDetail(game.getId());
+    }
+
+    /** "지금 뜨는"에 고정된 게임 (자동 고정 여부 포함) */
+    @Transactional(readOnly = true)
+    public List<TrendingPin> trendingPins() {
+        return gameRepository.findByTrendingOverrideOrderByIdAsc(TrendingOverride.PINNED).stream()
+                .map(game -> new TrendingPin(game.getId(), game.getTitle(), game.isTrendingAuto()))
+                .toList();
+    }
+
+    public record TrendingPin(Long id, String title, boolean auto) {
     }
 
     public AdminGameResponse hide(Long gameId) {

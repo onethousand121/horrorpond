@@ -239,6 +239,31 @@ class AdminCurationApiTest {
     }
 
     @Test
+    void lookupByStoreAndAutoPinsForWeeklyResearch() throws Exception {
+        Long id = steamCandidate(77, "Lookup", "lookup-77");
+        mvc.perform(admin(get("/api/admin/games/lookup").param("steamAppId", "77")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.steamUrl").value("https://store.steampowered.com/app/77"));
+        mvc.perform(admin(get("/api/admin/games/lookup").param("steamAppId", "78"))).andExpect(status().isNotFound());
+        mvc.perform(admin(get("/api/admin/games/lookup").param("itchUrl", "https://nobody.itch.io/none")))
+                .andExpect(status().isNotFound());
+        mvc.perform(admin(get("/api/admin/games/lookup"))).andExpect(status().isBadRequest());
+
+        // 조사 반영이 고정하면 auto=true, 관리자가 다시 고정하면 auto=false
+        mvc.perform(admin(put("/api/admin/games/{id}/trending", id))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"override\":\"PINNED\",\"auto\":true}"))
+                .andExpect(jsonPath("$.trendingAuto").value(true));
+        mvc.perform(admin(get("/api/admin/games/trending-pins")))
+                .andExpect(jsonPath("$[0].id").value(id))
+                .andExpect(jsonPath("$[0].auto").value(true));
+        mvc.perform(admin(put("/api/admin/games/{id}/trending", id))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"override\":\"PINNED\"}"))
+                .andExpect(jsonPath("$.trendingAuto").value(false));
+        mvc.perform(admin(get("/api/admin/games/trending-pins"))).andExpect(jsonPath("$[0].auto").value(false));
+    }
+
+    @Test
     void publishWithoutArticlePinsGameOnly() throws Exception {
         Long id = steamCandidate(1, "No Article", "no-article-1");
         mvc.perform(admin(get("/api/admin/games/{id}", id)))

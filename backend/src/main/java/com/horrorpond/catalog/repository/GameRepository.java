@@ -2,6 +2,8 @@ package com.horrorpond.catalog.repository;
 
 import com.horrorpond.catalog.domain.Game;
 import com.horrorpond.catalog.domain.GameSource;
+import com.horrorpond.catalog.domain.Store;
+import com.horrorpond.catalog.domain.TrendingOverride;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import org.springframework.data.jpa.repository.Query;
@@ -16,6 +18,14 @@ public interface GameRepository extends JpaRepository<Game, Long> {
     Optional<Game> findBySourceAndExternalId(GameSource source, String externalId);
 
     boolean existsBySlug(String slug);
+
+    /** 상점 링크 주소로 찾는다 (대소문자 무시) */
+    @Query("""
+            select g from Game g join g.storeLinks l
+            where l.store = :store and lower(l.url) = lower(:url)""")
+    List<Game> findByStoreLink(@Param("store") Store store, @Param("url") String url);
+
+    List<Game> findByTrendingOverrideOrderByIdAsc(TrendingOverride override);
 
     /** 한국어·영어 이름 중 하나가 같은(대소문자 무시) 게임이 그 출처에 있는지 */
     @Query("""

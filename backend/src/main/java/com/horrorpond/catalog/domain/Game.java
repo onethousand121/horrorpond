@@ -127,6 +127,10 @@ public class Game extends BaseTimeEntity {
     @Column(length = 10)
     private TrendingOverride trendingOverride;
 
+    /** 매주 조사 반영이 고정했으면 true (다음 반영 때 결과에서 빠지면 풀린다). 관리자가 직접 고정하면 false */
+    @Column(nullable = false)
+    private boolean trendingAuto;
+
     @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC")
     private List<GameMedia> media = new ArrayList<>();
@@ -379,9 +383,17 @@ public class Game extends BaseTimeEntity {
         this.genres.addAll(genres);
     }
 
-    /** "지금 뜨는"에 고정하거나 빼거나(null이면 자동 기준으로 되돌린다) */
+    /** "지금 뜨는"에 고정하거나 빼거나(null이면 자동 기준으로 되돌린다). 관리자가 직접 바꾼 것으로 기록한다 */
     public void changeTrendingOverride(TrendingOverride override) {
+        changeTrendingOverride(override, false);
+    }
+
+    /**
+     * @param auto 매주 조사 반영이 고정했으면 true. 고정(PINNED)일 때만 의미가 있다
+     */
+    public void changeTrendingOverride(TrendingOverride override, boolean auto) {
         this.trendingOverride = override;
+        this.trendingAuto = auto && override == TrendingOverride.PINNED;
     }
 
     public void hide() {
