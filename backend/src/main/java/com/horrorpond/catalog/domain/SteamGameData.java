@@ -43,6 +43,14 @@ public record SteamGameData(
                 comingSoon, coop, reviewCount, adult, media, credits);
     }
 
+    /**
+     * 스냅샷보다 최근에 받은 리뷰 수가 있을 때 그 값을 지키려고 쓴다.
+     */
+    public SteamGameData withReviewCount(Integer count) {
+        return new SteamGameData(title, shortDescription, headerImageUrl, releaseDate, releaseDateText,
+                comingSoon, coop, count, adult, media, developers);
+    }
+
     public record Media(MediaType type, String url, String thumbnailUrl) {
 
         public Media {

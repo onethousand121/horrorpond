@@ -30,6 +30,13 @@ public interface GameMetricDailyRepository extends JpaRepository<GameMetricDaily
                 @Param("reviewCount") int reviewCount, @Param("capturedAt") Instant capturedAt);
 
     /**
+     * 그 게임·상점의 가장 최근 리뷰 수 기록 시각. 기록이 없으면 null
+     */
+    @Query(nativeQuery = true, value = """
+            SELECT max(captured_at) FROM game_metric_daily WHERE game_id = :gameId AND store = :store""")
+    Instant findLatestCapturedAt(@Param("gameId") long gameId, @Param("store") String store);
+
+    /**
      * 오늘 아직 Steam 리뷰 수를 기록하지 않은 게임 중 트렌드를 볼 만한 것.
      * 숨김·성인·출시 전(리뷰가 없음)은 빼고, 최근 출시작(recentSince 이후)을 먼저, 그다음 리뷰가 minReviews 이상인 게임을
      * 기록한 지 오래된 순으로 고른다. 그래서 한 번에 다 못 하는 게임은 날마다 돌아가며 기록된다.
