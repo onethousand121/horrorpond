@@ -6,6 +6,7 @@ import com.horrorpond.catalog.domain.Game;
 import com.horrorpond.catalog.domain.GameStatus;
 import com.horrorpond.catalog.domain.MediaType;
 import com.horrorpond.catalog.domain.SteamGameData;
+import com.horrorpond.catalog.domain.StorePrice;
 import com.horrorpond.catalog.domain.TrendingOverride;
 import com.horrorpond.catalog.repository.DeveloperRepository;
 import com.horrorpond.catalog.repository.GameRepository;
@@ -226,6 +227,24 @@ class PublicGameApiTest {
                 .andExpect(jsonPath("$.content[*].slug", contains("pinned", "rising", "new-hit", "cooled")));
         mvc.perform(get("/api/games").param("sort", "POPULAR"))
                 .andExpect(jsonPath("$.content[0].slug").value("no-history"));
+    }
+
+    @Test
+    void freeFilterAndPrices() throws Exception {
+        create(spec("free-game").price(new StorePrice(true, null, null)));
+        create(spec("paid-game").price(new StorePrice(false, 2050000, "KRW")));
+        create(spec("unknown-price"));
+
+        mvc.perform(get("/api/games").param("free", "true"))
+                .andExpect(jsonPath("$.content[*].slug", contains("free-game")))
+                .andExpect(jsonPath("$.content[0].free").value(true));
+        mvc.perform(get("/api/games/paid-game"))
+                .andExpect(jsonPath("$.free").value(false))
+                .andExpect(jsonPath("$.priceAmount").value(2050000))
+                .andExpect(jsonPath("$.priceCurrency").value("KRW"));
+        mvc.perform(get("/api/games/free-game"))
+                .andExpect(jsonPath("$.free").value(true))
+                .andExpect(jsonPath("$.priceAmount").doesNotExist());
     }
 
     @Test
@@ -488,6 +507,7 @@ class PublicGameApiTest {
                     .map(slug -> genreRepository.findBySlug(slug).orElseThrow())
                     .toList()));
             game.changeTrendingOverride(spec.trendingOverride);
+            game.applyPrice(spec.price);
             gameRepository.save(game);
 
             if (spec.articleStatus != null) {
@@ -543,6 +563,7 @@ class PublicGameApiTest {
         private List<String> audioLanguages = List.of();
         private String englishTitle;
         private TrendingOverride trendingOverride;
+        private StorePrice price = StorePrice.UNKNOWN;
 
         GameSpec(String slug) {
             this.slug = slug;
@@ -578,5 +599,7 @@ class PublicGameApiTest {
         GameSpec englishTitle(String value) { englishTitle = value; return this; }
 
         GameSpec trendingOverride(TrendingOverride value) { trendingOverride = value; return this; }
+
+        GameSpec price(StorePrice value) { price = value; return this; }
     }
 }

@@ -39,14 +39,38 @@ function parseSearch(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : (value ?? "")).trim().slice(0, 100);
 }
 
-function href(locale: Locale, view: ViewKey, page: number, q: string, korean: boolean): string {
+interface Filters {
+  korean: boolean;
+  free: boolean;
+}
+
+function href(locale: Locale, view: ViewKey, page: number, q: string, filters: Filters): string {
   const params = new URLSearchParams();
   if (q) params.set("q", q);
   if (view !== "trending") params.set("view", view);
-  if (korean) params.set("korean", "1");
+  if (filters.korean) params.set("korean", "1");
+  if (filters.free) params.set("free", "1");
   if (page > 1) params.set("page", String(page));
   const query = params.toString();
   return localePath(locale, query ? `/games?${query}` : "/games");
+}
+
+/** 켜고 끄는 필터 (탭·검색과 함께 쓴다) */
+function FilterChip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "true" : undefined}
+      className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-sm ${
+        active
+          ? "border-accent bg-accent/15 font-medium text-accent"
+          : "border-border text-muted hover:border-accent/50 hover:text-foreground"
+      }`}
+    >
+      <span aria-hidden>{active ? "✓" : "+"}</span>
+      {children}
+    </Link>
+  );
 }
 
 // searchParams를 읽으므로 요청마다 렌더링된다. API 응답은 데이터 캐시(1시간)를 거친다.
@@ -60,10 +84,12 @@ export default async function GamesPage({ params, searchParams }: PageProps<"/[l
   const q = parseSearch(query.q);
   // 한국어 지원 필터는 탭·검색과 함께 쓴다 (한국어 화면에서만 보여준다)
   const korean = lang === "ko" && query.korean === "1";
+  const free = query.free === "1";
+  const filters: Filters = { korean, free };
   // 검색은 탭(지금 뜨는 = 최근 90일 등) 조건 없이 사이트 전체에서 찾고, 많이 알려진 게임부터 보여준다
   const viewParams: GetGamesParams = q ? { sort: "POPULAR" } : VIEWS.find((v) => v.key === view)!.params;
 
-  const games = await getGames({ ...viewParams, q: q || undefined, korean, page: page - 1, lang });
+  const games = await getGames({ ...viewParams, q: q || undefined, korean, free, page: page - 1, lang });
   const currentView: ViewKey = q ? "trending" : view;
 
   return (
@@ -77,7 +103,7 @@ export default async function GamesPage({ params, searchParams }: PageProps<"/[l
             {VIEWS.map((v) => (
               <Link
                 key={v.key}
-                href={href(lang, v.key, 1, q, korean)}
+                href={href(lang, v.key, 1, q, filters)}
                 aria-current={v.key === view ? "page" : undefined}
                 className={`rounded-full border px-3 py-1 ${
                   v.key === view
@@ -91,25 +117,21 @@ export default async function GamesPage({ params, searchParams }: PageProps<"/[l
           </nav>
         )}
       </div>
-      {lang === "ko" && (
-        <Link
-          href={href(lang, currentView, 1, q, !korean)}
-          aria-current={korean ? "true" : undefined}
-          className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-sm ${
-            korean
-              ? "border-accent bg-accent/15 font-medium text-accent"
-              : "border-border text-muted hover:border-accent/50 hover:text-foreground"
-          }`}
-        >
-          <span aria-hidden>{korean ? "✓" : "+"}</span>
-          {t.home.koreanOnly}
-        </Link>
-      )}
+      <div className="flex flex-wrap gap-1.5">
+        {lang === "ko" && (
+          <FilterChip href={href(lang, currentView, 1, q, { ...filters, korean: !korean })} active={korean}>
+            {t.home.koreanOnly}
+          </FilterChip>
+        )}
+        <FilterChip href={href(lang, currentView, 1, q, { ...filters, free: !free })} active={free}>
+          {t.home.freeOnly}
+        </FilterChip>
+      </div>
       <GameGrid games={games.content} locale={lang} emptyMessage={q ? t.search.noResults : undefined} />
       <Pagination
         page={page - 1}
         totalPages={games.totalPages}
-        hrefFor={(p) => href(lang, currentView, p + 1, q, korean)}
+        hrefFor={(p) => href(lang, currentView, p + 1, q, filters)}
         locale={lang}
       />
     </div>

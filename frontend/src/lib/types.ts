@@ -85,6 +85,8 @@ export interface GameSummary {
   source?: GameSource;
   /** 주인장 플레이 후기(공개된 후기 글)가 있으면 true. 백엔드 배포 전 응답에는 없다 */
   reviewed?: boolean;
+  /** 무료 게임. 백엔드 배포 전 응답에는 없다 */
+  free?: boolean;
 }
 
 export interface DeveloperCredit {
@@ -149,6 +151,11 @@ export interface GameDetail {
   achievements: AchievementGuide[];
   /** 백엔드 배포 전 응답에는 없다 (그때는 Steam으로 본다) */
   source?: GameSource;
+  /** 무료 게임. 백엔드 배포 전 응답에는 없다 */
+  free?: boolean;
+  /** 할인 전 정가 (통화 최소 단위: KRW는 ×100, USD는 센트). 출시 전·모름이면 null */
+  priceAmount?: number | null;
+  priceCurrency?: string | null;
 }
 
 /** 백엔드 GameGuideResponses.PlayVideoResponse */

@@ -1,6 +1,7 @@
 package com.horrorpond.ingestion.application;
 
 import com.horrorpond.catalog.domain.SteamGameData;
+import com.horrorpond.catalog.domain.StorePrice;
 
 import java.util.List;
 
@@ -16,7 +17,9 @@ public record ParsedSteamApp(
         List<String> developerNames,
         List<String> publisherNames,
         EnglishText english,
-        SteamLanguages languages
+        SteamLanguages languages,
+        /** 무료 여부와 한국 정가 (게임이 아니면 UNKNOWN) */
+        StorePrice price
 ) {
 
     public record EnglishText(String title, String shortDescription, String releaseDateText) {

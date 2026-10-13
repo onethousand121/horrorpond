@@ -187,6 +187,21 @@ class SteamAppDetailsParserTest {
         assertThat(parsed.data()).isNull();
     }
 
+    @Test
+    void priceIsTheUndiscountedKoreanPrice() {
+        // 할인 중(30%)이어도 정가(initial)를 쓴다. 원화는 100배 단위
+        assertThat(parser.parse(fixtureData(1262350)).price())
+                .isEqualTo(new com.horrorpond.catalog.domain.StorePrice(false, 2050000, "KRW"));
+        // 무료 게임은 price_overview가 없다
+        assertThat(parser.parse(modified(739630, d -> {
+            d.put("is_free", true);
+            d.remove("price_overview");
+        })).price().free()).isTrue();
+        // 출시 전 등 가격이 없으면 금액 없음
+        assertThat(parser.parse(modified(739630, d -> d.remove("price_overview"))).price())
+                .isEqualTo(com.horrorpond.catalog.domain.StorePrice.UNKNOWN);
+    }
+
     static String fixtureData(int appid) {
         return JSON.readTree(Fixtures.appDetails(appid)).get(String.valueOf(appid)).get("data").toString();
     }

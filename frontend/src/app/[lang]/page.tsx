@@ -107,6 +107,12 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               {t.koreanOnly}
             </Link>
           )}
+          <Link
+            href={localePath(lang, "/games?free=1")}
+            className={`${CHIP} border-emerald-400/40 bg-emerald-400/10 font-medium text-emerald-300 hover:bg-emerald-400/20`}
+          >
+            {t.freeOnly}
+          </Link>
           {genres.map((genre) => (
             <Link
               key={genre.slug}

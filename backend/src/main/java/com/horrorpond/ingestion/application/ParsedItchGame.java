@@ -1,6 +1,7 @@
 package com.horrorpond.ingestion.application;
 
 import com.horrorpond.catalog.domain.SteamGameData;
+import com.horrorpond.catalog.domain.StorePrice;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -18,6 +19,8 @@ public record ParsedItchGame(
         List<String> tags,
         List<String> languages,
         List<String> authors,
-        List<SteamGameData.Media> screenshots
+        List<SteamGameData.Media> screenshots,
+        /** min_price가 0이면 무료(원하는 만큼 내기 포함), 아니면 달러 센트. 못 읽으면 UNKNOWN */
+        StorePrice price
 ) {
 }

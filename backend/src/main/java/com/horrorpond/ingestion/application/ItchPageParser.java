@@ -2,6 +2,7 @@ package com.horrorpond.ingestion.application;
 
 import com.horrorpond.catalog.domain.MediaType;
 import com.horrorpond.catalog.domain.SteamGameData;
+import com.horrorpond.catalog.domain.StorePrice;
 import com.horrorpond.ingestion.client.ItchUrls;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.HtmlUtils;
@@ -51,6 +52,7 @@ public class ItchPageParser {
     private static final Pattern LANGUAGE_LINK = Pattern.compile("href=\"[^\"]*/games/lang-([a-z0-9-]+)\"");
     private static final Pattern ABBR_TITLE = Pattern.compile("<abbr [^>]*title=\"([^\"]+)\"");
     private static final Pattern SCREENSHOT = Pattern.compile("<a (?=[^>]*data-image_lightbox)([^>]*)>\\s*<img ([^>]*)>");
+    private static final Pattern MIN_PRICE = Pattern.compile("\"min_price\":(\\d+)");
     private static final DateTimeFormatter ITCH_DATE = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.ENGLISH);
     private static final DateTimeFormatter EN_DATE = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH);
 
@@ -146,7 +148,20 @@ public class ItchPageParser {
         List<String> authors = linkTexts(info.getOrDefault("author", info.get("authors")));
 
         return new ParsedItchGame(itchId, title, description, blankToNull(meta.get("og:image")), ratingCount,
-                releaseDate(info), tags, languages(info.get("languages")), authors, screenshots(html));
+                releaseDate(info), tags, languages(info.get("languages")), authors, screenshots(html), price(html));
+    }
+
+    /**
+     * 페이지 스크립트의 게임 정보에 min_price(센트)가 있다. 0이면 무료(원하는 만큼 내기 포함).
+     * itch.io 가격은 대부분 달러라 USD로 둔다.
+     */
+    private static StorePrice price(String html) {
+        Matcher m = MIN_PRICE.matcher(html);
+        if (!m.find()) {
+            return StorePrice.UNKNOWN;
+        }
+        int cents = Integer.parseInt(m.group(1));
+        return cents == 0 ? new StorePrice(true, null, null) : new StorePrice(false, cents, "USD");
     }
 
     /** itch.io에는 한국어 표기가 없어 "2026년 9월 16일" 모양으로 만든다 */

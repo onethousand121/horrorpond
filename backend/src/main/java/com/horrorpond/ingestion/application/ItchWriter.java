@@ -99,6 +99,7 @@ public class ItchWriter {
                 parsed.releaseDate(), ItchPageParser.koreanDateText(parsed.releaseDate()),
                 ItchPageParser.englishDateText(parsed.releaseDate()), parsed.ratingCount(), parsed.tags(),
                 parsed.languages(), parsed.screenshots(), developers));
+        game.applyPrice(parsed.price());
         if (parsed.ratingCount() != null) {
             recordMetric(game, parsed.ratingCount(), now);
         }

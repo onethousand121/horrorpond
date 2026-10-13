@@ -71,6 +71,7 @@ export interface GetGamesParams {
   korean?: boolean;
   /** 주인장 추천(추천 글 또는 주인장 플레이 영상이 있는 게임)만 */
   keeper?: boolean;
+  free?: boolean;
   sort?: GameSort;
   page?: number;
   size?: number;
@@ -85,6 +86,7 @@ export async function getGames(params: GetGamesParams = {}): Promise<PageRespons
   if (params.picked) query.set("picked", "true");
   if (params.korean) query.set("korean", "true");
   if (params.keeper) query.set("keeper", "true");
+  if (params.free) query.set("free", "true");
   if (params.sort) query.set("sort", params.sort);
   query.set("page", String(params.page ?? 0));
   query.set("size", String(params.size ?? DEFAULT_PAGE_SIZE));
