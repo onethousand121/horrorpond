@@ -75,11 +75,19 @@ public record IngestionProperties(
         return requestInterval.multipliedBy(2).plus(steamSpyRequestInterval).multipliedBy(enrichment.maxPerRun());
     }
 
+    /**
+     * @param releaseWindowPastDays   출시일이 이만큼 지났는데 아직 "출시 예정"인 게임까지 매일 다시 받는다
+     * @param releaseWindowAheadDays  출시일이 이만큼 안에 다가온 "출시 예정" 게임을 매일 다시 받는다
+     * @param releaseWindowMaxPerRun  그렇게 매일 다시 받는 게임 수 상한 (maxPerRun 안에서 쓴다)
+     */
     public record Enrichment(
             @DefaultValue("1200") int maxPerRun,
             @DefaultValue("7d") Duration refreshAfter,
             @DefaultValue("1d") Duration failedRetryAfter,
-            @DefaultValue("3") int maxFailCount
+            @DefaultValue("3") int maxFailCount,
+            @DefaultValue("14") @PositiveOrZero int releaseWindowPastDays,
+            @DefaultValue("3") @PositiveOrZero int releaseWindowAheadDays,
+            @DefaultValue("150") @PositiveOrZero int releaseWindowMaxPerRun
     ) {
     }
 

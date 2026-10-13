@@ -28,7 +28,8 @@
 - 장르: 자체 택소노미(curator 관리) + SteamSpy 태그 자동 매핑. Steam genres/categories는 참고용 raw 데이터로만 보관
 - 수집: discovery(Steam 스토어 검색: Horror 전체 최신 출시순(약 1.5만, 중간 실패 시 받은 데까지) + 인기 출시 예정 200, SteamSpy tag 전체(2025년 이후 누락 많음)) → enrichment(appdetails, 1.5s throttle, 429→60s backoff)
         → raw_snapshot(JSONB) 저장 → normalize(별도 단계, 재실행 가능)
-  enrichment 우선순위: MANUAL → STEAM_SEARCH(신작) → STEAMSPY_TAG → 갱신 → 재시도
+  enrichment 우선순위: MANUAL → 출시 무렵 재확인 → STEAM_SEARCH(신작) → STEAMSPY_TAG → 갱신 → 재시도
+  출시 무렵 재확인: 아직 "출시 예정"인데 출시일이 14일 전~3일 뒤인 게임은 7일 주기를 기다리지 않고 매일 다시 받는다(하루 최대 150개, 연기·출시 반영)
   enrichment는 자동 발견(SteamSpy/검색) seed를 먼저 SteamSpy appdetails(1s 간격) 상위 태그로 판정해
   상위 10개 태그 안에 Horror 계열 태그가 없으면 NOT_HORROR로 기록하고 Steam 호출에서 제외 (MANUAL seed는 판정 안 함)
   SteamSpy 과부하 응답(HTTP 200 + "Connection failed: Too many connections")은 30s 쉬고 재시도, 판정 연속 3회 실패면 enrichment 중단
