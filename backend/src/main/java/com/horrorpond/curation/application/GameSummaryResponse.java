@@ -43,7 +43,9 @@ public record GameSummaryResponse(
         boolean hasPlayVideo,
         boolean hasAchievementGuide,
         GameSource source,
-        boolean reviewed
+        boolean reviewed,
+        /** 무료 게임 (카드에 "무료" 뱃지) */
+        boolean free
 ) {
 
     static final int MAX_HIGHLIGHTS = 3;
@@ -66,7 +68,7 @@ public record GameSummaryResponse(
                 row.oneLiner(),
                 List.copyOf(highlights.subList(0, Math.min(MAX_HIGHLIGHTS, highlights.size()))),
                 row.sponsored(), row.hasPlayVideo(), row.hasAchievementGuide(), row.source(),
-                row.reviewed());
+                row.reviewed(), row.free());
     }
 
     public record GenreSummary(String slug, String name) {

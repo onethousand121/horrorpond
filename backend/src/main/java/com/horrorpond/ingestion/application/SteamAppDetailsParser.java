@@ -2,6 +2,7 @@ package com.horrorpond.ingestion.application;
 
 import com.horrorpond.catalog.domain.MediaType;
 import com.horrorpond.catalog.domain.SteamGameData;
+import com.horrorpond.catalog.domain.StorePrice;
 import com.horrorpond.ingestion.client.AppDetailsResult;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.HtmlUtils;
@@ -60,13 +61,13 @@ public class SteamAppDetailsParser {
         JsonNode root = JSON.readTree(dataJson);
         String type = text(root, "type");
         if (!TYPE_GAME.equals(type)) {
-            return new ParsedSteamApp(type, null, List.of(), List.of(), null, SteamLanguages.NONE);
+            return new ParsedSteamApp(type, null, List.of(), List.of(), null, SteamLanguages.NONE, StorePrice.UNKNOWN);
         }
         ParsedSteamApp.EnglishText english = english(root.get(AppDetailsResult.Found.ENGLISH));
         // 한국어 응답에 이름이 비어 있는 게임이 있다. 영어 이름으로 대신하고, 둘 다 없으면 게임으로 만들지 않는다
         String title = firstNonBlank(text(root, "name"), english == null ? null : english.title());
         if (title == null) {
-            return new ParsedSteamApp(TYPE_UNNAMED, null, List.of(), List.of(), null, SteamLanguages.NONE);
+            return new ParsedSteamApp(TYPE_UNNAMED, null, List.of(), List.of(), null, SteamLanguages.NONE, StorePrice.UNKNOWN);
         }
         JsonNode release = root.path("release_date");
         String releaseDateText = text(release, "date");
@@ -83,7 +84,7 @@ public class SteamAppDetailsParser {
                 media(root),
                 List.of());
         return new ParsedSteamApp(type, data, names(root, "developers"), names(root, "publishers"), english,
-                SteamLanguages.parse(text(root, "supported_languages")));
+                SteamLanguages.parse(text(root, "supported_languages")), price(root));
     }
 
     private static String firstNonBlank(String first, String second) {
@@ -187,5 +188,16 @@ public class SteamAppDetailsParser {
         }
         String text = value.asString().strip();
         return text.isEmpty() ? null : text;
+    }
+
+    /**
+     * is_free와 price_overview.initial(할인 전, 원화 ×100). 출시 전이거나 판매하지 않으면 price_overview가 없다.
+     */
+    static StorePrice price(JsonNode root) {
+        boolean free = root.path("is_free").asBoolean(false);
+        JsonNode overview = root.path("price_overview");
+        Integer amount = overview.path("initial").isIntegralNumber() ? overview.path("initial").asInt() : null;
+        String currency = overview.path("currency").isString() ? overview.path("currency").asString() : null;
+        return new StorePrice(free, amount, currency);
     }
 }

@@ -73,6 +73,20 @@ export function KoreanBadge({ locale, languages }: {
   );
 }
 
+/** 무료 게임. 출시 전 게임은 가격이 정해지지 않았을 수 있어 표시하지 않는다 */
+export function FreeBadge({ locale, free, comingSoon }: {
+  locale: Locale;
+  free?: boolean;
+  comingSoon: boolean;
+}) {
+  if (!free || comingSoon) return null;
+  return (
+    <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 text-xs font-medium text-emerald-300">
+      {getDictionary(locale).badge.free}
+    </span>
+  );
+}
+
 const CHIP =
   "inline-flex items-center gap-1 rounded bg-background/85 px-1.5 py-0.5 text-[11px] font-medium text-foreground backdrop-blur-sm";
 

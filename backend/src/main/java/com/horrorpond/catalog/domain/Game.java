@@ -97,6 +97,16 @@ public class Game extends BaseTimeEntity {
     /** Steam 리뷰 수 (itch.io 게임은 평가 수). 출시작 자동 노출의 품질 하한에 쓴다 */
     private Integer reviewCount;
 
+    /** 무료 게임 */
+    @Column(name = "is_free", nullable = false)
+    private boolean free;
+
+    /** 정가(할인 전)의 최소 단위 금액. 모르면 null ({@link StorePrice}) */
+    private Integer priceAmount;
+
+    @Column(length = 3)
+    private String priceCurrency;
+
     /** 성인 콘텐츠. 자동 노출에서 제외되고, 큐레이터가 공개(PUBLISHED)해야 보인다 */
     @Column(nullable = false)
     private boolean adult;
@@ -317,6 +327,18 @@ public class Game extends BaseTimeEntity {
 
     public String releaseDateText(Language language) {
         return language.pick(releaseDateText, releaseDateTextEn);
+    }
+
+    /** 상점 가격 (Steam·itch.io 데이터가 소유) */
+    public void applyPrice(StorePrice price) {
+        Objects.requireNonNull(price, "price");
+        this.free = price.free();
+        this.priceAmount = price.free() ? null : price.amount();
+        this.priceCurrency = price.free() ? null : price.currency();
+    }
+
+    public StorePrice getPrice() {
+        return new StorePrice(free, priceAmount, priceCurrency);
     }
 
     public void applySteamLanguages(List<String> languages, List<String> audioLanguages) {

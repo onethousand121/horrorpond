@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AchievementGuides } from "@/components/AchievementGuides";
-import { AdultBadge, CoopBadge, GenreBadge, KeeperPickBadge, KeeperReviewBadge, KoreanBadge } from "@/components/Badges";
+import { AdultBadge, CoopBadge, GenreBadge, KeeperPickBadge, KeeperReviewBadge, KoreanBadge, FreeBadge } from "@/components/Badges";
 import { HighlightList } from "@/components/HighlightList";
 import { Markdown } from "@/components/Markdown";
 import { MediaGallery } from "@/components/MediaGallery";
@@ -83,6 +83,19 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/games/[slu
 }
 
 /** 한국어 소개가 없어 DeepL로 번역한 소개에 붙이는 표시 */
+/** 할인 전 정가. 무료면 "무료", 출시 전이거나 가격을 모르면 null (행을 숨긴다) */
+function formatPrice(game: GameDetail, lang: Locale, freeLabel: string): string | null {
+  if (game.comingSoon) return null;
+  if (game.free) return freeLabel;
+  if (game.priceAmount == null || !game.priceCurrency) return null;
+  try {
+    return new Intl.NumberFormat(lang, { style: "currency", currency: game.priceCurrency })
+      .format(game.priceAmount / 100);
+  } catch {
+    return null;
+  }
+}
+
 function AutoTranslatedMark({ label }: { label: string }) {
   return (
     <span className="ml-2 rounded border border-border px-1.5 py-0.5 align-middle font-sans text-[10px] text-muted">
@@ -104,6 +117,7 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
   const screenshots = game.media.filter((m) => m.type === "SCREENSHOT");
   const developers = groupDevelopers(game.developers, lang);
   const releaseDate = formatReleaseDate(game, lang);
+  const price = formatPrice(game, lang, t.priceFree);
   const languages = orderLanguages(game.languages ?? [], lang);
   const steamLink = game.storeLinks.find((link) => link.store === "STEAM");
   const itchLink = game.storeLinks.find((link) => link.store === "ITCH");
@@ -144,6 +158,7 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
         <div className="relative -mt-10 space-y-3 px-4 sm:-mt-28 sm:px-8">
           <div className="flex flex-wrap gap-1.5">
             <KoreanBadge locale={lang} languages={game.languages} />
+            <FreeBadge locale={lang} free={game.free} comingSoon={game.comingSoon} />
             {game.coop && <CoopBadge locale={lang} />}
             {game.genres.map((genre) => (
               <GenreBadge key={genre.slug} genre={genre} locale={lang} linked />
@@ -260,6 +275,15 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted">{t.releaseDate}</dt>
                   <dd>{releaseDate}</dd>
+                </div>
+              )}
+              {price && (
+                <div className="flex justify-between gap-4">
+                  <dt className="shrink-0 text-muted">{t.price}</dt>
+                  <dd className="text-right">
+                    {price}
+                    {!game.free && <span className="block text-xs text-muted">{t.priceNote}</span>}
+                  </dd>
                 </div>
               )}
               {game.reviewCount != null && game.reviewCount > 0 && (

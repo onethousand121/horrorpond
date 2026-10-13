@@ -43,7 +43,8 @@ public class PublicGameQueryService {
      * @param search 제목 검색어 (부분 일치, 대소문자 무시). 비어 있으면 무시
      */
     public Page<GameSummaryResponse> list(String search, String genreSlug, Boolean coop, ReleaseWindow release, boolean picked,
-                                          boolean korean, boolean keeper, CuratedGameSort sort, Language language,
+                                          boolean korean, boolean keeper, boolean free, CuratedGameSort sort,
+                                          Language language,
                                           Pageable pageable) {
         List<Genre> genres = genreRepository.findAllByOrderByDisplayOrderAsc();
         GenreFilter genreFilter = genreSlug == null || genreSlug.isBlank() ? null : genres.stream()
@@ -53,7 +54,7 @@ public class PublicGameQueryService {
                 .orElse(new GenreFilter(genreSlug, List.of()));
         PublicGameQuery query = new PublicGameQuery(exposurePolicy.visible(QGame.game),
                 search == null || search.isBlank() ? null : search.strip(), genreFilter, coop, release,
-                exposurePolicy.today(), picked, sort, korean, keeper);
+                exposurePolicy.today(), picked, sort, korean, keeper, free);
 
         Page<CuratedGameRow> rows = curatedGameQueryRepository.findVisible(query, pageable);
         Map<Long, List<String>> curatorGenres = curatedGameQueryRepository.findCuratorGenreSlugs(
@@ -69,7 +70,7 @@ public class PublicGameQueryService {
 
     private long count(ReleaseWindow release) {
         return curatedGameQueryRepository.countVisible(new PublicGameQuery(exposurePolicy.visible(QGame.game), null,
-                null, null, release, exposurePolicy.today(), false, CuratedGameSort.LATEST, false, false));
+                null, null, release, exposurePolicy.today(), false, CuratedGameSort.LATEST, false, false, false));
     }
 
     /**

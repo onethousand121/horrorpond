@@ -83,6 +83,16 @@ class ItchPageParserTest {
     }
 
     @Test
+    void priceFromMinPrice() {
+        String page = ItchFixtures.gamePage(42, "Night Shift", "x", 10);
+        assertThat(parser.parseGame(page).price()).isEqualTo(com.horrorpond.catalog.domain.StorePrice.UNKNOWN);
+        assertThat(parser.parseGame(page + "<script>I.ViewGame({\"game\":{\"min_price\":0,\"id\":42}})</script>")
+                .price().free()).isTrue();
+        assertThat(parser.parseGame(page + "<script>{\"min_price\":499}</script>").price())
+                .isEqualTo(new com.horrorpond.catalog.domain.StorePrice(false, 499, "USD"));
+    }
+
+    @Test
     void dateTexts() {
         LocalDate date = LocalDate.of(2026, 9, 16);
         assertThat(ItchPageParser.koreanDateText(date)).isEqualTo("2026년 9월 16일");

@@ -69,7 +69,7 @@ public class CuratedGameQueryRepository {
                         keeperVideoExists(),
                         JPAExpressions.selectOne().from(achievementGuide)
                                 .where(achievementGuide.gameId.eq(game.id)).exists(),
-                        game.source, isArticle(ArticleKind.REVIEW)))
+                        game.source, isArticle(ArticleKind.REVIEW), game.free))
                 .from(game)
                 .leftJoin(article).on(article.gameId.eq(game.id), article.status.eq(ArticleStatus.PUBLISHED))
                 .where(where)
@@ -126,6 +126,9 @@ public class CuratedGameQueryRepository {
         }
         if (query.coop() != null) {
             where.and(game.coop.eq(query.coop()));
+        }
+        if (query.free()) {
+            where.and(game.free.isTrue());
         }
         if (query.korean()) {
             where.and(Expressions.booleanTemplate("array_contains({0}, {1})", game.languages,
@@ -245,10 +248,11 @@ public class CuratedGameQueryRepository {
      * @param picked     true면 재일 추천(공개된 추천 글이 있는 게임, 후기 제외)만
      * @param korean     true면 한국어를 지원하는 게임만
      * @param keeper     true면 주인장 추천(추천 글 또는 주인장 플레이 영상이 있는 게임)만
+     * @param free       true면 무료 게임만
      */
     public record PublicGameQuery(Predicate visibility, String search, GenreFilter genre, Boolean coop, ReleaseWindow release,
                                   LocalDate today, boolean picked, CuratedGameSort sort, boolean korean,
-                                  boolean keeper) {
+                                  boolean keeper, boolean free) {
     }
 
     public record GenreFilter(String slug, List<String> steamTags) {
@@ -280,7 +284,8 @@ public class CuratedGameQueryRepository {
             boolean hasPlayVideo,
             boolean hasAchievementGuide,
             GameSource source,
-            boolean reviewed
+            boolean reviewed,
+            boolean free
     ) {
     }
 }
