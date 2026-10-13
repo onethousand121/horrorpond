@@ -44,7 +44,19 @@ test("VideoGame JSON-LD가 있다", async ({ page }) => {
   await expect(script).toHaveCount(1);
   const data = JSON.parse((await script.textContent()) ?? "{}");
   expect(data).toMatchObject({ "@type": "VideoGame", name: "등대지기", inLanguage: "ko" });
-  expect(data.subjectOf?.[0]?.embedUrl).toContain("dQw4w9WgXcQ");
+  // 플레이 영상은 공개일(uploadDate)을 몰라 넣지 않는다
+  expect(data.subjectOf).toBeUndefined();
+});
+
+test("JSON-LD: 출시된 유료 게임은 정가(offers)가 있고 출시 예정작은 출시일·가격이 없다", async ({ page }) => {
+  const jsonLd = async (path: string) => {
+    await page.goto(path);
+    return JSON.parse((await page.locator('script[type="application/ld+json"]').textContent()) ?? "{}");
+  };
+  expect((await jsonLd("/games/dark-house")).offers).toMatchObject({ "@type": "Offer", price: 16500, priceCurrency: "KRW" });
+  const upcoming = await jsonLd("/games/coming-dread");
+  expect(upcoming.offers).toBeUndefined();
+  expect(upcoming.datePublished).toBeUndefined();
 });
 
 test("추천 글 게임: 한국어는 한 줄 소개가 설명, 영어는 게임 소개가 설명", async ({ page }) => {
@@ -79,4 +91,14 @@ test("없는 게임은 404", async ({ page }) => {
 
   const en = await page.goto("/en/games/no-such-game");
   expect(en?.status()).toBe(404);
+});
+
+test("라우트에 없는 주소도 사이트 모양의 404", async ({ page }) => {
+  const res = await page.goto("/no/such/page");
+  expect(res?.status()).toBe(404);
+  await expect(page.getByRole("heading", { name: "페이지를 찾을 수 없습니다" })).toBeVisible();
+
+  const en = await page.goto("/en/no/such/page");
+  expect(en?.status()).toBe(404);
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
 });

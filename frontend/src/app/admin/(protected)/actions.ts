@@ -1,5 +1,8 @@
 "use server";
 
+// 관리 액션은 모두 맨 앞에서 로그인을 확인한다 (쿠키 없는 호출이 캐시 만료·외부 호출을 하지 않게)
+import { requireAdminKey } from "@/lib/admin/session";
+
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import {
@@ -51,6 +54,7 @@ function gameId(formData: FormData): number {
 }
 
 export async function saveCurationAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
   const id = gameId(formData);
   const slug = String(formData.get("slug") ?? "").trim();
   const genreSlugs = formData.getAll("genre").map(String);
@@ -59,6 +63,7 @@ export async function saveCurationAction(_prev: ActionResult | null, formData: F
 }
 
 export async function saveArticleAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
   const id = gameId(formData);
   const highlights = formData
     .getAll("highlight")
@@ -90,6 +95,7 @@ export async function saveArticleAction(_prev: ActionResult | null, formData: Fo
  * 폼은 행마다 videoUrl / videoTitle을 같은 순서로 보낸다. 주소가 빈 행은 버린다.
  */
 export async function savePlayVideosAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
   const id = gameId(formData);
   const urls = formData.getAll("videoUrl").map((v) => String(v).trim());
   const titles = formData.getAll("videoTitle").map((v) => String(v).trim());
@@ -104,6 +110,7 @@ export async function savePlayVideosAction(_prev: ActionResult | null, formData:
  * 업적 공략 목록 전체 저장. 이름이 빈 행은 버린다.
  */
 export async function saveAchievementsAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
   const id = gameId(formData);
   const names = formData.getAll("achievementName").map((v) => String(v).trim());
   const descriptions = formData.getAll("achievementDescription").map((v) => String(v).trim());
@@ -123,6 +130,7 @@ async function youtubeTitle(url: string): Promise<string> {
  * 참고 영상 저장. 제목·채널 이름을 비워 두면 유튜브 oEmbed로 채운다. 채널 이름은 사이트에 출처로 보인다.
  */
 export async function saveReferenceVideosAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
   const id = gameId(formData);
   const urls = formData.getAll("videoUrl").map((v) => String(v).trim());
   const titles = formData.getAll("videoTitle").map((v) => String(v).trim());
@@ -145,31 +153,37 @@ export async function saveReferenceVideosAction(_prev: ActionResult | null, form
 
 
 export async function publishAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
   const id = gameId(formData);
   return run(() => publishGame(id), "고정 노출했습니다. 사이트에 바로 반영됩니다.");
 }
 
 export async function pinTrendingAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
   const id = gameId(formData);
   return run(() => changeTrendingOverride(id, "PINNED"), "'지금 뜨는' 맨 앞에 고정했습니다.");
 }
 
 export async function excludeTrendingAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
   const id = gameId(formData);
   return run(() => changeTrendingOverride(id, "EXCLUDED"), "'지금 뜨는'에서 뺐습니다.");
 }
 
 export async function resetTrendingAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
   const id = gameId(formData);
   return run(() => changeTrendingOverride(id, null), "'지금 뜨는'을 자동 기준으로 되돌렸습니다.");
 }
 
 export async function hideAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
   const id = gameId(formData);
   return run(() => hideGame(id), "숨겼습니다.");
 }
 
 export async function unhideAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
   const id = gameId(formData);
   return run(() => unhideGame(id), "숨김을 해제했습니다. 자동 노출 기준을 만족하면 다시 보입니다.");
 }
@@ -184,6 +198,7 @@ function parseSteamAppId(line: string): number | null {
 const MAX_SEEDS_PER_SUBMIT = 30;
 
 export async function addSteamGamesAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
   const lines = String(formData.get("steam") ?? "")
     .split(/\s+/)
     .map((line) => line.trim())
@@ -219,6 +234,7 @@ export async function addSteamGamesAction(_prev: ActionResult | null, formData: 
 
 /** itch.io 게임을 지금 받아 오고, 그 게임의 관리 화면으로 간다 (고정 노출·추천 글은 거기서) */
 export async function addItchGameAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
   const url = String(formData.get("url") ?? "").trim();
   if (!url) return { ok: false, message: "itch.io 게임 주소를 넣어 주세요." };
   let gameId: number;
@@ -237,11 +253,13 @@ export async function addItchGameAction(_prev: ActionResult | null, formData: Fo
 }
 
 export async function unpublishArticleAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
   const id = gameId(formData);
   return run(() => unpublishArticle(id), "글을 내렸습니다. 초안으로 남아 있어 다시 공개할 수 있습니다.");
 }
 
 export async function deleteArticleAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
   const id = gameId(formData);
   return run(() => deleteArticle(id), "글을 삭제했습니다.");
 }

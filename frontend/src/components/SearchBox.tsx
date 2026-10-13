@@ -1,3 +1,6 @@
+import { Suspense } from "react";
+import { PlainSearchInput, SearchInput } from "@/components/SearchInput";
+
 /**
  * 헤더 검색. 일반 GET 폼이라 자바스크립트 없이도 {action}?q= 로 이동한다.
  */
@@ -15,13 +18,9 @@ export function SearchBox({ action, label, placeholder, className = "" }: {
           <path d="m11 11 3.5 3.5" />
         </svg>
         <span className="sr-only">{label}</span>
-        <input
-          type="search"
-          name="q"
-          maxLength={100}
-          placeholder={placeholder}
-          className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted/70"
-        />
+        <Suspense fallback={<PlainSearchInput placeholder={placeholder} />}>
+          <SearchInput placeholder={placeholder} />
+        </Suspense>
       </label>
     </form>
   );

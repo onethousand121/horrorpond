@@ -15,7 +15,7 @@ export function HighlightList({ items, compact = false, locale = "ko" }: {
 
   if (compact) {
     return (
-      <ul className="space-y-1 text-[13px] text-foreground/90">
+      <ul lang="ko" className="space-y-1 text-[13px] text-foreground/90">
         {items.map((item) => (
           <li key={item} className="flex gap-2">
             <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-accent" aria-hidden />

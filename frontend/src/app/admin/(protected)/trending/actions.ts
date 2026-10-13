@@ -1,5 +1,8 @@
 "use server";
 
+// 관리 액션은 모두 맨 앞에서 로그인을 확인한다 (쿠키 없는 호출이 캐시 만료·외부 호출을 하지 않게)
+import { requireAdminKey } from "@/lib/admin/session";
+
 import { revalidatePath, updateTag } from "next/cache";
 import {
   addItchGame,
@@ -20,6 +23,8 @@ import { youtubeInfo } from "@/lib/admin/youtubeInfo";
 /** 이번 결과가 이보다 적으면 조사가 덜 된 회차로 보고 지난주 자동 고정을 풀지 않는다 */
 const MIN_GAMES_TO_UNPIN = 5;
 const MAX_REFERENCE_VIDEOS = 10;
+/** 한 번에 반영할 게임 수. 서버 액션 시간 제한(60초) 안에 끝내기 위해 */
+const MAX_GAMES = 20;
 
 export interface ImportRow {
   title: string;
@@ -42,6 +47,7 @@ export interface ImportState {
  * 매주 조사 결과를 "지금 뜨는"과 참고 영상에 반영한다. 게임마다 따로 처리해 하나가 실패해도 나머지는 계속한다.
  */
 export async function applyTrendingResearchAction(_prev: ImportState | null, formData: FormData): Promise<ImportState> {
+  await requireAdminKey();
   let research;
   try {
     research = parseResearch(String(formData.get("json") ?? ""));
@@ -49,8 +55,22 @@ export async function applyTrendingResearchAction(_prev: ImportState | null, for
     return { ok: false, message: (e as Error).message, rows: [], reviewQueue: [], warnings: [] };
   }
 
+  if (research.games.length > MAX_GAMES) {
+    return { ok: false, message: `게임은 한 번에 ${MAX_GAMES}개까지 반영할 수 있어요 (${research.games.length}개).`, rows: [], reviewQueue: [], warnings: [] };
+  }
+
   const rows: ImportRow[] = [];
   const pinnedNow = new Set<number>();
+  try {
+    return await applyAll(research, rows, pinnedNow);
+  } finally {
+    // 중간에 실패해도 이미 반영된 고정이 사이트에 보이게 캐시를 비운다
+    updateTag(CACHE_TAGS.games);
+    revalidatePath("/admin", "layout");
+  }
+}
+
+async function applyAll(research: ReturnType<typeof parseResearch>, rows: ImportRow[], pinnedNow: Set<number>): Promise<ImportState> {
   for (const game of research.games) {
     try {
       rows.push(await applyGame(game, pinnedNow));
@@ -73,8 +93,6 @@ export async function applyTrendingResearchAction(_prev: ImportState | null, for
     unpinNote = ` 결과가 ${research.games.length}개뿐이라 지난주 고정은 그대로 뒀어요.`;
   }
 
-  updateTag(CACHE_TAGS.games);
-  revalidatePath("/admin", "layout");
   return {
     ok: true,
     message: `${research.games.length}개 처리했어요.${unpinNote}`,

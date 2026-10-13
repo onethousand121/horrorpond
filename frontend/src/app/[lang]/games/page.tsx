@@ -6,12 +6,23 @@ import { Pagination } from "@/components/Pagination";
 import { getGames, type GetGamesParams } from "@/lib/api";
 import { alternatesFor, getDictionary, isLocale, localePath, type Locale } from "@/lib/i18n";
 
-export async function generateMetadata({ params }: PageProps<"/[lang]/games">): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps<"/[lang]/games">): Promise<Metadata> {
   const { lang } = await params;
   if (!isLocale(lang)) return {};
   const t = getDictionary(lang).games;
-  return { title: t.metaTitle, description: t.metaDescription, alternates: alternatesFor(lang, "/games") };
+  const query = await searchParams;
+  // 검색·필터·2페이지 이후는 목록 1페이지와 내용이 겹치므로 색인하지 않고 링크만 따라가게 한다
+  const filtered = Boolean(query.q || query.korean || query.free || query.view || parsePage(query.page) > 1);
+  return {
+    title: t.metaTitle,
+    description: t.metaDescription,
+    alternates: alternatesFor(lang, "/games"),
+    ...(filtered ? { robots: { index: false, follow: true } } : {}),
+  };
 }
+
+/** 이보다 큰 ?page는 없는 페이지로 본다 (백엔드 int 범위를 넘는 값이 오류가 되지 않게) */
+const MAX_PAGE = 10_000;
 
 const VIEWS = [
   { key: "trending", params: { sort: "TRENDING" } },
@@ -31,7 +42,7 @@ function parseView(value: string | string[] | undefined): ViewKey {
 /** URL의 ?page는 1부터. 잘못된 값은 1페이지로 본다. */
 function parsePage(value: string | string[] | undefined): number {
   const page = Number(Array.isArray(value) ? value[0] : value);
-  return Number.isInteger(page) && page >= 1 ? page : 1;
+  return Number.isInteger(page) && page >= 1 && page <= MAX_PAGE ? page : 1;
 }
 
 /** 검색어: 앞뒤 공백 제거, 백엔드 제한(100자)에 맞춰 자른다 */
@@ -91,12 +102,14 @@ export default async function GamesPage({ params, searchParams }: PageProps<"/[l
 
   const games = await getGames({ ...viewParams, q: q || undefined, korean, free, page: page - 1, lang });
   const currentView: ViewKey = q ? "trending" : view;
+  // 범위를 넘은 페이지(오래된 링크 등)는 빈 목록 대신 404
+  if (page > 1 && page > games.totalPages) notFound();
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-baseline justify-between gap-4">
         <h1 className="font-pixel text-[22px]">
-          {q ? t.search.resultsFor(q) : t.games.heading} <span className="font-sans text-base font-normal text-muted">{games.totalElements}</span>
+          {q ? t.search.resultsFor(q) : t.games.heading} <span className="font-sans text-base font-normal text-muted">{games.totalElements.toLocaleString(t.htmlLang)}</span>
         </h1>
         {!q && (
           <nav aria-label={t.games.viewNav} className="flex flex-wrap gap-1.5 text-sm">

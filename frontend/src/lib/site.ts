@@ -13,7 +13,7 @@ export const SITE_URL = (process.env.SITE_URL ?? "http://localhost:3000").replac
 export const CONTACT_EMAIL = "contact@lurkpond.com";
 
 /** 개인정보처리방침 시행일 (내용을 바꾸면 갱신) */
-export const PRIVACY_EFFECTIVE_DATE = "2026-10-08";
+export const PRIVACY_EFFECTIVE_DATE = "2026-10-14";
 
 /** 운영자(유튜버). channelId는 채널 RSS 피드용 (youtube.com/@ryujaeil의 canonical) */
 export const CURATOR = {

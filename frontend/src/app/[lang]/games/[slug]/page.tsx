@@ -11,10 +11,10 @@ import { PlayVideos } from "@/components/PlayVideos";
 import { SponsorBadge } from "@/components/SponsorBadge";
 import { TrailerPlayer } from "@/components/TrailerPlayer";
 import { getGame } from "@/lib/api";
-import { formatCount, formatReleaseDate, groupDevelopers } from "@/lib/format";
+import { formatCount, formatReleaseDate, groupDevelopers, isUpcoming } from "@/lib/format";
 import { alternatesFor, getDictionary, isLocale, localePath, type Locale } from "@/lib/i18n";
 import { languageName, orderLanguages, VISIBLE_LANGUAGES } from "@/lib/languages";
-import { SITE_URL } from "@/lib/site";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import type { GameDetail } from "@/lib/types";
 
 // ISR: 빌드 때는 만들지 않고(빈 배열) 첫 방문 때 정적 생성 후 1시간마다 갱신.
@@ -31,7 +31,7 @@ function videoGameJsonLd(game: GameDetail, lang: Locale) {
     inLanguage: lang,
     ...(game.headerImageUrl && { image: game.headerImageUrl }),
     ...(game.shortDescription && { description: game.shortDescription }),
-    ...(game.releaseDate && { datePublished: game.releaseDate }),
+    ...(game.releaseDate && !isUpcoming(game) && { datePublished: game.releaseDate }),
     genre: ["Horror", ...game.genres.map((genre) => genre.name)],
     gamePlatform: "PC",
     playMode: game.coop ? ["SinglePlayer", "CoOp"] : "SinglePlayer",
@@ -41,15 +41,19 @@ function videoGameJsonLd(game: GameDetail, lang: Locale) {
     publisher: game.developers
       .filter((d) => d.role === "PUBLISHER")
       .map((d) => ({ "@type": "Organization", name: d.name })),
-    ...(game.playVideos.length > 0 && {
-      subjectOf: game.playVideos.map((video) => ({
-        "@type": "VideoObject",
-        name: video.title ?? game.title,
-        embedUrl: `https://www.youtube.com/embed/${video.youtubeId}`,
-        thumbnailUrl: `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
-      })),
-    }),
+    ...(offerOf(game) && { offers: offerOf(game) }),
   };
+}
+
+/**
+ * 출시된 게임의 정가 (Google 소프트웨어 앱 정보). 플레이 영상은 공개일(uploadDate)을 몰라 넣지 않는다
+ */
+function offerOf(game: GameDetail) {
+  if (isUpcoming(game)) return null;
+  const store = game.storeLinks.find((link) => link.store === "STEAM") ?? game.storeLinks[0];
+  if (game.free) return { "@type": "Offer", price: 0, priceCurrency: "USD", ...(store && { url: store.url }) };
+  if (game.priceAmount == null || !game.priceCurrency) return null;
+  return { "@type": "Offer", price: game.priceAmount / 100, priceCurrency: game.priceCurrency, ...(store && { url: store.url }) };
 }
 
 /** 상세 페이지에는 업적 공략을 앞에서 몇 개만 보여주고 전용 페이지로 잇는다 */
@@ -81,14 +85,16 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/games/[slu
       description,
       images: game.headerImageUrl ? [game.headerImageUrl] : [],
       type: "article",
+      url: `${SITE_URL}${localePath(lang, `/games/${game.slug}`)}`,
+      siteName: SITE_NAME,
+      locale: lang === "ko" ? "ko_KR" : "en_US",
     },
   };
 }
 
-/** 한국어 소개가 없어 DeepL로 번역한 소개에 붙이는 표시 */
 /** 할인 전 정가. 무료면 "무료", 출시 전이거나 가격을 모르면 null (행을 숨긴다) */
 function formatPrice(game: GameDetail, lang: Locale, freeLabel: string): string | null {
-  if (game.comingSoon) return null;
+  if (isUpcoming(game)) return null;
   if (game.free) return freeLabel;
   if (game.priceAmount == null || !game.priceCurrency) return null;
   try {
@@ -99,6 +105,7 @@ function formatPrice(game: GameDetail, lang: Locale, freeLabel: string): string 
   }
 }
 
+/** 한국어 소개가 없어 DeepL로 번역한 소개에 붙이는 표시 */
 function AutoTranslatedMark({ label }: { label: string }) {
   return (
     <span className="ml-2 rounded border border-border px-1.5 py-0.5 align-middle font-sans text-[10px] text-muted">
@@ -161,7 +168,7 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
         <div className="relative -mt-10 space-y-3 px-4 sm:-mt-28 sm:px-8">
           <div className="flex flex-wrap gap-1.5">
             <KoreanBadge locale={lang} languages={game.languages} />
-            <FreeBadge locale={lang} free={game.free} comingSoon={game.comingSoon} />
+            <FreeBadge locale={lang} game={game} />
             {game.coop && <CoopBadge locale={lang} />}
             {game.genres.map((genre) => (
               <GenreBadge key={genre.slug} genre={genre} locale={lang} linked />
@@ -285,7 +292,11 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
                   <dt className="shrink-0 text-muted">{t.price}</dt>
                   <dd className="text-right">
                     {price}
-                    {!game.free && <span className="block text-xs text-muted">{t.priceNote}</span>}
+                    {!game.free && (
+                      <span className="block text-xs text-muted">
+                        {game.priceCurrency === "KRW" ? t.priceNoteKrw : t.priceNote}
+                      </span>
+                    )}
                   </dd>
                 </div>
               )}

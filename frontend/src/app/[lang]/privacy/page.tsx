@@ -53,8 +53,9 @@ const CONTENT: Record<Locale, { title: string; intro: string; sections: Section[
       {
         title: "4. 외부 콘텐츠",
         body: [
-          "게임 이미지는 Steam(Valve) 서버에서 불러오며, 이때 접속 정보가 Steam에 전달됩니다.",
-          "유튜브 영상은 재생 버튼을 누를 때 유튜브의 개인정보 보호 강화 모드(youtube-nocookie.com)로 불러옵니다. 재생 후에는 Google의 개인정보처리방침이 적용됩니다.",
+          "게임 이미지는 Steam(Valve)과 itch.io 서버에서 불러오며, 이때 접속 정보가 각 서비스에 전달됩니다.",
+          "유튜브 영상의 미리보기 이미지는 페이지를 열 때 유튜브 이미지 서버(i.ytimg.com, Google)에서 불러옵니다. 영상 자체는 재생 버튼을 누를 때 유튜브의 개인정보 보호 강화 모드(youtube-nocookie.com)로 불러오며, 재생 후에는 Google의 개인정보처리방침이 적용됩니다.",
+          "본문 글꼴(Pretendard)은 jsDelivr CDN에서 불러옵니다.",
         ],
       },
       {
@@ -113,8 +114,9 @@ const CONTENT: Record<Locale, { title: string; intro: string; sections: Section[
       {
         title: "4. External content",
         body: [
-          "Game images are loaded from Steam (Valve) servers, which receive your connection information.",
-          "YouTube videos load in YouTube's privacy-enhanced mode (youtube-nocookie.com) only when you press play. Once playing, Google's privacy policy applies.",
+          "Game images are loaded from Steam (Valve) and itch.io servers, which receive your connection information.",
+          "YouTube video thumbnails load from YouTube's image server (i.ytimg.com, Google) when a page opens. The videos themselves load in YouTube's privacy-enhanced mode (youtube-nocookie.com) only when you press play. Once playing, Google's privacy policy applies.",
+          "The body font (Pretendard) is loaded from the jsDelivr CDN.",
         ],
       },
       {
