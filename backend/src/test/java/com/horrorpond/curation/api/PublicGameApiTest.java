@@ -169,6 +169,34 @@ class PublicGameApiTest {
     }
 
     @Test
+    void adultDetailHasOnlyBasicsAndStoreLinks() throws Exception {
+        create(spec("pinned-adult").adult(true).developerCount(1));
+        jdbc.update("""
+                INSERT INTO play_video (game_id, youtube_id, title, sort_order, kind, channel_name)
+                SELECT id, 'dQw4w9WgXcQ', 'Keeper', 0, 'KEEPER', NULL FROM game WHERE slug = 'pinned-adult'
+                UNION ALL
+                SELECT id, 'aaaaaaaaaaa', 'Other', 1, 'REFERENCE', 'Channel' FROM game WHERE slug = 'pinned-adult'""");
+        jdbc.update("""
+                INSERT INTO achievement_guide (game_id, name, sort_order)
+                SELECT id, 'Ach', 0 FROM game WHERE slug = 'pinned-adult'""");
+
+        // 성인 게임은 API에서부터 소개·미디어·글·영상·공략을 내려주지 않는다
+        mvc.perform(get("/api/games/pinned-adult"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Title pinned-adult"))
+                .andExpect(jsonPath("$.adult").value(true))
+                .andExpect(jsonPath("$.shortDescription").doesNotExist())
+                .andExpect(jsonPath("$.media", hasSize(0)))
+                .andExpect(jsonPath("$.article").doesNotExist())
+                .andExpect(jsonPath("$.playVideos", hasSize(0)))
+                .andExpect(jsonPath("$.referenceVideos", hasSize(0)))
+                .andExpect(jsonPath("$.achievements", hasSize(0)))
+                .andExpect(jsonPath("$.storeLinks[0].store").value("STEAM"))
+                .andExpect(jsonPath("$.developers", hasSize(1)))
+                .andExpect(jsonPath("$.releaseDate").value("2020-01-01"));
+    }
+
+    @Test
     void hubStatsCountOnlyVisibleGames() throws Exception {
         LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
         create(spec("today").releaseDate(today));
@@ -234,6 +262,8 @@ class PublicGameApiTest {
         create(spec("free-game").price(new StorePrice(true, null, null)));
         create(spec("paid-game").price(new StorePrice(false, 2050000, "KRW")));
         create(spec("unknown-price"));
+        // 출시 전 게임은 가격·무료 표시가 없으니 무료 목록에도 없다
+        create(spec("free-upcoming").releaseDate(null).comingSoon(true).price(new StorePrice(true, null, null)));
 
         mvc.perform(get("/api/games").param("free", "true"))
                 .andExpect(jsonPath("$.content[*].slug", contains("free-game")))
