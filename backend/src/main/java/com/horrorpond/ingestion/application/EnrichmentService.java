@@ -22,6 +22,8 @@ import org.springframework.stereotype.Service;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,6 +40,9 @@ import java.util.function.Function;
 @Service
 @RequiredArgsConstructor
 public class EnrichmentService {
+
+    /** 출시일은 사이트 기준(한국) 날짜로 비교한다 */
+    private static final ZoneId SITE_ZONE = ZoneId.of("Asia/Seoul");
 
     /** SteamSpy 장애 시 아이템마다 재시도를 반복하며 예산을 낭비하지 않도록, 연속 실패가 이만큼이면 중단한다. */
     static final int MAX_CONSECUTIVE_TAG_CHECK_FAILURES = 3;
@@ -70,6 +75,7 @@ public class EnrichmentService {
     /**
      * 우선순위 (공포게임이 아니라고 판정된 NOT_HORROR는 모두 제외):
      * 1) 수동 추가한 PENDING (관리자가 명시적으로 원한 것)
+     * 1.5) 출시 무렵인 "출시 예정" 게임 (출시일이 최근 14일~3일 뒤): 출시·연기가 몰리는 때라 매일 다시 받는다
      * 2) Steam 검색으로 발견한 PENDING (신작·출시 예정작), appid 내림차순
      * 3) SteamSpy로 발견한 PENDING, appid 내림차순 (최신 게임 먼저)
      * 4) 갱신 주기가 지난 OK (오래된 순)
@@ -82,6 +88,16 @@ public class EnrichmentService {
         addAll(targets, config.maxPerRun(), remaining -> seedRepository
                 .findByFetchStatusAndDiscoveredByOrderByDiscoveredAtAscAppidAsc(
                         FetchStatus.PENDING, DiscoveredBy.MANUAL, remaining));
+        if (config.releaseWindowMaxPerRun() > 0) {
+            LocalDate today = LocalDate.ofInstant(now, SITE_ZONE);
+            // 오늘 이미 받은 건 다시 받지 않는다 (수동 실행을 여러 번 해도)
+            Instant fetchedBefore = now.minus(Duration.ofHours(20));
+            addAll(targets, Math.min(config.maxPerRun(), targets.size() + config.releaseWindowMaxPerRun()),
+                    remaining -> seedRepository.findReleaseWindowRefreshTargets(
+                            today.minusDays(config.releaseWindowPastDays()),
+                            today.plusDays(config.releaseWindowAheadDays()), fetchedBefore,
+                            remaining.max()));
+        }
         addAll(targets, config.maxPerRun(), remaining -> seedRepository
                 .findByFetchStatusAndDiscoveredByAndHorrorTagNotOrderByAppidDesc(
                         FetchStatus.PENDING, DiscoveredBy.STEAM_SEARCH, HorrorTag.NOT_HORROR, remaining));
