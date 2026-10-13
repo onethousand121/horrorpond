@@ -54,7 +54,11 @@ public class DiscoveryService {
             List<String> failures = new ArrayList<>();
             int added = 0;
             // 검색을 먼저: 같은 appid가 양쪽에 있으면 신작 우선순위를 받도록 STEAM_SEARCH로 들어간다
-            added += discover("Steam search", DiscoveredBy.STEAM_SEARCH, this::searchHorrorAppIds, existing, failures);
+            // 목록마다 따로 실패를 기록한다 (출시 예정 목록이 실패해도 받은 최신 출시작은 저장)
+            added += discover("Steam search " + SteamSearchList.NEW_RELEASES, DiscoveredBy.STEAM_SEARCH,
+                    () -> searchPages(SteamSearchList.NEW_RELEASES, HORROR_SEARCH_LIMIT), existing, failures);
+            added += discover("Steam search " + SteamSearchList.POPULAR_UPCOMING, DiscoveredBy.STEAM_SEARCH,
+                    () -> searchPages(SteamSearchList.POPULAR_UPCOMING, UPCOMING_LIMIT), existing, failures);
             added += discover("SteamSpy", DiscoveredBy.STEAMSPY_TAG, steamSpyClient::fetchHorrorAppIds, existing,
                     failures);
             if (failures.isEmpty()) {
@@ -91,22 +95,15 @@ public class DiscoveryService {
         return newAppids.size();
     }
 
-    Set<Integer> searchHorrorAppIds() {
+    Set<Integer> searchPages(SteamSearchList list, int limit) {
         Set<Integer> appids = new LinkedHashSet<>();
-        appids.addAll(searchPages(SteamSearchList.NEW_RELEASES, HORROR_SEARCH_LIMIT));
-        appids.addAll(searchPages(SteamSearchList.POPULAR_UPCOMING, UPCOMING_LIMIT));
-        return appids;
-    }
-
-    private List<Integer> searchPages(SteamSearchList list, int limit) {
-        List<Integer> appids = new ArrayList<>();
         for (int start = 0; start < limit; start += SEARCH_PAGE_SIZE) {
             List<Integer> page;
             try {
                 page = storeClient.fetchHorrorSearchPage(list, start, SEARCH_PAGE_SIZE);
             } catch (RuntimeException e) {
                 if (appids.isEmpty()) {
-                    throw e; // 첫 페이지부터 실패하면 검색 출처 실패로 기록한다
+                    throw e; // 첫 페이지부터 실패하면 그 목록의 실패로 기록한다
                 }
                 // 긴 목록 중간에서 실패하면 받은 데까지 쓰고, 나머지는 다음 날 다시 훑는다
                 log.warn("Steam search {} stopped at start={}: {}", list, start, e.getMessage());

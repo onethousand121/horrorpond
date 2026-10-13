@@ -31,11 +31,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter((game) => !game.adult && game.hasAchievementGuide)
       .map((game) => `/games/${game.slug}/achievements`),
   ];
-  // 한국어 주소마다 영어 주소를 hreflang으로 연결한다
-  return paths.map((path) => ({
-    url: `${SITE_URL}${path}`,
-    alternates: {
-      languages: { ko: `${SITE_URL}${path}`, en: `${SITE_URL}${localePath("en", path)}` },
-    },
-  }));
+  // 언어마다 따로 항목을 두고, 서로를 hreflang으로 연결한다 (x-default는 한국어)
+  return paths.flatMap((path) => {
+    const languages = {
+      ko: `${SITE_URL}${path}`,
+      en: `${SITE_URL}${localePath("en", path)}`,
+      "x-default": `${SITE_URL}${path}`,
+    };
+    return [
+      { url: languages.ko, alternates: { languages } },
+      { url: languages.en, alternates: { languages } },
+    ];
+  });
 }

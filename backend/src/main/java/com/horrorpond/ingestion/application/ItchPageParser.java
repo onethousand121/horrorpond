@@ -53,6 +53,11 @@ public class ItchPageParser {
     private static final Pattern ABBR_TITLE = Pattern.compile("<abbr [^>]*title=\"([^\"]+)\"");
     private static final Pattern SCREENSHOT = Pattern.compile("<a (?=[^>]*data-image_lightbox)([^>]*)>\\s*<img ([^>]*)>");
     private static final Pattern MIN_PRICE = Pattern.compile("\"min_price\":(\\d+)");
+    /** 스크립트 게임 정보·가격 칸의 통화 코드 */
+    private static final Pattern CURRENCY = Pattern.compile(
+            "\"(?:price_?)?[cC]urrency\":\"([A-Za-z]{3})\"|itemprop=\"priceCurrency\"[^>]*content=\"([A-Za-z]{3})\"");
+    /** "$4.99" 모양의 달러 표시 (CA$·A$ 같은 다른 달러는 제외) */
+    private static final Pattern DOLLAR_PRICE = Pattern.compile("(?<![A-Za-z])\\$\\d");
     private static final DateTimeFormatter ITCH_DATE = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.ENGLISH);
     private static final DateTimeFormatter EN_DATE = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH);
 
@@ -148,20 +153,39 @@ public class ItchPageParser {
         List<String> authors = linkTexts(info.getOrDefault("author", info.get("authors")));
 
         return new ParsedItchGame(itchId, title, description, blankToNull(meta.get("og:image")), ratingCount,
-                releaseDate(info), tags, languages(info.get("languages")), authors, screenshots(html), price(html));
+                releaseDate(info), tags, languages(info.get("languages")), authors, screenshots(html), price(html, product));
     }
 
     /**
-     * 페이지 스크립트의 게임 정보에 min_price(센트)가 있다. 0이면 무료(원하는 만큼 내기 포함).
-     * itch.io 가격은 대부분 달러라 USD로 둔다.
+     * 페이지 스크립트의 게임 정보에 min_price(최소 단위 금액)가 있다. 0이면 무료(원하는 만큼 내기 포함).
+     * 통화는 구조화 데이터(offers.priceCurrency)나 통화 코드가 있으면 그것, 없으면 "$" 가격 표시가 있을 때만 USD.
+     * 통화를 모르면 금액도 모르는 것으로 둔다 (유로 등을 달러로 잘못 보이지 않게).
      */
-    private static StorePrice price(String html) {
+    private static StorePrice price(String html, JsonNode product) {
         Matcher m = MIN_PRICE.matcher(html);
         if (!m.find()) {
             return StorePrice.UNKNOWN;
         }
         int cents = Integer.parseInt(m.group(1));
-        return cents == 0 ? new StorePrice(true, null, null) : new StorePrice(false, cents, "USD");
+        if (cents == 0) {
+            return new StorePrice(true, null, null);
+        }
+        String currency = currency(html, product);
+        return currency == null ? StorePrice.UNKNOWN : new StorePrice(false, cents, currency);
+    }
+
+    private static String currency(String html, JsonNode product) {
+        String code = product == null ? null : blankToNull(product.path("offers").path("priceCurrency").asString(null));
+        if (code == null) {
+            Matcher m = CURRENCY.matcher(html);
+            if (m.find()) {
+                code = m.group(1) != null ? m.group(1) : m.group(2);
+            }
+        }
+        if (code != null) {
+            return code.matches("[A-Za-z]{3}") ? code.toUpperCase(Locale.ROOT) : null;
+        }
+        return DOLLAR_PRICE.matcher(html).find() ? "USD" : null;
     }
 
     /** itch.io에는 한국어 표기가 없어 "2026년 9월 16일" 모양으로 만든다 */

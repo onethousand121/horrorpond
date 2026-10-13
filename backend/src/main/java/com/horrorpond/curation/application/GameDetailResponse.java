@@ -29,7 +29,7 @@ public record GameDetailResponse(
         String releaseDateText,
         boolean comingSoon,
         boolean coop,
-        /** 성인 콘텐츠. 사이트는 소개·미디어 없이 Steam 링크만 보여준다 */
+        /** 성인 콘텐츠. 소개·미디어·글·영상·공략은 비워서 내려준다 (사이트는 Steam 링크만) */
         boolean adult,
         Integer reviewCount,
         /** Steam 지원 언어 코드 (ko, en, ja …) */
@@ -60,29 +60,32 @@ public record GameDetailResponse(
 
     /**
      * 제목·소개·출시일 텍스트는 요청 언어로 (영어가 없으면 한국어). 큐레이터 글은 한국어만 있다.
+     * 성인 게임은 API에서부터 소개·미디어·글·영상·업적 공략을 비운다 (사이트는 Steam 링크만 보여준다).
      */
     static GameDetailResponse of(Game game, List<GenreSummary> genres, CurationArticle article, Language language,
                                  List<PlayVideoResponse> playVideos, List<AchievementGuideResponse> achievements,
                                  List<PlayVideoResponse> referenceVideos) {
+        boolean adult = game.isAdult();
         return new GameDetailResponse(
-                game.getSlug(), game.title(language), game.shortDescription(language),
-                game.isShortDescriptionAutoTranslated(language), game.getHeaderImageUrl(),
+                game.getSlug(), game.title(language), adult ? null : game.shortDescription(language),
+                !adult && game.isShortDescriptionAutoTranslated(language), game.getHeaderImageUrl(),
                 game.getReleaseDate(), game.releaseDateText(language), game.isComingSoon(), game.isCoop(),
-                game.isAdult(),
+                adult,
                 game.getReviewCount(), List.copyOf(game.getLanguages()), List.copyOf(game.getAudioLanguages()), genres,
                 game.getDevelopers().stream()
                         .sorted(Comparator.comparing(GameDeveloper::getRole)
                                 .thenComparing(credit -> credit.getDeveloper().getName()))
                         .map(DeveloperCredit::from)
                         .toList(),
-                game.getMedia().stream()
+                adult ? List.of() : game.getMedia().stream()
                         .map(media -> new Media(media.getType(), media.getUrl(), media.getThumbnailUrl()))
                         .toList(),
                 game.getStoreLinks().stream()
                         .map(link -> new StoreLinkResponse(link.getStore(), link.getUrl()))
                         .toList(),
-                article == null ? null : Article.from(article), playVideos, achievements, game.getSource(),
-                referenceVideos, game.isFree(), game.getPriceAmount(), game.getPriceCurrency());
+                adult || article == null ? null : Article.from(article), adult ? List.of() : playVideos,
+                adult ? List.of() : achievements, game.getSource(),
+                adult ? List.of() : referenceVideos, game.isFree(), game.getPriceAmount(), game.getPriceCurrency());
     }
 
     public record DeveloperCredit(String name, String slug, DeveloperRole role) {

@@ -24,6 +24,15 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
       template: `%s | ${SITE_NAME}`,
     },
     description: dict.site.description,
+    // 공유 미리보기 기본값. 상세처럼 openGraph를 따로 정한 페이지는 그 값을 쓴다
+    openGraph: {
+      title: `${SITE_NAME} — ${dict.site.tagline}`,
+      description: dict.site.description,
+      siteName: SITE_NAME,
+      locale: lang === "ko" ? "ko_KR" : "en_US",
+      type: "website",
+    },
+    twitter: { card: "summary" },
     // 구글 서치콘솔·네이버 서치어드바이저 소유 확인 (값은 Vercel 환경변수, 없으면 생략)
     verification: {
       ...(process.env.GOOGLE_SITE_VERIFICATION && { google: process.env.GOOGLE_SITE_VERIFICATION }),

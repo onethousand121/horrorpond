@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { GenreSummary } from "@/lib/types";
 import { KeeperFrog } from "@/components/KeeperFrog";
+import { isUpcoming } from "@/lib/format";
 import { getDictionary, localePath, type Locale } from "@/lib/i18n";
 
 const BADGE = "rounded-full border border-border bg-surface-2/60 px-2 py-0.5 text-xs text-muted";
@@ -73,13 +74,12 @@ export function KoreanBadge({ locale, languages }: {
   );
 }
 
-/** 무료 게임. 출시 전 게임은 가격이 정해지지 않았을 수 있어 표시하지 않는다 */
-export function FreeBadge({ locale, free, comingSoon }: {
+/** 무료 게임. 출시 전 게임은 가격이 정해지지 않았을 수 있어 표시하지 않는다 (출시 예정 판정은 카드와 같은 isUpcoming) */
+export function FreeBadge({ locale, game }: {
   locale: Locale;
-  free?: boolean;
-  comingSoon: boolean;
+  game: { free?: boolean; comingSoon: boolean; releaseDate: string | null };
 }) {
-  if (!free || comingSoon) return null;
+  if (!game.free || isUpcoming(game)) return null;
   return (
     <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 text-xs font-medium text-emerald-300">
       {getDictionary(locale).badge.free}

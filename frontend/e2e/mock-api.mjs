@@ -255,7 +255,8 @@ function filterGames(query) {
   const release = query.get("release");
   return games.filter((g) => {
     if (g.status === "HIDDEN") return false;
-    if (bool(query, "free") && !g.free) return false;
+    // 백엔드와 같이 무료 필터는 출시 예정작을 뺀다
+    if (bool(query, "free") && (!g.free || g.comingSoon)) return false;
     if (bool(query, "korean") && !g.languages.includes("ko")) return false;
     if (query.has("coop") && g.coop !== bool(query, "coop")) return false;
     if (bool(query, "picked") && g.article?.kind !== "PICK") return false;

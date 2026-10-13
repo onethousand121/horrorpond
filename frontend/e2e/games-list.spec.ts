@@ -55,4 +55,6 @@ test("검색어는 q로 넘어가고 결과를 보여준다", async ({ page, req
   await expect(card(page, "어두운 집")).toHaveCount(0);
   const received = await mockRequests(request, "/api/games");
   expect(received.some((r) => r.query.q === "keeper" && r.query.sort === "POPULAR")).toBe(true);
+  // 결과 화면의 검색창에 검색어가 남아 있다
+  await expect(page.getByRole("search").getByRole("searchbox")).toHaveValue("keeper");
 });

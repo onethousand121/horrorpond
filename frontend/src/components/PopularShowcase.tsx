@@ -14,18 +14,19 @@ const STEAM_TAGS = 4;
 
 /**
  * 인기 게임 쇼케이스: 큰 카드 1개 + 아래 썸네일 줄. 썸네일에 마우스를 올리거나 누르면 큰 카드가 바뀐다.
- * 마우스나 포커스가 안에 있는 동안, 그리고 움직임 줄이기 설정이면 자동으로 넘기지 않는다.
+ * 마우스나 포커스가 안에 있는 동안, 터치한 뒤(모바일에서 읽는 중), 그리고 움직임 줄이기 설정이면 자동으로 넘기지 않는다.
  */
 export function PopularShowcase({ games, locale }: { games: GameSummary[]; locale: Locale }) {
   const dict = getDictionary(locale);
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [touched, setTouched] = useState(false);
 
   useEffect(() => {
-    if (paused || games.length < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (paused || touched || games.length < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const timer = setInterval(() => setActive((i) => (i + 1) % games.length), ROTATE_MS);
     return () => clearInterval(timer);
-  }, [paused, games.length]);
+  }, [paused, touched, games.length]);
 
   const game = games[active];
   if (!game) return null;
@@ -34,6 +35,7 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
   return (
     <div
       className="space-y-3"
+      onTouchStart={() => setTouched(true)}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -87,7 +89,7 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
           </p>
           <div className="flex flex-wrap gap-1.5">
             <KoreanBadge locale={locale} languages={game.languages} />
-            <FreeBadge locale={locale} free={game.free} comingSoon={game.comingSoon} />
+            <FreeBadge locale={locale} game={game} />
             {game.coop && <CoopBadge locale={locale} />}
             {game.genres.map((genre) => (
               <GenreBadge key={genre.slug} genre={genre} locale={locale} />
@@ -99,7 +101,7 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
             ))}
           </div>
           {(game.picked || game.reviewed) && game.oneLiner ? (
-            <p className="border-l-2 border-accent-2/60 pl-3 text-sm text-foreground/90">{game.oneLiner}</p>
+            <p lang="ko" className="border-l-2 border-accent-2/60 pl-3 text-sm text-foreground/90">{game.oneLiner}</p>
           ) : null}
           {!game.adult && game.shortDescription && (
             <p className="line-clamp-4 text-sm leading-relaxed text-muted">{game.shortDescription}</p>

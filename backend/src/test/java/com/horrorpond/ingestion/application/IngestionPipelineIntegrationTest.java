@@ -233,6 +233,8 @@ class IngestionPipelineIntegrationTest {
     void steamSearchFailureStillSavesSteamSpySeeds() {
         SERVER.expect(ExpectedCount.times(3), requestTo(SteamMockServer.steamSearchUrl("sort_by=Released_DESC", 0)))
                 .andRespond(withServerError());
+        SERVER.expect(once(), requestTo(SteamMockServer.steamSearchUrl("filter=popularcomingsoon", 0)))
+                .andRespond(withSuccess(SteamMockServer.steamSearchBody(), MediaType.APPLICATION_JSON));
         SERVER.expect(once(), requestTo(SteamMockServer.steamSpyHorrorUrl()))
                 .andRespond(withSuccess("{\"739630\":{\"appid\":739630}}", MediaType.APPLICATION_JSON));
 
@@ -241,8 +243,30 @@ class IngestionPipelineIntegrationTest {
 
         IngestionJob job = jobRepository.findById(jobId).orElseThrow();
         assertThat(job.getStatus()).isEqualTo(JobStatus.FAILED);
-        assertThat(job.getErrorMessage()).startsWith("added=1, Steam search:");
+        assertThat(job.getErrorMessage()).startsWith("added=1, Steam search NEW_RELEASES:");
         assertThat(seedRepository.findAll()).extracting(SteamAppSeed::getAppid).containsExactly(739630);
+    }
+
+    @Test
+    void upcomingSearchFailureKeepsNewReleases() {
+        SERVER.expect(once(), requestTo(SteamMockServer.steamSearchUrl("sort_by=Released_DESC", 0)))
+                .andRespond(withSuccess(SteamMockServer.steamSearchBody(1262350, 594330), MediaType.APPLICATION_JSON));
+        SERVER.expect(ExpectedCount.times(3), requestTo(SteamMockServer.steamSearchUrl("filter=popularcomingsoon", 0)))
+                .andRespond(withServerError());
+        SERVER.expect(once(), requestTo(SteamMockServer.steamSpyHorrorUrl()))
+                .andRespond(withSuccess("{\"739630\":{\"appid\":739630}}", MediaType.APPLICATION_JSON));
+
+        Long jobId = discoveryService.run(TriggerType.MANUAL);
+        SERVER.verify();
+
+        // 출시 예정 목록만 실패로 남고, 먼저 받은 최신 출시작은 저장된다
+        IngestionJob job = jobRepository.findById(jobId).orElseThrow();
+        assertThat(job.getStatus()).isEqualTo(JobStatus.FAILED);
+        assertThat(job.getErrorMessage()).startsWith("added=3, Steam search POPULAR_UPCOMING:");
+        assertThat(seedRepository.findAll())
+                .extracting(SteamAppSeed::getAppid, SteamAppSeed::getDiscoveredBy)
+                .containsExactlyInAnyOrder(tuple(1262350, DiscoveredBy.STEAM_SEARCH),
+                        tuple(594330, DiscoveredBy.STEAM_SEARCH), tuple(739630, DiscoveredBy.STEAMSPY_TAG));
     }
 
     @Test

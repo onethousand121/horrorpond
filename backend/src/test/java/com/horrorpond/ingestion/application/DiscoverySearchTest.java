@@ -33,7 +33,7 @@ class DiscoverySearchTest {
         when(storeClient.fetchHorrorSearchPage(eq(SteamSearchList.POPULAR_UPCOMING), anyInt(), eq(100)))
                 .thenReturn(List.of());
 
-        assertThat(service.searchHorrorAppIds()).hasSize(340);
+        assertThat(service.searchPages(SteamSearchList.NEW_RELEASES, DiscoveryService.HORROR_SEARCH_LIMIT)).hasSize(340);
     }
 
     @Test
@@ -46,10 +46,8 @@ class DiscoverySearchTest {
                     }
                     return ids(start, 100);
                 });
-        when(storeClient.fetchHorrorSearchPage(eq(SteamSearchList.POPULAR_UPCOMING), anyInt(), eq(100)))
-                .thenReturn(List.of(999_999));
 
-        assertThat(service.searchHorrorAppIds()).hasSize(201);
+        assertThat(service.searchPages(SteamSearchList.NEW_RELEASES, DiscoveryService.HORROR_SEARCH_LIMIT)).hasSize(200);
     }
 
     @Test
@@ -57,7 +55,8 @@ class DiscoverySearchTest {
         when(storeClient.fetchHorrorSearchPage(eq(SteamSearchList.NEW_RELEASES), eq(0), eq(100)))
                 .thenThrow(new SteamTransientException("search responded 502"));
 
-        assertThatThrownBy(service::searchHorrorAppIds).isInstanceOf(SteamTransientException.class);
+        assertThatThrownBy(() -> service.searchPages(SteamSearchList.NEW_RELEASES, DiscoveryService.HORROR_SEARCH_LIMIT))
+                .isInstanceOf(SteamTransientException.class);
     }
 
     private static List<Integer> ids(int start, int count) {

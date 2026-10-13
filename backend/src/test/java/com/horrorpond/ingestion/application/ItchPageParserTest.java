@@ -88,8 +88,21 @@ class ItchPageParserTest {
         assertThat(parser.parseGame(page).price()).isEqualTo(com.horrorpond.catalog.domain.StorePrice.UNKNOWN);
         assertThat(parser.parseGame(page + "<script>I.ViewGame({\"game\":{\"min_price\":0,\"id\":42}})</script>")
                 .price().free()).isTrue();
+        // 통화 표시가 없으면 달러로 단정하지 않는다
         assertThat(parser.parseGame(page + "<script>{\"min_price\":499}</script>").price())
+                .isEqualTo(com.horrorpond.catalog.domain.StorePrice.UNKNOWN);
+        assertThat(parser.parseGame(page + "<script>{\"min_price\":499}</script><span class=\"dollars\">$4.99</span>").price())
                 .isEqualTo(new com.horrorpond.catalog.domain.StorePrice(false, 499, "USD"));
+        // CA$는 미국 달러가 아니다
+        assertThat(parser.parseGame(page + "<script>{\"min_price\":499}</script><span>CA$4.99</span>").price())
+                .isEqualTo(com.horrorpond.catalog.domain.StorePrice.UNKNOWN);
+        // 통화 코드가 있으면 그것을 쓴다
+        assertThat(parser.parseGame(page + "<script>{\"min_price\":500,\"currency\":\"eur\"}</script><span>$1</span>").price())
+                .isEqualTo(new com.horrorpond.catalog.domain.StorePrice(false, 500, "EUR"));
+        String offer = page.replace("\"@type\":\"Product\"",
+                "\"@type\":\"Product\",\"offers\":{\"@type\":\"Offer\",\"price\":\"5.00\",\"priceCurrency\":\"GBP\"}");
+        assertThat(parser.parseGame(offer + "<script>{\"min_price\":500}</script>").price())
+                .isEqualTo(new com.horrorpond.catalog.domain.StorePrice(false, 500, "GBP"));
     }
 
     @Test
