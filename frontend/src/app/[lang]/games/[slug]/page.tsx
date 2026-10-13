@@ -68,7 +68,10 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/games/[slu
   if (game.adult) {
     return { title: game.title, description: getDictionary(lang).adult.notice, robots: { index: false, follow: false } };
   }
-  const description = game.article?.oneLiner ?? game.shortDescription ?? undefined;
+  // 큐레이터 글은 한국어뿐이라 영어 페이지는 게임 소개를 먼저 쓴다
+  const description = (lang === "en"
+    ? game.shortDescription ?? game.article?.oneLiner
+    : game.article?.oneLiner ?? game.shortDescription) ?? undefined;
   return {
     title: game.title,
     description,

@@ -291,6 +291,24 @@ class IngestionPipelineIntegrationTest {
     }
 
     @Test
+    void renormalizingAnOlderSnapshotKeepsTheNewerReviewCount() {
+        ingest(739630);
+        // 스냅샷을 받은 뒤 METRICS가 더 최근 리뷰 수를 기록했다 (예: 컬럼 추가로 전체 재정리)
+        jdbc.update("UPDATE steam_raw_snapshot SET fetched_at = now() - interval '5 days', normalized_hash = NULL");
+        jdbc.update("DELETE FROM game_metric_daily");
+        jdbc.update("""
+                INSERT INTO game_metric_daily (game_id, store, captured_on, review_count, captured_at)
+                SELECT id, 'STEAM', current_date - 1, 700000, now() - interval '1 day' FROM game""");
+        jdbc.update("UPDATE game SET review_count = 700000");
+
+        assertJob(normalizeService.run(TriggerType.MANUAL), JobType.NORMALIZE, JobStatus.SUCCEEDED, 1, 0);
+
+        assertThat(jdbc.queryForObject("SELECT review_count FROM game", Integer.class)).isEqualTo(700000);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM game_metric_daily", Integer.class))
+                .as("오래된 스냅샷 값으로 기록을 남기지 않는다").isEqualTo(1);
+    }
+
+    @Test
     void changedPayloadUpdatesSteamFieldsButKeepsCuratorSlugAndGenres() {
         ingest(739630);
         Long genreId = genreRepository.save(Genre.create("Co-op", "co-op", null, 0)).getId();

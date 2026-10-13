@@ -16,6 +16,7 @@ import com.horrorpond.ingestion.domain.TriggerType;
 import com.horrorpond.ingestion.repository.SteamAppSeedRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 
@@ -169,7 +170,14 @@ public class EnrichmentService {
                 if (tags != null) {
                     consecutiveTagCheckFailures = 0;
                     HorrorTag horrorTag = checkHorror ? HorrorTag.classify(tags) : null;
-                    itemWriter.recordSpyTags(appid, tags, horrorTag);
+                    try {
+                        itemWriter.recordSpyTags(appid, tags, horrorTag);
+                    } catch (DataAccessException e) {
+                        log.warn("Saving SteamSpy tags failed: appid={}", appid, e);
+                        markFailedQuietly(appid);
+                        failed++;
+                        continue;
+                    }
                     if (horrorTag == HorrorTag.NOT_HORROR) {
                         excluded++;
                         processed++;
@@ -182,8 +190,15 @@ public class EnrichmentService {
                     AppDetailsResult result = withEnglish(appid,
                             withReviewCount(appid, storeClient.fetchAppDetails(appid)));
                     consecutiveRateLimits = 0;
-                    itemWriter.write(appid, result);
-                    processed++;
+                    try {
+                        itemWriter.write(appid, result);
+                        processed++;
+                    } catch (DataAccessException e) {
+                        // 저장 오류 1건이 단계 전체를 멈추지 않게 실패로 기록하고 넘어간다 (실패 횟수가 차면 대상에서 빠진다)
+                        log.warn("Saving appdetails failed: appid={}", appid, e);
+                        markFailedQuietly(appid);
+                        failed++;
+                    }
                     break;
                 } catch (SteamRateLimitedException e) {
                     consecutiveRateLimits++;
@@ -208,6 +223,14 @@ public class EnrichmentService {
         log.info("Enrichment finished: targets={}, processed={} (excluded as not horror={}), failed={}",
                 seeds.size(), processed, excluded, failed);
         return new Outcome(processed, failed, null);
+    }
+
+    private void markFailedQuietly(int appid) {
+        try {
+            itemWriter.markFailed(appid);
+        } catch (DataAccessException e) {
+            log.warn("Marking seed failed also failed: appid={}", appid, e);
+        }
     }
 
     /**
