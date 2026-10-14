@@ -138,6 +138,16 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
   const endings = game.endingType ? (
     <EndingGuides endingType={game.endingType} endings={game.endings ?? []} locale={lang} />
   ) : null;
+  // 게임 소개 (Steam·itch 원문 또는 자동 번역). 주인장 글이 있으면 글 위에 둔다
+  const aboutGame = game.shortDescription ? (
+    <section aria-label={t.about} className="space-y-2">
+      <h2 className="font-pixel text-[11px] text-muted">
+        {isItch ? t.aboutItch : t.aboutSteam}
+        {game.shortDescriptionTranslated && <AutoTranslatedMark label={t.autoTranslated} />}
+      </h2>
+      <p className="leading-relaxed text-foreground/90">{game.shortDescription}</p>
+    </section>
+  ) : null;
   // 한글패치는 한국어 화면에만 (공식 한국어가 있어도 보여준다: 더 나은 번역일 수 있다)
   const koreanPatches = lang === "ko" ? (game.koreanPatches ?? []) : [];
 
@@ -197,6 +207,8 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
             <>
               {article ? (
                 <section aria-label={isReview ? t.reviewLabel : t.pickLabel} className="space-y-6">
+                  {/* 게임이 어떤 게임인지 먼저 보여주고 주인장 글로 이어간다 */}
+                  {aboutGame}
                   <p>
                     {isReview ? <KeeperReviewBadge locale={lang} /> : <KeeperPickBadge locale={lang} />}
                   </p>
@@ -218,23 +230,9 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
                     <Markdown>{article.body}</Markdown>
                   </div>
                   {endings}
-                  {game.shortDescription && (
-                    <p className="border-l-2 border-border pl-4 text-sm text-muted">
-                      {game.shortDescription}
-                      {game.shortDescriptionTranslated && <AutoTranslatedMark label={t.autoTranslated} />}
-                    </p>
-                  )}
                 </section>
               ) : (
-                game.shortDescription && (
-                  <section aria-label={t.about} className="space-y-2">
-                    <h2 className="font-pixel text-[11px] text-muted">
-                      {isItch ? t.aboutItch : t.aboutSteam}
-                      {game.shortDescriptionTranslated && <AutoTranslatedMark label={t.autoTranslated} />}
-                    </h2>
-                    <p className="leading-relaxed text-foreground/90">{game.shortDescription}</p>
-                  </section>
-                )
+                aboutGame
               )}
 
               {/* 플레이 영상·업적 공략은 있을 때만 보인다 */}
