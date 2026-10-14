@@ -63,6 +63,17 @@ public class IngestionAlertNotifier {
         return mailer.send(subject, text.toString());
     }
 
+    /**
+     * 설정(RESEND_API_KEY·ALERT_EMAIL_TO)이 맞는지 관리 화면에서 확인하는 테스트 메일.
+     *
+     * @return 보냈으면 true (설정이 없거나 Resend가 거절하면 false)
+     */
+    public boolean sendTest() {
+        return mailer.send("[lurkpond] 알림 메일 테스트",
+                "수집 실패 알림 메일이 제대로 도착하는지 확인하는 테스트입니다.\n"
+                        + "이 메일이 보이면 설정이 맞습니다. 실제 알림은 매일 수집에서 실패한 단계가 있을 때만 옵니다.\n");
+    }
+
     private static String format(Instant instant) {
         return instant == null ? "-" : TIME.format(instant);
     }

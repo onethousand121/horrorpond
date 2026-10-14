@@ -29,6 +29,7 @@ const CONTENT: Record<Locale, { title: string; intro: string; points: string[]; 
       "심리 공포, 아날로그 호러 같은 서브장르는 Steam 태그를 바탕으로 자동 분류합니다.",
       "\"주인장 추천\" 표시는 직접 플레이하고 추천하는 게임입니다.",
       "협찬을 받은 글은 항상 협찬 표시와 고지 문구를 함께 보여줍니다.",
+      "게임 정보·이미지·영상·한글패치 링크 등 권리자의 삭제 요청이 있으면 확인 후 바로 내립니다. 아래 연락처로 알려 주세요.",
     ],
     contactTitle: "개발사 프리뷰 / 노출 문의",
     contact:
@@ -44,6 +45,7 @@ const CONTENT: Record<Locale, { title: string; intro: string; points: string[]; 
       "Subgenres such as psychological or analog horror are sorted automatically from Steam tags.",
       "\"Keeper's pick\" marks games he has played and recommends.",
       "Sponsored write-ups always carry a sponsorship badge and disclosure.",
+      "If you hold rights to any game info, image, video or fan patch link shown here and want it removed, contact us below and we will take it down after checking.",
     ],
     contactTitle: "For developers: previews and features",
     contact:

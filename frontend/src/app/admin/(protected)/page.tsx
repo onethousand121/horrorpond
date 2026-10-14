@@ -9,6 +9,7 @@ import { hideAction, unhideAction } from "./actions";
 import { ActionButton } from "./components/ActionButton";
 import { AddItchGameForm } from "./components/AddItchGameForm";
 import { AddSteamGamesForm } from "./components/AddSteamGamesForm";
+import { TestAlertButton } from "./components/TestAlertButton";
 import { AdultBadge, ArticleStatusBadge, GameStatusBadge, VisibilityBadge } from "./components/StatusBadge";
 
 const TABS = [
@@ -91,6 +92,7 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
 
       <AddSteamGamesForm />
       <AddItchGameForm />
+      <TestAlertButton />
 
       <p className="text-sm text-muted">{result.totalElements.toLocaleString()}개</p>
 

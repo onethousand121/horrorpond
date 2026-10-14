@@ -360,6 +360,7 @@ async function handleAdmin(req, res, path, query) {
   }
   if (path === "/api/admin/ingestion/seeds" && req.method === "POST") return send(res, 200, { appid: body?.appid ?? 0 });
   if (path === "/api/admin/ingestion/itch" && req.method === "POST") return send(res, 200, { gameId: 5 });
+  if (path === "/api/admin/ingestion/alert-test" && req.method === "POST") return send(res, 200, { sent: true });
 
   const byId = /^\/api\/admin\/games\/(\d+)(?:\/(.+))?$/.exec(path);
   if (byId) {
