@@ -109,7 +109,7 @@ test("멀티 엔딩: 추천 글 아래에 스포일러로 접혀 있고, 누르�
   const endings = article.getByRole("region", { name: "엔딩", exact: true });
   await expect(endings).toBeVisible();
   const summary = endings.locator("summary");
-  await expect(summary).toHaveText(/스포일러 주의 · 엔딩 2개 · 눌러서 보기/);
+  await expect(summary).toHaveText(/엔딩 정보 · 스포일러 주의 · 눌러서 보기/);
   // 기본은 닫혀 있다
   expect(await endings.locator("details").evaluate((d) => (d as HTMLDetailsElement).open)).toBe(false);
   await expect(endings.getByText("새벽의 등대")).toBeHidden();
@@ -136,17 +136,21 @@ test("멀티 엔딩: 키보드로도 연다", async ({ page }) => {
 test("영어 화면: 엔딩 안내는 영어", async ({ page }) => {
   await page.goto("/en/games/lighthouse-keeper");
   const endings = page.getByRole("region", { name: "Endings", exact: true });
-  await expect(endings.locator("summary")).toHaveText(/Spoilers · 2 endings · click to reveal/);
+  await expect(endings.locator("summary")).toHaveText(/Ending info · Spoilers · click to reveal/);
 });
 
 test("단일 엔딩: 한 줄 안내 (글이 없으면 본문 아래)", async ({ page }) => {
   await page.goto("/games/dark-house");
   const endings = page.getByRole("region", { name: "엔딩", exact: true });
   await expect(endings).toBeVisible();
+  // 멀티 엔딩과 같은 모양으로 접혀 있어 펼치기 전에는 구분되지 않는다
+  await expect(endings.locator("summary")).toHaveText(/엔딩 정보 · 스포일러 주의 · 눌러서 보기/);
+  await expect(endings.getByText("엔딩이 하나뿐인 게임이에요.")).toBeHidden();
+  await endings.locator("summary").click();
   await expect(endings.getByText("엔딩이 하나뿐인 게임이에요.")).toBeVisible();
-  await expect(endings.locator("details")).toHaveCount(0);
 
   await page.goto("/en/games/dark-house");
+  await page.getByRole("region", { name: "Endings", exact: true }).locator("summary").click();
   await expect(page.getByText("This game has a single ending.")).toBeVisible();
 });
 

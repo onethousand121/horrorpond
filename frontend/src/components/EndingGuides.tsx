@@ -3,7 +3,7 @@ import { getDictionary, type Locale } from "@/lib/i18n";
 import type { EndingGuide, EndingType } from "@/lib/types";
 
 /**
- * 엔딩 영역. 단일 엔딩은 한 줄 안내, 멀티 엔딩은 스포일러라 접어 두고 눌러야 보인다
+ * 엔딩 영역. 단일·멀티 모두 같은 모양으로 접어 둔다 (펼치기 전에는 엔딩이 몇 개인지도 알 수 없게)
  * (네이티브 details/summary라 JS 없이도 열리고 키보드로도 연다). 엔딩 이름·설명은 큐레이터 글이라 한국어다.
  */
 export function EndingGuides({ endingType, endings, locale }: {
@@ -18,14 +18,14 @@ export function EndingGuides({ endingType, endings, locale }: {
     <section aria-label={t.endings} className="space-y-4">
       <hr className="divider" />
       <h2 className="font-pixel text-[22px]">{t.endings}</h2>
-      {endingType === "SINGLE" ? (
-        <p className="text-sm text-muted">{t.singleEnding}</p>
-      ) : (
-        <details className="group overflow-hidden rounded-xl border border-border bg-surface">
-          <summary className="flex cursor-pointer list-none items-center gap-2 p-4 font-medium hover:bg-surface-2/60">
-            <span aria-hidden className="text-accent transition group-open:rotate-90">▶</span>
-            {t.endingSpoiler(endings.length)}
-          </summary>
+      <details className="group overflow-hidden rounded-xl border border-border bg-surface">
+        <summary className="flex cursor-pointer list-none items-center gap-2 p-4 font-medium hover:bg-surface-2/60">
+          <span aria-hidden className="text-accent transition group-open:rotate-90">▶</span>
+          {t.endingSpoiler}
+        </summary>
+        {endingType === "SINGLE" ? (
+          <p className="border-t border-border p-4 text-sm text-muted">{t.singleEnding}</p>
+        ) : (
           <ol lang="ko" className="divide-y divide-border border-t border-border">
             {endings.map((ending, index) => (
               <li key={`${ending.name}-${index}`} className="space-y-3 p-4">
@@ -45,8 +45,8 @@ export function EndingGuides({ endingType, endings, locale }: {
               </li>
             ))}
           </ol>
-        </details>
-      )}
+        )}
+      </details>
     </section>
   );
 }
