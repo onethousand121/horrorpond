@@ -11,9 +11,12 @@ import com.horrorpond.catalog.domain.TrendingOverride;
 import com.horrorpond.catalog.repository.DeveloperRepository;
 import com.horrorpond.catalog.repository.GameRepository;
 import com.horrorpond.catalog.repository.GenreRepository;
+import com.horrorpond.curation.domain.ArticleKind;
 import com.horrorpond.curation.domain.ArticleStatus;
 import com.horrorpond.curation.domain.CurationArticle;
+import com.horrorpond.curation.domain.PlayVideo;
 import com.horrorpond.curation.repository.CurationArticleRepository;
+import com.horrorpond.curation.repository.PlayVideoRepository;
 import com.horrorpond.support.DatabaseCleaner;
 import com.horrorpond.support.TestcontainersConfiguration;
 import jakarta.persistence.EntityManagerFactory;
@@ -69,6 +72,9 @@ class PublicGameApiTest {
 
     @Autowired
     CurationArticleRepository articleRepository;
+
+    @Autowired
+    PlayVideoRepository playVideoRepository;
 
     @Autowired
     TransactionTemplate tx;
@@ -531,6 +537,21 @@ class PublicGameApiTest {
 
     // ===== fixtures =====
 
+    @Test
+    void keeperListPutsPicksThenReviewsThenVideoOnlyGames() throws Exception {
+        create(spec("video-only").articleStatus(null).keeperVideo(true).reviewCount(5000));
+        create(spec("review").articleKind(ArticleKind.REVIEW).reviewCount(1000));
+        create(spec("pick").reviewCount(10));
+        create(spec("nothing").articleStatus(null).reviewCount(9000));
+
+        // 리뷰 수와 상관없이 추천 → 후기 → 영상만 있는 게임 순이고, 아무것도 없는 게임은 빠진다
+        mvc.perform(get("/api/games").param("keeper", "true").param("sort", "POPULAR"))
+                .andExpect(jsonPath("$.content[*].slug", contains("pick", "review", "video-only")));
+        // 다른 목록은 원래 정렬 그대로
+        mvc.perform(get("/api/games").param("sort", "POPULAR"))
+                .andExpect(jsonPath("$.content[*].slug", contains("nothing", "video-only", "review", "pick")));
+    }
+
     private GameSpec spec(String slug) {
         return new GameSpec(slug);
     }
@@ -566,7 +587,7 @@ class PublicGameApiTest {
             gameRepository.save(game);
 
             if (spec.articleStatus != null) {
-                CurationArticle article = CurationArticle.draft(game.getId(), "Article " + spec.slug,
+                CurationArticle article = CurationArticle.draft(game.getId(), spec.articleKind, "Article " + spec.slug,
                         "One liner " + spec.slug, "# Why\n\n**Markdown** body", List.of("h1", "h2", "h3", "h4"));
                 if (spec.sponsored) {
                     article.markSponsored("Key provided by the publisher");
@@ -575,6 +596,9 @@ class PublicGameApiTest {
                     article.publish(spec.publishedAt);
                 }
                 articleRepository.save(article);
+            }
+            if (spec.keeperVideo) {
+                playVideoRepository.save(PlayVideo.create(game.getId(), "https://youtu.be/dQw4w9WgXcQ", null, 0));
             }
             if (spec.gameStatus != GameStatus.CANDIDATE) {
                 game.publish(spec.publishedAt);
@@ -619,6 +643,8 @@ class PublicGameApiTest {
         private String englishTitle;
         private TrendingOverride trendingOverride;
         private StorePrice price = StorePrice.UNKNOWN;
+        private ArticleKind articleKind = ArticleKind.PICK;
+        private boolean keeperVideo;
 
         GameSpec(String slug) {
             this.slug = slug;
@@ -656,5 +682,9 @@ class PublicGameApiTest {
         GameSpec trendingOverride(TrendingOverride value) { trendingOverride = value; return this; }
 
         GameSpec price(StorePrice value) { price = value; return this; }
+
+        GameSpec articleKind(ArticleKind value) { articleKind = value; return this; }
+
+        GameSpec keeperVideo(boolean value) { keeperVideo = value; return this; }
     }
 }

@@ -15,7 +15,7 @@
 - 노출 정책(공포게임 허브): Game.status = CANDIDATE | PUBLISHED | HIDDEN. 규칙은 Game.isPubliclyVisible / ExposurePolicy 한 곳
   HIDDEN 비노출, PUBLISHED(큐레이터 공개) 항상 노출, CANDIDATE(수집됨)는 성인 아님 AND (출시 예정 OR 출시 후 new-release-days(10)일 이내 OR 리뷰 ≥ min-reviews(10))면 자동 노출 (AutoExposure)
   큐레이터 글은 선택. 종류(curation_article.kind)는 PICK("주인장 추천", 장점 포인트 1개 이상 필요, 추천 목록·주인장 추천 줄)
-  | REVIEW("플레이 후기", 포인트 선택, 후기 뱃지만 붙고 추천 목록에는 안 나옴). 플레이 영상(play_video)·업적 공략(achievement_guide)도 선택이며 없으면 사이트에서 영역을 숨긴다
+  | REVIEW("플레이 후기", 포인트 선택, 후기 뱃지, picked 목록에는 안 나옴). 주인장 추천 줄·탭(keeper=true)은 추천 → 후기 → 주인장 영상만 순. 플레이 영상(play_video)·업적 공략(achievement_guide)도 선택이며 없으면 사이트에서 영역을 숨긴다
   (관리 화면에서 목록 전체를 한 번에 저장, 유튜브 주소는 YoutubeVideoId가 검증).
   play_video.kind = KEEPER(주인장 영상, 뱃지·주인장 추천 기준) | REFERENCE(다른 채널 참고 영상, channel_name 필수).
   참고 영상은 주인장 영상이 없을 때만 상세에 "참고 영상 · 채널"로 보이고 뱃지·추천 줄에는 안 쓴다. API는 /videos와 /reference-videos로 분리

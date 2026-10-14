@@ -9,7 +9,7 @@ import { VideoRow } from "@/components/VideoRow";
 import { getGames, getGenres, getStats } from "@/lib/api";
 import { alternatesFor, getDictionary, isLocale, localePath } from "@/lib/i18n";
 import { CURATOR } from "@/lib/site";
-import { pickRandomPreferring } from "@/lib/random";
+import { pickRandomTiered } from "@/lib/random";
 import { getFreshVideos } from "@/lib/youtube";
 
 // 요청 시 렌더링: 고정 경로는 빌드 때 사전 렌더링되므로, connection()으로 빌드가 백엔드에 의존하지 않게 한다.
@@ -56,13 +56,19 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
     getGames({ release: "RECENT", sort: "RELEASE", size: ROW, lang }),
     getGames({ release: "UPCOMING", size: ROW, lang }),
     getGames({ sort: "POPULAR", size: ROW, lang }),
-    // 주인장 추천: 추천 글을 쓴 게임을 먼저, 남는 칸은 주인장 플레이 영상이 있는 게임으로. 요청마다 무작위
+    // 주인장 추천: 추천 글을 쓴 게임을 먼저, 다음은 플레이 후기, 남는 칸은 주인장 플레이 영상이 있는 게임으로
     getGames({ picked: true, sort: "POPULAR", size: KEEPER_POOL, lang }).catch(() => null),
     getGames({ keeper: true, sort: "POPULAR", size: KEEPER_POOL, lang }).catch(() => null),
     getFreshVideos(VIDEOS, VIDEO_FRESH_DAYS),
   ]);
 
-  const keeperPicks = pickRandomPreferring(pickPool?.content ?? [], keeperPool?.content ?? [], ROW, (game) => game.slug);
+  // 추천 → 플레이 후기 → 주인장 영상만 있는 게임 순으로 채우고, 같은 단계 안에서는 무작위
+  const keeperRest = (keeperPool?.content ?? []).filter((game) => !game.picked);
+  const keeperPicks = pickRandomTiered(
+    [pickPool?.content ?? [], keeperRest.filter((game) => game.reviewed), keeperRest.filter((game) => !game.reviewed)],
+    ROW,
+    (game) => game.slug,
+  );
 
   return (
     <div className="space-y-12">

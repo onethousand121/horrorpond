@@ -288,7 +288,8 @@ function filterGames(query) {
     if (bool(query, "korean") && !g.languages.includes("ko") && g.koreanPatches.length === 0) return false;
     if (query.has("coop") && g.coop !== bool(query, "coop")) return false;
     if (bool(query, "picked") && g.article?.kind !== "PICK") return false;
-    if (bool(query, "keeper") && g.article?.kind !== "PICK" && g.playVideos.length === 0) return false;
+    // 주인장 추천: 글(추천·후기) 또는 주인장 영상이 있는 게임
+    if (bool(query, "keeper") && !g.article && g.playVideos.length === 0) return false;
     if (query.get("genre") && !g.genreSlugs.includes(query.get("genre"))) return false;
     if (release === "UPCOMING" && !g.comingSoon) return false;
     if ((release === "RECENT" || release === "TODAY") && g.comingSoon) return false;
