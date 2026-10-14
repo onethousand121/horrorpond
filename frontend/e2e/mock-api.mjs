@@ -40,6 +40,9 @@ function steamGame(id, appid, fields) {
     playVideos: [],
     referenceVideos: [],
     achievements: [],
+    endingType: null,
+    endings: [],
+    koreanPatches: [],
     status: "CANDIDATE",
     ...fields,
   };
@@ -56,6 +59,7 @@ const games = [
     priceAmount: 1650000,
     priceCurrency: "KRW",
     reviewCount: 4321,
+    endingType: "SINGLE",
   }),
   steamGame(2, 1002, {
     slug: "free-scream",
@@ -119,6 +123,21 @@ const games = [
       publishedAt: "2026-09-10T03:00:00Z",
     },
     playVideos: [{ youtubeId: "dQw4w9WgXcQ", title: "등대지기 1화", channelName: null }],
+    endingType: "MULTIPLE",
+    endings: [
+      { name: "새벽의 등대", description: "마지막 밤까지 불을 지킨다.\n문은 끝까지 열지 않는다.", youtubeId: "aBcDeFgHiJk" },
+      { name: "바다로", description: null, youtubeId: null },
+    ],
+  }),
+  steamGame(7, 1007, {
+    slug: "night-ward",
+    title: "Night Ward",
+    shortDescription: "불 꺼진 병동을 돌아다닌다.",
+    en: { shortDescription: "Wander a ward with the lights out." },
+    // 공식 한국어는 없고 유저 한글패치만 있다
+    languages: ["en"],
+    reviewCount: 300,
+    koreanPatches: [{ url: "https://patch.example.com/night-ward", author: "병동 한글화팀", note: "v1.0 기준" }],
   }),
 ];
 
@@ -161,6 +180,8 @@ function toSummary(raw, lang) {
     source: g.source,
     reviewed: g.article?.kind === "REVIEW",
     free: g.free,
+    multiEnding: g.endingType === "MULTIPLE",
+    koreanPatch: g.koreanPatches.length > 0,
   };
 }
 
@@ -193,6 +214,9 @@ function toDetail(raw, lang) {
     free: g.free,
     priceAmount: g.comingSoon ? null : g.priceAmount,
     priceCurrency: g.comingSoon ? null : g.priceCurrency,
+    endingType: g.endingType,
+    endings: g.endingType === "MULTIPLE" ? g.endings : [],
+    koreanPatches: g.koreanPatches,
   };
 }
 
@@ -231,6 +255,9 @@ function toAdminDetail(g) {
     playVideos: g.playVideos,
     referenceVideos: g.referenceVideos,
     achievements: g.achievements,
+    endingType: g.endingType,
+    endings: g.endings,
+    koreanPatches: g.koreanPatches,
   };
 }
 
@@ -257,7 +284,8 @@ function filterGames(query) {
     if (g.status === "HIDDEN") return false;
     // 백엔드와 같이 무료 필터는 출시 예정작을 뺀다
     if (bool(query, "free") && (!g.free || g.comingSoon)) return false;
-    if (bool(query, "korean") && !g.languages.includes("ko")) return false;
+    // 백엔드와 같이 한국어 필터는 유저 한글패치가 있는 게임도 포함한다
+    if (bool(query, "korean") && !g.languages.includes("ko") && g.koreanPatches.length === 0) return false;
     if (query.has("coop") && g.coop !== bool(query, "coop")) return false;
     if (bool(query, "picked") && g.article?.kind !== "PICK") return false;
     if (bool(query, "keeper") && g.article?.kind !== "PICK" && g.playVideos.length === 0) return false;

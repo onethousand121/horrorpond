@@ -30,6 +30,8 @@ test("한국어 칩은 한국어 화면에만 있고, 켜면 korean=true로 부�
   await expect(page).toHaveURL(/[?&]korean=1(&|$)/);
   await expect(card(page, "어두운 집")).toBeVisible();
   await expect(card(page, "Free Scream")).toHaveCount(0);
+  // 공식 한국어가 없어도 유저 한글패치가 있으면 들어간다 (백엔드 필터)
+  await expect(card(page, "Night Ward")).toBeVisible();
 
   const received = await mockRequests(request, "/api/games");
   expect(received.some((r) => r.query.korean === "true")).toBe(true);
@@ -57,4 +59,18 @@ test("검색어는 q로 넘어가고 결과를 보여준다", async ({ page, req
   expect(received.some((r) => r.query.q === "keeper" && r.query.sort === "POPULAR")).toBe(true);
   // 결과 화면의 검색창에 검색어가 남아 있다
   await expect(page.getByRole("search").getByRole("searchbox")).toHaveValue("keeper");
+});
+
+test("카드 뱃지: 한글패치(한국어 화면만, 공식 한국어 게임엔 없음), 멀티 엔딩", async ({ page }) => {
+  await page.goto("/games");
+  await expect(card(page, "Night Ward").getByText("한글패치", { exact: true })).toBeVisible();
+  await expect(card(page, "Night Ward").getByText("한국어", { exact: true })).toHaveCount(0);
+  await expect(card(page, "어두운 집").getByText("한글패치", { exact: true })).toHaveCount(0);
+  await expect(card(page, "등대지기").getByText("멀티 엔딩", { exact: true })).toBeVisible();
+  await expect(card(page, "어두운 집").getByText("멀티 엔딩", { exact: true })).toHaveCount(0);
+
+  await page.goto("/en/games");
+  await expect(card(page, "Night Ward")).toBeVisible();
+  await expect(card(page, "Night Ward").getByText("Korean patch", { exact: true })).toHaveCount(0);
+  await expect(card(page, "Lighthouse Keeper").getByText("Multiple endings", { exact: true })).toBeVisible();
 });

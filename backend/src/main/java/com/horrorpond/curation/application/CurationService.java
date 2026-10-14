@@ -53,7 +53,8 @@ public class CurationService {
         Game game = findGame(gameId);
         return AdminGameDetailResponse.of(game, articleRepository.findByGameId(gameId).orElse(null), exposurePolicy,
                 gameGuideService.playVideos(gameId), gameGuideService.achievements(gameId),
-                gameGuideService.referenceVideos(gameId));
+                gameGuideService.referenceVideos(gameId), gameGuideService.endings(gameId),
+                gameGuideService.koreanPatches(gameId));
     }
 
     /**

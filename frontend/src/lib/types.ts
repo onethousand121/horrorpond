@@ -15,6 +15,9 @@ export type GameSort = "LATEST" | "RELEASE" | "POPULAR" | "TRENDING";
 /** 백엔드 ReleaseWindow: 출시 예정 / 최근 90일 출시 / 오늘 포함 최근 7일 출시 */
 export type ReleaseWindow = "UPCOMING" | "RECENT" | "TODAY" | "TOMORROW";
 
+/** 엔딩 구분: 단일 / 멀티. 표시 안 함이면 null */
+export type EndingType = "SINGLE" | "MULTIPLE";
+
 /** 백엔드 HubStatsResponse: 홈 상단 숫자 (모두 사이트에 보이는 게임 기준) */
 export interface HubStats {
   releasedToday: number;
@@ -87,6 +90,10 @@ export interface GameSummary {
   reviewed?: boolean;
   /** 무료 게임. 백엔드 배포 전 응답에는 없다 */
   free?: boolean;
+  /** 멀티 엔딩 게임. 백엔드 배포 전 응답에는 없다 */
+  multiEnding?: boolean;
+  /** 유저 한글패치가 있다. 백엔드 배포 전 응답에는 없다 */
+  koreanPatch?: boolean;
 }
 
 export interface DeveloperCredit {
@@ -156,6 +163,12 @@ export interface GameDetail {
   /** 할인 전 정가 (통화 최소 단위: KRW는 ×100, USD는 센트). 출시 전·모름이면 null */
   priceAmount?: number | null;
   priceCurrency?: string | null;
+  /** 엔딩 구분. null이면 영역을 숨긴다 (백엔드 배포 전 응답에는 없다) */
+  endingType?: EndingType | null;
+  /** 엔딩 공략 (멀티 엔딩일 때만). 백엔드 배포 전 응답에는 없다 */
+  endings?: EndingGuide[];
+  /** 유저 한글패치 배포처. 백엔드 배포 전 응답에는 없다 */
+  koreanPatches?: KoreanPatch[];
 }
 
 /** 백엔드 GameGuideResponses.PlayVideoResponse */
@@ -172,4 +185,21 @@ export interface AchievementGuide {
   description: string | null;
   /** 공략 영상. 없으면 null */
   youtubeId: string | null;
+}
+
+/** 백엔드 GameGuideResponses.EndingGuideResponse */
+export interface EndingGuide {
+  name: string;
+  /** 보는 방법. 없으면 null */
+  description: string | null;
+  /** 엔딩 영상. 없으면 null */
+  youtubeId: string | null;
+}
+
+/** 백엔드 GameGuideResponses.KoreanPatchResponse */
+export interface KoreanPatch {
+  /** 배포처 주소 (https) */
+  url: string;
+  author: string | null;
+  note: string | null;
 }

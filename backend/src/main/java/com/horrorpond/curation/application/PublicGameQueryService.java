@@ -87,6 +87,7 @@ public class PublicGameQueryService {
         List<String> curatorSlugs = game.getGenres().stream().map(Genre::getSlug).toList();
         return GameDetailResponse.of(game, resolver.resolve(curatorSlugs, game.getTags(), language), article,
                 language, gameGuideService.playVideos(game.getId()), gameGuideService.achievements(game.getId()),
-                gameGuideService.referenceVideos(game.getId()));
+                gameGuideService.referenceVideos(game.getId()), gameGuideService.endings(game.getId()),
+                gameGuideService.koreanPatches(game.getId()));
     }
 }

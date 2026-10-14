@@ -102,3 +102,73 @@ test("라우트에 없는 주소도 사이트 모양의 404", async ({ page }) =
   expect(en?.status()).toBe(404);
   await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
 });
+
+test("멀티 엔딩: 추천 글 아래에 스포일러로 접혀 있고, 누르면 엔딩과 영상이 보인다", async ({ page }) => {
+  await page.goto("/games/lighthouse-keeper");
+  const article = page.getByRole("region", { name: "주인장 추천", exact: true });
+  const endings = article.getByRole("region", { name: "엔딩", exact: true });
+  await expect(endings).toBeVisible();
+  const summary = endings.locator("summary");
+  await expect(summary).toHaveText(/스포일러 주의 · 엔딩 2개 · 눌러서 보기/);
+  // 기본은 닫혀 있다
+  expect(await endings.locator("details").evaluate((d) => (d as HTMLDetailsElement).open)).toBe(false);
+  await expect(endings.getByText("새벽의 등대")).toBeHidden();
+
+  await summary.click();
+  await expect(endings.getByRole("heading", { name: "새벽의 등대" })).toBeVisible();
+  await expect(endings.getByRole("heading", { name: "바다로" })).toBeVisible();
+  // 설명은 줄바꿈을 살린 일반 텍스트
+  await expect(endings.getByText("마지막 밤까지 불을 지킨다.")).toBeVisible();
+  await expect(endings.locator("ol")).toHaveAttribute("lang", "ko");
+  // 영상은 눌러야 재생되는 썸네일
+  await expect(endings.getByRole("button", { name: "새벽의 등대 엔딩 영상 재생" })).toBeVisible();
+  await expect(endings.locator("iframe")).toHaveCount(0);
+});
+
+test("멀티 엔딩: 키보드로도 연다", async ({ page }) => {
+  await page.goto("/games/lighthouse-keeper");
+  const endings = page.getByRole("region", { name: "엔딩", exact: true });
+  await endings.locator("summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(endings.getByRole("heading", { name: "새벽의 등대" })).toBeVisible();
+});
+
+test("영어 화면: 엔딩 안내는 영어", async ({ page }) => {
+  await page.goto("/en/games/lighthouse-keeper");
+  const endings = page.getByRole("region", { name: "Endings", exact: true });
+  await expect(endings.locator("summary")).toHaveText(/Spoilers · 2 endings · click to reveal/);
+});
+
+test("단일 엔딩: 한 줄 안내 (글이 없으면 본문 아래)", async ({ page }) => {
+  await page.goto("/games/dark-house");
+  const endings = page.getByRole("region", { name: "엔딩", exact: true });
+  await expect(endings).toBeVisible();
+  await expect(endings.getByText("엔딩이 하나뿐인 게임이에요.")).toBeVisible();
+  await expect(endings.locator("details")).toHaveCount(0);
+
+  await page.goto("/en/games/dark-house");
+  await expect(page.getByText("This game has a single ending.")).toBeVisible();
+});
+
+test("엔딩 구분이 없으면 엔딩 영역이 없다", async ({ page }) => {
+  await page.goto("/games/free-scream");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Free Scream");
+  await expect(page.getByRole("region", { name: "엔딩", exact: true })).toHaveCount(0);
+});
+
+test("유저 한글패치: 한국어 화면에만 nofollow 외부 링크와 안내", async ({ page }) => {
+  await page.goto("/games/night-ward");
+  const row = infoRow(page, "한글패치");
+  const link = row.getByRole("link", { name: /병동 한글화팀/ });
+  await expect(link).toHaveAttribute("href", "https://patch.example.com/night-ward");
+  await expect(link).toHaveAttribute("rel", /\bnofollow\b/);
+  await expect(link).toHaveAttribute("rel", /\bugc\b/);
+  await expect(link).toHaveAttribute("target", "_blank");
+  await expect(row.getByText("v1.0 기준")).toBeVisible();
+  await expect(row.getByText("비공식 패치예요. 제작자 배포처에서 받으세요.")).toBeVisible();
+
+  await page.goto("/en/games/night-ward");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Night Ward");
+  await expect(page.locator('a[href="https://patch.example.com/night-ward"]')).toHaveCount(0);
+  await expect(infoRow(page, "Korean patch")).toHaveCount(0);
+});

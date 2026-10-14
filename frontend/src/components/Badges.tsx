@@ -74,6 +74,26 @@ export function KoreanBadge({ locale, languages }: {
   );
 }
 
+/**
+ * 한국어 화면에서만: 유저 한글패치가 있으면 표시. 공식 한국어 뱃지와 다른 색이고, 공식 지원 게임에는 붙이지 않는다
+ */
+export function KoreanPatchBadge({ locale, koreanPatch, languages }: {
+  locale: Locale;
+  koreanPatch?: boolean;
+  languages?: string[];
+}) {
+  if (locale !== "ko" || !koreanPatch || languages?.includes("ko")) return null;
+  const t = getDictionary(locale).badge;
+  return (
+    <span
+      title={t.koreanPatchLabel}
+      className="rounded-full border border-sky-400/40 bg-sky-400/10 px-2 py-0.5 text-xs font-medium text-sky-300"
+    >
+      {t.koreanPatch}
+    </span>
+  );
+}
+
 /** 무료 게임. 출시 전 게임은 가격이 정해지지 않았을 수 있어 표시하지 않는다 (출시 예정 판정은 카드와 같은 isUpcoming) */
 export function FreeBadge({ locale, game }: {
   locale: Locale;
@@ -122,19 +142,39 @@ function TrophyIcon() {
   );
 }
 
+/** 갈림길 모양 (멀티 엔딩) */
+function BranchIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden className="size-[13px] shrink-0">
+      <path d="M8 15V9M8 9L3 3M8 9l5-6" stroke="#c9a7ff" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+      <circle cx="3" cy="3" r="1.8" fill="#c9a7ff" />
+      <circle cx="13" cy="3" r="1.8" fill="#c9a7ff" />
+    </svg>
+  );
+}
+
 /**
- * 주인장이 붙인 콘텐츠 표시 (카드 이미지 오른쪽 위). 모두 같은 칩 모양이고 순서는 협찬 → 추천/후기 → 영상 → 업적.
+ * 주인장이 붙인 콘텐츠 표시 (카드 이미지 오른쪽 위). 모두 같은 칩 모양이고 순서는 협찬 → 추천/후기 → 영상 → 업적 → 멀티 엔딩.
  * 협찬은 눈에 잘 띄어야 하므로(추천·보증 심사지침) 아이콘 없이 노란 테두리와 글자로 맨 앞에 둔다.
  */
-export function ContentBadges({ locale, sponsored, picked, reviewed = false, hasPlayVideo, hasAchievementGuide }: {
+export function ContentBadges({
+  locale,
+  sponsored,
+  picked,
+  reviewed = false,
+  hasPlayVideo,
+  hasAchievementGuide,
+  multiEnding = false,
+}: {
   locale: Locale;
   sponsored: boolean;
   picked: boolean;
   reviewed?: boolean;
   hasPlayVideo: boolean;
   hasAchievementGuide: boolean;
+  multiEnding?: boolean;
 }) {
-  if (!sponsored && !picked && !reviewed && !hasPlayVideo && !hasAchievementGuide) return null;
+  if (!sponsored && !picked && !reviewed && !hasPlayVideo && !hasAchievementGuide && !multiEnding) return null;
   const t = getDictionary(locale);
   return (
     <>
@@ -169,6 +209,12 @@ export function ContentBadges({ locale, sponsored, picked, reviewed = false, has
         <span className={CHIP} title={t.card.hasAchievementGuide} aria-label={t.card.hasAchievementGuide}>
           <TrophyIcon />
           {t.card.achievementShort}
+        </span>
+      )}
+      {multiEnding && (
+        <span className={CHIP}>
+          <BranchIcon />
+          {t.badge.multiEnding}
         </span>
       )}
     </>

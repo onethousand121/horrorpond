@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AchievementGuides } from "@/components/AchievementGuides";
+import { EndingGuides } from "@/components/EndingGuides";
 import { AdultBadge, CoopBadge, GenreBadge, KeeperPickBadge, KeeperReviewBadge, KoreanBadge, FreeBadge } from "@/components/Badges";
 import { HighlightList } from "@/components/HighlightList";
 import { Markdown } from "@/components/Markdown";
@@ -133,6 +134,12 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
   const itchLink = game.storeLinks.find((link) => link.store === "ITCH");
   const isItch = game.source === "ITCH";
   const isReview = article?.kind === "REVIEW";
+  // 엔딩은 큐레이터 글 아래에, 글이 없으면 업적 공략 아래에 둔다
+  const endings = game.endingType ? (
+    <EndingGuides endingType={game.endingType} endings={game.endings ?? []} locale={lang} />
+  ) : null;
+  // 한글패치는 한국어 화면에만 (공식 한국어가 있어도 보여준다: 더 나은 번역일 수 있다)
+  const koreanPatches = lang === "ko" ? (game.koreanPatches ?? []) : [];
 
   // 같은 그림이 두 번 보이지 않게: 헤더 이미지(상단 히어로)와 첫 스크린샷(갤러리 큰 화면)을 피해 포스터를 고른다
   const trailerPoster = (screenshots[1] ?? screenshots[0])?.url ?? game.headerImageUrl;
@@ -210,6 +217,7 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
                     </h2>
                     <Markdown>{article.body}</Markdown>
                   </div>
+                  {endings}
                   {game.shortDescription && (
                     <p className="border-l-2 border-border pl-4 text-sm text-muted">
                       {game.shortDescription}
@@ -264,6 +272,7 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
                   </Link>
                 </section>
               )}
+              {!article && endings}
 
               {(trailers.length > 0 || screenshots.length > 0) && (
                 <section aria-label={t.media} className="space-y-4">
@@ -317,6 +326,34 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
                     {languages.length > VISIBLE_LANGUAGES && (
                       <span className="text-muted"> {t.moreLanguages(languages.length - VISIBLE_LANGUAGES)}</span>
                     )}
+                  </dd>
+                </div>
+              )}
+              {koreanPatches.length > 0 && (
+                <div className="flex justify-between gap-4">
+                  <dt className="shrink-0 text-muted">{t.koreanPatch}</dt>
+                  <dd className="min-w-0 text-right">
+                    <ul className="space-y-1">
+                      {koreanPatches.map((patch, index) => (
+                        <li key={`${patch.url}-${index}`}>
+                          <a
+                            href={patch.url}
+                            target="_blank"
+                            rel="nofollow ugc noopener noreferrer"
+                            lang="ko"
+                            className="break-words text-accent hover:underline"
+                          >
+                            {patch.author ?? t.koreanPatchAuthor} ↗
+                          </a>
+                          {patch.note && (
+                            <span lang="ko" className="block text-xs text-muted">
+                              {patch.note}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-1 text-xs text-muted">{t.koreanPatchNote}</p>
                   </dd>
                 </div>
               )}

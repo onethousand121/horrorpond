@@ -33,6 +33,16 @@ test("맞는 키로 로그인 → 게임 목록 → 로그아웃", async ({ page
   await expect(page).toHaveURL("/admin/games/6");
   await expect(page.getByRole("heading", { level: 1, name: "등대지기" })).toBeVisible();
 
+  // 엔딩 정보는 글 편집 아래에 접혀 있고, 펼치면 저장된 구분과 목록이 보인다
+  const endings = page.locator("details").filter({ hasText: "엔딩 정보 (플레이해 보고 체크)" });
+  await expect(endings.getByRole("radio", { name: "멀티 엔딩" })).toBeHidden();
+  await endings.locator("summary").click();
+  await expect(endings.getByRole("radio", { name: "멀티 엔딩" })).toBeChecked();
+  await expect(endings.getByPlaceholder("엔딩 이름").first()).toHaveValue("새벽의 등대");
+  await endings.getByRole("radio", { name: "단일 엔딩" }).check();
+  await expect(endings.getByPlaceholder("엔딩 이름")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "한글패치 저장" })).toBeVisible();
+
   await page.getByRole("button", { name: "로그아웃" }).click();
   await expect(page).toHaveURL("/admin/login");
   await page.goto("/admin");
