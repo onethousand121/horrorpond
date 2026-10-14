@@ -1,5 +1,6 @@
 package com.horrorpond.curation.application;
 
+import com.horrorpond.catalog.domain.EndingType;
 import com.horrorpond.catalog.domain.Game;
 import com.horrorpond.catalog.domain.GameSource;
 import com.horrorpond.common.domain.Language;
@@ -45,7 +46,11 @@ public record GameSummaryResponse(
         GameSource source,
         boolean reviewed,
         /** 무료 게임 (카드에 "무료" 뱃지) */
-        boolean free
+        boolean free,
+        /** 멀티 엔딩 게임 (카드에 "멀티 엔딩" 뱃지) */
+        boolean multiEnding,
+        /** 유저 한글패치가 하나 이상 있다 (카드에 "한글패치" 뱃지) */
+        boolean koreanPatch
 ) {
 
     static final int MAX_HIGHLIGHTS = 3;
@@ -68,7 +73,7 @@ public record GameSummaryResponse(
                 row.oneLiner(),
                 List.copyOf(highlights.subList(0, Math.min(MAX_HIGHLIGHTS, highlights.size()))),
                 row.sponsored(), row.hasPlayVideo(), row.hasAchievementGuide(), row.source(),
-                row.reviewed(), row.free());
+                row.reviewed(), row.free(), row.endingType() == EndingType.MULTIPLE, row.hasKoreanPatch());
     }
 
     public record GenreSummary(String slug, String name) {

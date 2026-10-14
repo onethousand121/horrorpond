@@ -179,6 +179,13 @@ class PublicGameApiTest {
         jdbc.update("""
                 INSERT INTO achievement_guide (game_id, name, sort_order)
                 SELECT id, 'Ach', 0 FROM game WHERE slug = 'pinned-adult'""");
+        jdbc.update("UPDATE game SET ending_type = 'MULTIPLE' WHERE slug = 'pinned-adult'");
+        jdbc.update("""
+                INSERT INTO ending_guide (game_id, name, sort_order)
+                SELECT id, 'End', 0 FROM game WHERE slug = 'pinned-adult'""");
+        jdbc.update("""
+                INSERT INTO korean_patch (game_id, url, sort_order)
+                SELECT id, 'https://example.com/patch', 0 FROM game WHERE slug = 'pinned-adult'""");
 
         // 성인 게임은 API에서부터 소개·미디어·글·영상·공략을 내려주지 않는다
         mvc.perform(get("/api/games/pinned-adult"))
@@ -191,6 +198,9 @@ class PublicGameApiTest {
                 .andExpect(jsonPath("$.playVideos", hasSize(0)))
                 .andExpect(jsonPath("$.referenceVideos", hasSize(0)))
                 .andExpect(jsonPath("$.achievements", hasSize(0)))
+                .andExpect(jsonPath("$.endingType").doesNotExist())
+                .andExpect(jsonPath("$.endings", hasSize(0)))
+                .andExpect(jsonPath("$.koreanPatches", hasSize(0)))
                 .andExpect(jsonPath("$.storeLinks[0].store").value("STEAM"))
                 .andExpect(jsonPath("$.developers", hasSize(1)))
                 .andExpect(jsonPath("$.releaseDate").value("2020-01-01"));
@@ -222,9 +232,19 @@ class PublicGameApiTest {
         mvc.perform(get("/api/games").param("korean", "true"))
                 .andExpect(jsonPath("$.content[*].slug", contains("korean")))
                 .andExpect(jsonPath("$.content[0].languages", contains("en", "ko")))
-                .andExpect(jsonPath("$.content[0].audioLanguages", contains("en")));
+                .andExpect(jsonPath("$.content[0].audioLanguages", contains("en")))
+                .andExpect(jsonPath("$.content[0].koreanPatch").value(false));
         mvc.perform(get("/api/games").param("sort", "POPULAR"))
                 .andExpect(jsonPath("$.content[*].slug", contains("korean", "english-only")));
+
+        // 공식 한국어가 없어도 유저 한글패치가 있으면 한국어 필터에 들어간다
+        jdbc.update("""
+                INSERT INTO korean_patch (game_id, url, sort_order)
+                SELECT id, 'https://example.com/patch', 0 FROM game WHERE slug = 'english-only'""");
+        mvc.perform(get("/api/games").param("korean", "true").param("sort", "POPULAR"))
+                .andExpect(jsonPath("$.content[*].slug", contains("korean", "english-only")))
+                .andExpect(jsonPath("$.content[1].koreanPatch").value(true))
+                .andExpect(jsonPath("$.content[1].languages", contains("en", "ja")));
         mvc.perform(get("/api/games/english-only"))
                 .andExpect(jsonPath("$.languages", contains("en", "ja")))
                 .andExpect(jsonPath("$.audioLanguages", contains("ja")));

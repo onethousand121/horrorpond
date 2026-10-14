@@ -1,5 +1,6 @@
 package com.horrorpond.curation.api;
 
+import com.horrorpond.catalog.domain.EndingType;
 import com.horrorpond.catalog.domain.GameStatus;
 import com.horrorpond.common.web.PageResponse;
 import com.horrorpond.curation.application.AdminArticleResponse;
@@ -10,6 +11,8 @@ import com.horrorpond.curation.application.AdminGameDetailResponse;
 import com.horrorpond.curation.application.AdminGameResponse;
 import com.horrorpond.curation.application.CurationService;
 import com.horrorpond.curation.application.GameGuideResponses.AchievementGuideResponse;
+import com.horrorpond.curation.application.GameGuideResponses.EndingsResponse;
+import com.horrorpond.curation.application.GameGuideResponses.KoreanPatchResponse;
 import com.horrorpond.curation.application.GameGuideResponses.PlayVideoResponse;
 import com.horrorpond.curation.application.GameGuideService;
 import com.horrorpond.curation.application.PublishingService;
@@ -110,6 +113,28 @@ public class AdminCurationController {
                 .toList());
     }
 
+    /**
+     * 엔딩 구분과 엔딩 목록을 한 번에 바꾼다. endingType이 null이면 표시 안 함.
+     * 목록은 MULTIPLE일 때만 받는다 (그 외에 목록이 있으면 400, 빈 목록이면 기존 목록을 지운다).
+     */
+    @PutMapping("/{id}/endings")
+    public EndingsResponse replaceEndings(@PathVariable Long id, @Valid @RequestBody EndingsRequest request) {
+        return gameGuideService.replaceEndings(id, request.endingType(), request.endings().stream()
+                .map(e -> new GameGuideService.EndingCommand(e.name(), e.description(), e.videoUrl()))
+                .toList());
+    }
+
+    /**
+     * 유저 한글패치 목록 전체를 바꾼다 (순서 = 목록 순서, 빈 목록이면 모두 삭제).
+     */
+    @PutMapping("/{id}/korean-patches")
+    public List<KoreanPatchResponse> replaceKoreanPatches(@PathVariable Long id,
+                                                          @Valid @RequestBody KoreanPatchesRequest request) {
+        return gameGuideService.replaceKoreanPatches(id, request.patches().stream()
+                .map(p -> new GameGuideService.KoreanPatchCommand(p.url(), p.author(), p.note()))
+                .toList());
+    }
+
     @PostMapping("/{id}/publish")
     public AdminGameResponse publish(@PathVariable Long id) {
         return publishingService.publish(id);
@@ -191,6 +216,20 @@ public class AdminCurationController {
     }
 
     public record AchievementItem(String name, String description, String videoUrl) {
+    }
+
+    /** 이름 필수·길이·개수·영상 주소는 도메인(EndingGuide)이, 구분과 목록의 짝은 GameGuideService가 검증한다 */
+    public record EndingsRequest(EndingType endingType, @NotNull List<@NotNull EndingItem> endings) {
+    }
+
+    public record EndingItem(String name, String description, String videoUrl) {
+    }
+
+    /** https 주소·길이·개수는 도메인(KoreanPatch)이 검증한다 */
+    public record KoreanPatchesRequest(@NotNull List<@NotNull KoreanPatchItem> patches) {
+    }
+
+    public record KoreanPatchItem(String url, String author, String note) {
     }
 
     /**

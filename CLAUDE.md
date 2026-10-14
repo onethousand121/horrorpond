@@ -19,6 +19,9 @@
   (관리 화면에서 목록 전체를 한 번에 저장, 유튜브 주소는 YoutubeVideoId가 검증).
   play_video.kind = KEEPER(주인장 영상, 뱃지·주인장 추천 기준) | REFERENCE(다른 채널 참고 영상, channel_name 필수).
   참고 영상은 주인장 영상이 없을 때만 상세에 "참고 영상 · 채널"로 보이고 뱃지·추천 줄에는 안 쓴다. API는 /videos와 /reference-videos로 분리
+  엔딩: game.ending_type(SINGLE | MULTIPLE | null=표시 안 함) + ending_guide(이름·보는 방법·영상, MULTIPLE일 때만 목록 허용). PUT /endings가 구분과 목록을 함께 교체.
+  상세는 큐레이터 글 아래(글이 없으면 업적 공략 아래)에 SINGLE은 한 줄, MULTIPLE은 닫힌 details 스포일러. 카드 "멀티 엔딩" 뱃지(summary.multiEnding)
+  유저 한글패치: korean_patch(https 배포처 주소·제작자·메모, KoreanPatch가 검증). korean=true 필터에 포함, 카드 "한글패치" 뱃지(공식 한국어면 안 붙음)·상세 지원 언어 아래 nofollow ugc 링크, 한국어 화면만
   성인 게임(adult)은 자동 노출 제외, 고정 노출해도 이미지 흐림 + 19 표시, 상세는 소개·미디어 없이 Steam 링크만, noindex·사이트맵 제외 장르 = 큐레이터 지정 장르 ∪ SteamSpy 태그 매핑(genre.steam_tags)
 - "지금 뜨는"(sort=TRENDING): 최근 7일 리뷰 증가량(지금 리뷰 수 − 7~14일 전 game_metric_daily 최댓값, 출시 7일 이내는 0부터) desc.
   기록 없는 게임은 빠짐. 상위 5개 태그에 Horror 계열 필요(DB 함수 horror_in_top_tags, itch는 예외).

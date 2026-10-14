@@ -1,7 +1,7 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
-import type { ErrorResponse, PageResponse } from "../types";
+import type { EndingType, ErrorResponse, PageResponse } from "../types";
 import { requireAdminKey } from "./session";
 import type { AdminArticle, AdminGame, AdminGameDetail, GameStatus, TrendingOverride } from "./types";
 
@@ -155,6 +155,20 @@ export function replaceAchievements(
   achievements: { name: string; description: string; videoUrl: string }[],
 ) {
   return adminFetch<unknown>(`/api/admin/games/${id}/achievements`, { method: "PUT", body: { achievements } });
+}
+
+/** 엔딩 구분과 엔딩 목록을 한 번에 저장 (목록은 멀티 엔딩일 때만) */
+export function replaceEndings(
+  id: number,
+  endingType: EndingType | null,
+  endings: { name: string; description: string; videoUrl: string }[],
+) {
+  return adminFetch<unknown>(`/api/admin/games/${id}/endings`, { method: "PUT", body: { endingType, endings } });
+}
+
+/** 유저 한글패치 목록 전체 저장 */
+export function replaceKoreanPatches(id: number, patches: { url: string; author: string; note: string }[]) {
+  return adminFetch<unknown>(`/api/admin/games/${id}/korean-patches`, { method: "PUT", body: { patches } });
 }
 
 /**

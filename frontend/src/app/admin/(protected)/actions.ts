@@ -14,6 +14,8 @@ import {
   hideGame,
   publishGame,
   replaceAchievements,
+  replaceEndings,
+  replaceKoreanPatches,
   replacePlayVideos,
   replaceReferenceVideos,
   unhideGame,
@@ -119,6 +121,47 @@ export async function saveAchievementsAction(_prev: ActionResult | null, formDat
     .map((name, i) => ({ name, description: descriptions[i] ?? "", videoUrl: videoUrls[i] ?? "" }))
     .filter((row) => row.name);
   return run(() => replaceAchievements(id, achievements), `업적 ${achievements.length}개를 저장했습니다.`);
+}
+
+/**
+ * 엔딩 구분과 엔딩 목록을 함께 저장. 목록은 멀티 엔딩일 때만 보내고, 이름이 빈 행은 버린다.
+ */
+export async function saveEndingsAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
+  const id = gameId(formData);
+  const raw = formData.get("endingType");
+  const endingType = raw === "SINGLE" || raw === "MULTIPLE" ? raw : null;
+  const names = formData.getAll("endingName").map((v) => String(v).trim());
+  const descriptions = formData.getAll("endingDescription").map((v) => String(v).trim());
+  const videoUrls = formData.getAll("endingVideoUrl").map((v) => String(v).trim());
+  const endings =
+    endingType === "MULTIPLE"
+      ? names
+          .map((name, i) => ({ name, description: descriptions[i] ?? "", videoUrl: videoUrls[i] ?? "" }))
+          .filter((row) => row.name)
+      : [];
+  const message =
+    endingType === "MULTIPLE"
+      ? `멀티 엔딩, 엔딩 ${endings.length}개를 저장했습니다.`
+      : endingType === "SINGLE"
+        ? "단일 엔딩으로 저장했습니다."
+        : "엔딩 표시를 껐습니다.";
+  return run(() => replaceEndings(id, endingType, endings), message);
+}
+
+/**
+ * 유저 한글패치 목록 전체 저장. 주소가 빈 행은 버린다 (https 주소만 받는다: 백엔드 KoreanPatch).
+ */
+export async function saveKoreanPatchesAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
+  const id = gameId(formData);
+  const urls = formData.getAll("patchUrl").map((v) => String(v).trim());
+  const authors = formData.getAll("patchAuthor").map((v) => String(v).trim());
+  const notes = formData.getAll("patchNote").map((v) => String(v).trim());
+  const patches = urls
+    .map((url, i) => ({ url, author: authors[i] ?? "", note: notes[i] ?? "" }))
+    .filter((row) => row.url);
+  return run(() => replaceKoreanPatches(id, patches), `한글패치 ${patches.length}개를 저장했습니다.`);
 }
 
 /** 유튜브 영상 제목. 실패하면 빈 문자열(제목 없이 저장) */

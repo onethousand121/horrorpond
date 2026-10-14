@@ -2,8 +2,14 @@
 
 import { useActionState, useState } from "react";
 import { GUIDE_LIMITS } from "@/lib/admin/types";
-import type { AchievementGuide, PlayVideo } from "@/lib/types";
-import { saveAchievementsAction, savePlayVideosAction, saveReferenceVideosAction } from "../actions";
+import type { AchievementGuide, EndingGuide, EndingType, KoreanPatch, PlayVideo } from "@/lib/types";
+import {
+  saveAchievementsAction,
+  saveEndingsAction,
+  saveKoreanPatchesAction,
+  savePlayVideosAction,
+  saveReferenceVideosAction,
+} from "../actions";
 import { ResultMessage } from "./ActionButton";
 
 const inputClass = "w-full rounded border border-border bg-background px-3 py-1.5 text-sm";
@@ -246,6 +252,174 @@ export function AchievementForm({ gameId, achievements }: { gameId: number; achi
         {state && <ResultMessage result={state} />}
       </div>
       <p className="text-xs text-muted">이름이 빈 행은 저장하지 않습니다.</p>
+    </form>
+  );
+}
+
+const ENDING_TYPES: { value: EndingType | ""; label: string }[] = [
+  { value: "", label: "표시 안 함" },
+  { value: "SINGLE", label: "단일 엔딩" },
+  { value: "MULTIPLE", label: "멀티 엔딩" },
+];
+
+/**
+ * 엔딩 구분과 엔딩 목록. 구분과 목록을 한 번에 저장한다(목록은 멀티 엔딩일 때만, 다른 구분으로 저장하면 목록은 지워진다).
+ * 사이트에는 스포일러로 접혀서 보인다.
+ */
+export function EndingForm({ gameId, endingType, endings }: {
+  gameId: number;
+  endingType: EndingType | null;
+  endings: EndingGuide[];
+}) {
+  const [state, action, pending] = useActionState(saveEndingsAction, null);
+  const [type, setType] = useState<EndingType | "">(endingType ?? "");
+  const { rows, update, add, remove, move } = useRows(
+    endings.map((e) => ({ name: e.name, description: e.description ?? "", videoUrl: youtubeUrl(e.youtubeId) })),
+    { name: "", description: "", videoUrl: "" },
+  );
+
+  return (
+    <form action={action} className="space-y-3">
+      <input type="hidden" name="gameId" value={gameId} />
+      <fieldset className="flex flex-wrap gap-4 text-sm">
+        <legend className="sr-only">엔딩 구분</legend>
+        {ENDING_TYPES.map((option) => (
+          <label key={option.value} className="flex items-center gap-1.5">
+            <input
+              type="radio"
+              name="endingType"
+              value={option.value}
+              checked={type === option.value}
+              onChange={() => setType(option.value)}
+            />
+            {option.label}
+          </label>
+        ))}
+      </fieldset>
+      {type === "MULTIPLE" && (
+        <>
+          {rows.map((row, i) => (
+            <div key={i} className="space-y-2 rounded border border-border p-3">
+              <div className="flex items-center gap-2">
+                <input
+                  name="endingName"
+                  value={row.name}
+                  onChange={(e) => update(i, { name: e.target.value })}
+                  maxLength={GUIDE_LIMITS.endingName}
+                  placeholder="엔딩 이름"
+                  className={`${inputClass} font-medium`}
+                />
+                <RowControls index={i} count={rows.length} onMove={(d) => move(i, d)} onRemove={() => remove(i)} />
+              </div>
+              <textarea
+                name="endingDescription"
+                value={row.description}
+                onChange={(e) => update(i, { description: e.target.value })}
+                maxLength={GUIDE_LIMITS.endingDescription}
+                rows={3}
+                placeholder="보는 방법 (선택)"
+                className={inputClass}
+              />
+              <input
+                name="endingVideoUrl"
+                value={row.videoUrl}
+                onChange={(e) => update(i, { videoUrl: e.target.value })}
+                placeholder="엔딩 영상 주소 (선택, 쇼츠 가능)"
+                className={inputClass}
+              />
+            </div>
+          ))}
+        </>
+      )}
+      <div className="flex flex-wrap items-center gap-3">
+        {type === "MULTIPLE" && (
+          <button
+            type="button"
+            onClick={add}
+            disabled={rows.length >= GUIDE_LIMITS.endings}
+            className="rounded border border-dashed border-border px-3 py-1.5 text-sm text-muted hover:text-foreground disabled:opacity-40"
+          >
+            + 엔딩 추가
+          </button>
+        )}
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded border border-border px-4 py-1.5 text-sm hover:border-foreground/40 disabled:opacity-50"
+        >
+          {pending ? "저장 중…" : "엔딩 저장"}
+        </button>
+        {state && <ResultMessage result={state} />}
+      </div>
+      <p className="text-xs text-muted">
+        글 저장과 따로 저장됩니다. 멀티 엔딩이 아니면 엔딩 목록은 지워집니다. 이름이 빈 행은 저장하지 않습니다.
+      </p>
+    </form>
+  );
+}
+
+/**
+ * 유저 한글패치 목록. 배포처 주소(https)만 링크하고 파일은 두지 않는다.
+ */
+export function KoreanPatchForm({ gameId, patches }: { gameId: number; patches: KoreanPatch[] }) {
+  const [state, action, pending] = useActionState(saveKoreanPatchesAction, null);
+  const { rows, update, add, remove, move } = useRows(
+    patches.map((p) => ({ url: p.url, author: p.author ?? "", note: p.note ?? "" })),
+    { url: "", author: "", note: "" },
+  );
+
+  return (
+    <form action={action} className="space-y-3">
+      <input type="hidden" name="gameId" value={gameId} />
+      {rows.map((row, i) => (
+        <div key={i} className="flex flex-col gap-2 rounded border border-border p-3 sm:flex-row sm:items-center">
+          <input
+            name="patchUrl"
+            type="url"
+            value={row.url}
+            onChange={(e) => update(i, { url: e.target.value })}
+            maxLength={GUIDE_LIMITS.patchUrl}
+            placeholder="https://배포처 주소"
+            className={`${inputClass} sm:w-80`}
+          />
+          <input
+            name="patchAuthor"
+            value={row.author}
+            onChange={(e) => update(i, { author: e.target.value })}
+            maxLength={GUIDE_LIMITS.patchAuthor}
+            placeholder="제작자 (선택)"
+            className={`${inputClass} sm:w-40`}
+          />
+          <input
+            name="patchNote"
+            value={row.note}
+            onChange={(e) => update(i, { note: e.target.value })}
+            maxLength={GUIDE_LIMITS.patchNote}
+            placeholder="메모 (선택, 예: v1.2 기준)"
+            className={inputClass}
+          />
+          <RowControls index={i} count={rows.length} onMove={(d) => move(i, d)} onRemove={() => remove(i)} />
+        </div>
+      ))}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={add}
+          disabled={rows.length >= GUIDE_LIMITS.koreanPatches}
+          className="rounded border border-dashed border-border px-3 py-1.5 text-sm text-muted hover:text-foreground disabled:opacity-40"
+        >
+          + 한글패치 추가
+        </button>
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded border border-border px-4 py-1.5 text-sm hover:border-foreground/40 disabled:opacity-50"
+        >
+          {pending ? "저장 중…" : "한글패치 저장"}
+        </button>
+        {state && <ResultMessage result={state} />}
+      </div>
+      <p className="text-xs text-muted">https 주소만 받습니다. 주소가 빈 행은 저장하지 않습니다.</p>
     </form>
   );
 }

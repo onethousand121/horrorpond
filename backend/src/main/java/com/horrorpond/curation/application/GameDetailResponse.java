@@ -1,6 +1,7 @@
 package com.horrorpond.curation.application;
 
 import com.horrorpond.catalog.domain.DeveloperRole;
+import com.horrorpond.catalog.domain.EndingType;
 import com.horrorpond.catalog.domain.Game;
 import com.horrorpond.catalog.domain.GameDeveloper;
 import com.horrorpond.catalog.domain.GameSource;
@@ -8,6 +9,8 @@ import com.horrorpond.catalog.domain.MediaType;
 import com.horrorpond.catalog.domain.Store;
 import com.horrorpond.common.domain.Language;
 import com.horrorpond.curation.application.GameGuideResponses.AchievementGuideResponse;
+import com.horrorpond.curation.application.GameGuideResponses.EndingGuideResponse;
+import com.horrorpond.curation.application.GameGuideResponses.KoreanPatchResponse;
 import com.horrorpond.curation.application.GameGuideResponses.PlayVideoResponse;
 import com.horrorpond.curation.application.GameSummaryResponse.GenreSummary;
 import com.horrorpond.curation.domain.ArticleKind;
@@ -29,7 +32,7 @@ public record GameDetailResponse(
         String releaseDateText,
         boolean comingSoon,
         boolean coop,
-        /** 성인 콘텐츠. 소개·미디어·글·영상·공략은 비워서 내려준다 (사이트는 Steam 링크만) */
+        /** 성인 콘텐츠. 소개·미디어·글·영상·공략·한글패치는 비워서 내려준다 (사이트는 Steam 링크만) */
         boolean adult,
         Integer reviewCount,
         /** Steam 지원 언어 코드 (ko, en, ja …) */
@@ -55,16 +58,23 @@ public record GameDetailResponse(
         /** 정가(할인 전)의 최소 단위 금액 (KRW는 100배, USD는 센트). 모르면 null */
         Integer priceAmount,
         /** KRW, USD. priceAmount가 없으면 null */
-        String priceCurrency
+        String priceCurrency,
+        /** 엔딩 구분 SINGLE | MULTIPLE. 표시 안 함이면 null */
+        EndingType endingType,
+        /** 엔딩 공략 (멀티 엔딩일 때만). 없으면 빈 목록 */
+        List<EndingGuideResponse> endings,
+        /** 유저 한글패치 배포처. 없으면 빈 목록 */
+        List<KoreanPatchResponse> koreanPatches
 ) {
 
     /**
      * 제목·소개·출시일 텍스트는 요청 언어로 (영어가 없으면 한국어). 큐레이터 글은 한국어만 있다.
-     * 성인 게임은 API에서부터 소개·미디어·글·영상·업적 공략을 비운다 (사이트는 Steam 링크만 보여준다).
+     * 성인 게임은 API에서부터 소개·미디어·글·영상·업적·엔딩 공략·한글패치를 비운다 (사이트는 Steam 링크만 보여준다).
      */
     static GameDetailResponse of(Game game, List<GenreSummary> genres, CurationArticle article, Language language,
                                  List<PlayVideoResponse> playVideos, List<AchievementGuideResponse> achievements,
-                                 List<PlayVideoResponse> referenceVideos) {
+                                 List<PlayVideoResponse> referenceVideos, List<EndingGuideResponse> endings,
+                                 List<KoreanPatchResponse> koreanPatches) {
         boolean adult = game.isAdult();
         return new GameDetailResponse(
                 game.getSlug(), game.title(language), adult ? null : game.shortDescription(language),
@@ -85,7 +95,10 @@ public record GameDetailResponse(
                         .toList(),
                 adult || article == null ? null : Article.from(article), adult ? List.of() : playVideos,
                 adult ? List.of() : achievements, game.getSource(),
-                adult ? List.of() : referenceVideos, game.isFree(), game.getPriceAmount(), game.getPriceCurrency());
+                adult ? List.of() : referenceVideos, game.isFree(), game.getPriceAmount(), game.getPriceCurrency(),
+                adult ? null : game.getEndingType(),
+                adult || game.getEndingType() != EndingType.MULTIPLE ? List.of() : endings,
+                adult ? List.of() : koreanPatches);
     }
 
     public record DeveloperCredit(String name, String slug, DeveloperRole role) {

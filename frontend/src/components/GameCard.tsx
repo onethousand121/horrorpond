@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { AdultBadge, ContentBadges, CoopBadge, GenreBadge, KoreanBadge, FreeBadge } from "@/components/Badges";
+import { AdultBadge, ContentBadges, CoopBadge, GenreBadge, KoreanBadge, KoreanPatchBadge, FreeBadge } from "@/components/Badges";
 import { HighlightList } from "@/components/HighlightList";
 import { formatCount, formatReleaseDate, isUpcoming } from "@/lib/format";
 import { getDictionary, localePath, type Locale } from "@/lib/i18n";
@@ -51,6 +51,7 @@ export function GameCard({ game, locale, eager = false }: { game: GameSummary; l
             reviewed={game.reviewed}
             hasPlayVideo={game.hasPlayVideo}
             hasAchievementGuide={game.hasAchievementGuide}
+            multiEnding={game.multiEnding}
           />
         </div>
       </div>
@@ -72,6 +73,7 @@ export function GameCard({ game, locale, eager = false }: { game: GameSummary; l
         {(game.picked || game.reviewed) && <HighlightList items={game.highlights.slice(0, CARD_HIGHLIGHTS)} compact />}
         <div className="mt-auto flex flex-wrap gap-1.5 pt-1">
           <KoreanBadge locale={locale} languages={game.languages} />
+          <KoreanPatchBadge locale={locale} koreanPatch={game.koreanPatch} languages={game.languages} />
           <FreeBadge locale={locale} game={game} />
           {game.coop && <CoopBadge locale={locale} />}
           {game.genres.slice(0, CARD_GENRES).map((genre) => (

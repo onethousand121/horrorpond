@@ -1,5 +1,6 @@
 package com.horrorpond.curation.repository;
 
+import com.horrorpond.catalog.domain.EndingType;
 import com.horrorpond.catalog.domain.GameSource;
 import com.horrorpond.catalog.domain.QGameMetricDaily;
 import com.horrorpond.catalog.domain.TrendingOverride;
@@ -9,6 +10,7 @@ import com.horrorpond.curation.domain.ArticleKind;
 import com.horrorpond.curation.domain.ArticleStatus;
 import com.horrorpond.curation.domain.QAchievementGuide;
 import com.horrorpond.curation.domain.QCurationArticle;
+import com.horrorpond.curation.domain.QKoreanPatch;
 import com.horrorpond.curation.domain.QPlayVideo;
 import com.horrorpond.curation.domain.VideoKind;
 import com.querydsl.core.BooleanBuilder;
@@ -49,6 +51,7 @@ public class CuratedGameQueryRepository {
     private static final QCurationArticle article = QCurationArticle.curationArticle;
     private static final QPlayVideo playVideo = QPlayVideo.playVideo;
     private static final QAchievementGuide achievementGuide = QAchievementGuide.achievementGuide;
+    private static final QKoreanPatch koreanPatch = QKoreanPatch.koreanPatch;
 
     /** 한국어 지원 필터의 언어 코드 (Game.languages) */
     static final String KOREAN = "ko";
@@ -69,7 +72,8 @@ public class CuratedGameQueryRepository {
                         keeperVideoExists(),
                         JPAExpressions.selectOne().from(achievementGuide)
                                 .where(achievementGuide.gameId.eq(game.id)).exists(),
-                        game.source, isArticle(ArticleKind.REVIEW), game.free))
+                        game.source, isArticle(ArticleKind.REVIEW), game.free, game.endingType,
+                        koreanPatchExists()))
                 .from(game)
                 .leftJoin(article).on(article.gameId.eq(game.id), article.status.eq(ArticleStatus.PUBLISHED))
                 .where(where)
@@ -132,8 +136,9 @@ public class CuratedGameQueryRepository {
             where.and(game.free.isTrue()).and(game.comingSoon.isFalse());
         }
         if (query.korean()) {
+            // 공식 한국어 지원 또는 유저 한글패치가 있는 게임
             where.and(Expressions.booleanTemplate("array_contains({0}, {1})", game.languages,
-                    Expressions.constant(KOREAN)));
+                    Expressions.constant(KOREAN)).or(koreanPatchExists()));
         }
         if (query.picked()) {
             where.and(article.kind.eq(ArticleKind.PICK));
@@ -172,6 +177,13 @@ public class CuratedGameQueryRepository {
     private static BooleanExpression keeperVideoExists() {
         return JPAExpressions.selectOne().from(playVideo)
                 .where(playVideo.gameId.eq(game.id), playVideo.kind.eq(VideoKind.KEEPER))
+                .exists();
+    }
+
+    /** 유저 한글패치가 하나 이상 있는지 */
+    private static BooleanExpression koreanPatchExists() {
+        return JPAExpressions.selectOne().from(koreanPatch)
+                .where(koreanPatch.gameId.eq(game.id))
                 .exists();
     }
 
@@ -247,7 +259,7 @@ public class CuratedGameQueryRepository {
      * @param release    출시 시점 필터. 없으면 null
      * @param today      RECENT 계산 기준일
      * @param picked     true면 재일 추천(공개된 추천 글이 있는 게임, 후기 제외)만
-     * @param korean     true면 한국어를 지원하는 게임만
+     * @param korean     true면 한국어를 지원하거나 유저 한글패치가 있는 게임만
      * @param keeper     true면 주인장 추천(추천 글 또는 주인장 플레이 영상이 있는 게임)만
      * @param free       true면 무료 게임만
      */
@@ -286,7 +298,9 @@ public class CuratedGameQueryRepository {
             boolean hasAchievementGuide,
             GameSource source,
             boolean reviewed,
-            boolean free
+            boolean free,
+            EndingType endingType,
+            boolean hasKoreanPatch
     ) {
     }
 }

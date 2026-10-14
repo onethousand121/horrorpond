@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -453,6 +454,119 @@ class AdminCurationApiTest {
         mvc.perform(get("/api/games/guided-1")).andExpect(jsonPath("$.playVideos", hasSize(0)));
         mvc.perform(get("/api/games")).andExpect(jsonPath("$.content[0].hasPlayVideo").value(false));
         mvc.perform(get("/api/games").param("keeper", "true")).andExpect(jsonPath("$.content", hasSize(0)));
+    }
+
+    @Test
+    void endingTypeAndEndingsAreReplacedTogether() throws Exception {
+        Long id = steamCandidate(1, "Endings", "endings-1");
+        mvc.perform(admin(post("/api/admin/games/{id}/publish", id))).andExpect(status().isOk());
+        // 기본은 표시 안 함
+        mvc.perform(get("/api/games/endings-1"))
+                .andExpect(jsonPath("$.endingType").doesNotExist())
+                .andExpect(jsonPath("$.endings", hasSize(0)));
+        mvc.perform(get("/api/games")).andExpect(jsonPath("$.content[0].multiEnding").value(false));
+
+        // 멀티 엔딩: 구분과 목록을 한 번에 (쇼츠 주소도 받는다)
+        mvc.perform(admin(put("/api/admin/games/{id}/endings", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"endingType":"MULTIPLE","endings":[
+                                  {"name":" 탈출 ","description":"열쇠를 모두 모은다\\n그리고 문으로","videoUrl":"https://www.youtube.com/shorts/dQw4w9WgXcQ"},
+                                  {"name":"죽음","description":"","videoUrl":""}]}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.endingType").value("MULTIPLE"))
+                .andExpect(jsonPath("$.endings[*].name", contains("탈출", "죽음")));
+        mvc.perform(get("/api/games/endings-1"))
+                .andExpect(jsonPath("$.endingType").value("MULTIPLE"))
+                .andExpect(jsonPath("$.endings[0].youtubeId").value("dQw4w9WgXcQ"))
+                .andExpect(jsonPath("$.endings[0].description").value("열쇠를 모두 모은다\n그리고 문으로"))
+                .andExpect(jsonPath("$.endings[1].youtubeId").doesNotExist())
+                .andExpect(jsonPath("$.endings[1].description").doesNotExist());
+        mvc.perform(get("/api/games")).andExpect(jsonPath("$.content[0].multiEnding").value(true));
+        mvc.perform(admin(get("/api/admin/games/{id}", id)))
+                .andExpect(jsonPath("$.endingType").value("MULTIPLE"))
+                .andExpect(jsonPath("$.endings", hasSize(2)));
+
+        // 멀티 엔딩이 아닌데 목록이 있거나, 이름·주소가 잘못되면 400이고 기존 값은 그대로
+        mvc.perform(admin(put("/api/admin/games/{id}/endings", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"endingType\":\"SINGLE\",\"endings\":[{\"name\":\"하나\"}]}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(admin(put("/api/admin/games/{id}/endings", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"endingType\":null,\"endings\":[{\"name\":\"하나\"}]}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(admin(put("/api/admin/games/{id}/endings", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"endingType\":\"MULTIPLE\",\"endings\":[{\"name\":\"x\",\"videoUrl\":\"https://vimeo.com/1\"}]}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/games/endings-1"))
+                .andExpect(jsonPath("$.endingType").value("MULTIPLE"))
+                .andExpect(jsonPath("$.endings", hasSize(2)));
+
+        // 단일 엔딩으로 바꾸면 목록은 지워진다
+        mvc.perform(admin(put("/api/admin/games/{id}/endings", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"endingType\":\"SINGLE\",\"endings\":[]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.endingType").value("SINGLE"));
+        mvc.perform(get("/api/games/endings-1"))
+                .andExpect(jsonPath("$.endingType").value("SINGLE"))
+                .andExpect(jsonPath("$.endings", hasSize(0)));
+        mvc.perform(get("/api/games")).andExpect(jsonPath("$.content[0].multiEnding").value(false));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM ending_guide", Integer.class)).isZero();
+
+        // 표시 안 함으로 되돌린다
+        mvc.perform(admin(put("/api/admin/games/{id}/endings", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"endingType\":null,\"endings\":[]}"))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/games/endings-1")).andExpect(jsonPath("$.endingType").doesNotExist());
+        mvc.perform(admin(put("/api/admin/games/{id}/endings", 999999))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"endings\":[]}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void koreanPatchesAreReplacedAsWholeListAndCountForKoreanFilter() throws Exception {
+        Long id = steamCandidate(1, "Patched", "patched-1");
+        Long other = steamCandidate(2, "Plain", "plain-2");
+        mvc.perform(admin(post("/api/admin/games/{id}/publish", id))).andExpect(status().isOk());
+        mvc.perform(admin(post("/api/admin/games/{id}/publish", other))).andExpect(status().isOk());
+        mvc.perform(get("/api/games").param("korean", "true")).andExpect(jsonPath("$.content", hasSize(0)));
+
+        mvc.perform(admin(put("/api/admin/games/{id}/korean-patches", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"patches":[{"url":" https://cafe.example.com/patch/1 ","author":"한글팀","note":"v1.2 기준"},
+                                            {"url":"https://blog.example.kr/p","author":"","note":""}]}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].url", contains("https://cafe.example.com/patch/1", "https://blog.example.kr/p")));
+        mvc.perform(get("/api/games/patched-1"))
+                .andExpect(jsonPath("$.koreanPatches[0].author").value("한글팀"))
+                .andExpect(jsonPath("$.koreanPatches[0].note").value("v1.2 기준"))
+                .andExpect(jsonPath("$.koreanPatches[1].author").doesNotExist());
+        mvc.perform(get("/api/games/plain-2")).andExpect(jsonPath("$.koreanPatches", hasSize(0)));
+        // 한국어 필터는 한글패치가 있는 게임도 포함한다
+        mvc.perform(get("/api/games").param("korean", "true"))
+                .andExpect(jsonPath("$.content[*].slug", contains("patched-1")))
+                .andExpect(jsonPath("$.content[0].koreanPatch").value(true));
+        mvc.perform(admin(get("/api/admin/games/{id}", id))).andExpect(jsonPath("$.koreanPatches", hasSize(2)));
+
+        // https가 아니면 400이고 기존 목록은 그대로
+        for (String url : List.of("http://example.com/p", "javascript:alert(1)", "/relative", "https:///nohost", "")) {
+            mvc.perform(admin(put("/api/admin/games/{id}/korean-patches", id))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"patches\":[{\"url\":\"" + url + "\"}]}"))
+                    .andExpect(status().isBadRequest());
+        }
+        mvc.perform(get("/api/games/patched-1")).andExpect(jsonPath("$.koreanPatches", hasSize(2)));
+
+        // 빈 목록이면 모두 지워진다
+        mvc.perform(admin(put("/api/admin/games/{id}/korean-patches", id))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"patches\":[]}"))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/games").param("korean", "true")).andExpect(jsonPath("$.content", hasSize(0)));
     }
 
     @Test

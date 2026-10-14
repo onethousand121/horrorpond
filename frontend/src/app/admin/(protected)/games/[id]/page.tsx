@@ -18,7 +18,7 @@ import {
 import { ActionButton } from "../../components/ActionButton";
 import { ArticleForm } from "../../components/ArticleForm";
 import { CurationForm } from "../../components/CurationForm";
-import { AchievementForm, PlayVideoForm, ReferenceVideoForm } from "../../components/GuideForms";
+import { AchievementForm, EndingForm, KoreanPatchForm, PlayVideoForm, ReferenceVideoForm } from "../../components/GuideForms";
 import { AdultBadge, ArticleStatusBadge, GameStatusBadge, VisibilityBadge } from "../../components/StatusBadge";
 
 function parseId(id: string): number | null {
@@ -184,6 +184,43 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
         </div>
         {/* 삭제·저장 후 서버 값으로 다시 그리도록 글이 바뀌면 새로 마운트한다 */}
         <ArticleForm key={article ? `${article.status}-${article.kind}-${article.title}` : "new"} gameId={game.id} article={article} />
+        {/* 엔딩은 글과 따로 저장한다 (폼 안에 폼을 둘 수 없어 글 폼 바로 아래에 둔다) */}
+        <details className="rounded border border-border p-3">
+          <summary className="cursor-pointer text-sm font-medium">
+            엔딩 정보 (플레이해 보고 체크)
+            <span className="ml-2 text-xs font-normal text-muted">
+              {game.endingType === "MULTIPLE"
+                ? `멀티 엔딩 · ${game.endings?.length ?? 0}개`
+                : game.endingType === "SINGLE"
+                  ? "단일 엔딩"
+                  : "표시 안 함"}
+            </span>
+          </summary>
+          <div className="mt-3 space-y-2">
+            <p className="text-sm text-muted">
+              사이트의 추천·후기 글 아래(글이 없으면 업적 공략 아래)에 보입니다. 멀티 엔딩 목록은 스포일러로 접혀 있어요.
+            </p>
+            <EndingForm
+              key={JSON.stringify([game.endingType ?? null, game.endings ?? []])}
+              gameId={game.id}
+              endingType={game.endingType ?? null}
+              endings={game.endings ?? []}
+            />
+          </div>
+        </details>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-semibold">유저 한글패치</h2>
+        <p className="text-sm text-muted">
+          공식 한국어가 없는 게임에 비공식 한글패치 배포처를 링크합니다. 사이트(한국어 화면)의 지원 언어 아래와 카드에
+          &quot;한글패치&quot;로 보이고, 한국어 지원 필터에도 들어갑니다. 제작자가 직접 올린 곳만 넣어 주세요.
+        </p>
+        <KoreanPatchForm
+          key={JSON.stringify(game.koreanPatches ?? [])}
+          gameId={game.id}
+          patches={game.koreanPatches ?? []}
+        />
       </section>
 
       <section className="space-y-3">

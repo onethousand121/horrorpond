@@ -141,6 +141,11 @@ public class Game extends BaseTimeEntity {
     @Column(nullable = false)
     private boolean trendingAuto;
 
+    /** 엔딩 구분 (큐레이터 지정). null이면 표시 안 함 */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private EndingType endingType;
+
     @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC")
     private List<GameMedia> media = new ArrayList<>();
@@ -416,6 +421,11 @@ public class Game extends BaseTimeEntity {
     public void changeTrendingOverride(TrendingOverride override, boolean auto) {
         this.trendingOverride = override;
         this.trendingAuto = auto && override == TrendingOverride.PINNED;
+    }
+
+    /** 엔딩 구분을 바꾼다. null이면 표시 안 함 (엔딩 목록은 멀티 엔딩일 때만 둔다: curation GameGuideService) */
+    public void changeEndingType(EndingType endingType) {
+        this.endingType = endingType;
     }
 
     public void hide() {
