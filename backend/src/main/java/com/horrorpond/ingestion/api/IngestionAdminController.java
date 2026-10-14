@@ -1,5 +1,6 @@
 package com.horrorpond.ingestion.api;
 
+import com.horrorpond.ingestion.application.IngestionAlertNotifier;
 import com.horrorpond.ingestion.application.IngestionTriggerService;
 import com.horrorpond.ingestion.application.ItchIngestionService;
 import com.horrorpond.ingestion.application.SeedService;
@@ -45,6 +46,7 @@ public class IngestionAdminController {
     private final SeedService seedService;
     private final ItchIngestionService itchIngestionService;
     private final IngestionJobRepository jobRepository;
+    private final IngestionAlertNotifier alertNotifier;
 
     @PostMapping("/run")
     @ResponseStatus(HttpStatus.ACCEPTED)
@@ -74,6 +76,15 @@ public class IngestionAdminController {
     @ResponseStatus(HttpStatus.CREATED)
     public ItchGameResponse addItchGame(@Valid @RequestBody ItchGameRequest request) {
         return new ItchGameResponse(itchIngestionService.addManual(request.url()));
+    }
+
+    /** 수집 실패 알림 메일 설정을 확인하는 테스트 메일 */
+    @PostMapping("/alert-test")
+    public AlertTestResponse sendTestAlert() {
+        return new AlertTestResponse(alertNotifier.sendTest());
+    }
+
+    public record AlertTestResponse(boolean sent) {
     }
 
     public record ItchGameRequest(@NotBlank @Size(max = 500) String url) {

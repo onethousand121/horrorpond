@@ -25,6 +25,12 @@ test("맞는 키로 로그인 → 게임 목록 → 로그아웃", async ({ page
   await expect(page.getByRole("link", { name: "어두운 집" })).toBeVisible();
   await expect(page.getByRole("link", { name: "등대지기" })).toHaveCount(0);
 
+  // 알림 메일 테스트: 접힌 칸을 펼쳐 보내면 결과가 보인다
+  const alert = page.locator("details").filter({ hasText: "알림 메일 테스트" });
+  await alert.locator("summary").click();
+  await alert.getByRole("button", { name: "테스트 메일 보내기" }).click();
+  await expect(alert.getByRole("status")).toContainText("테스트 메일을 보냈어요");
+
   await page.getByRole("link", { name: "고정 노출" }).click();
   await expect(page).toHaveURL("/admin?tab=published");
   await expect(page.getByRole("link", { name: "등대지기" })).toBeVisible();

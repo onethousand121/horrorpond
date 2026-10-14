@@ -28,6 +28,16 @@ class IngestionAlertNotifierTest {
     private final IngestionAlertNotifier notifier = new IngestionAlertNotifier(jobRepository, mailer);
 
     @Test
+    void testMailReportsWhetherItWasSent() {
+        when(mailer.send(any(), any())).thenReturn(true);
+        assertThat(notifier.sendTest()).isTrue();
+        verify(mailer).send(org.mockito.ArgumentMatchers.eq("[lurkpond] 알림 메일 테스트"), any());
+
+        when(mailer.send(any(), any())).thenReturn(false);
+        assertThat(notifier.sendTest()).isFalse();
+    }
+
+    @Test
     void sendsNothingWhenEveryStepSucceeded() {
         when(jobRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(
                 job(1L, JobType.DISCOVERY, null), job(2L, JobType.ITCH, null)));

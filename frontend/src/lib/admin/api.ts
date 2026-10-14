@@ -181,6 +181,11 @@ export function addSteamSeed(appid: number): Promise<{ appid: number }> {
 /**
  * itch.io 게임을 주소로 바로 받는다 (인기 기준 없음). 400: itch.io 게임 주소가 아님, 404: 없는 게임.
  */
+/** 수집 실패 알림 메일 테스트. sent=false면 서버에 키·받는 주소가 없거나 Resend가 거절한 것 */
+export function sendTestAlert(): Promise<{ sent: boolean }> {
+  return adminFetch(`/api/admin/ingestion/alert-test`, { method: "POST" });
+}
+
 export function addItchGame(url: string): Promise<{ gameId: number }> {
   return adminFetch(`/api/admin/ingestion/itch`, { method: "POST", body: { url } });
 }

@@ -7,6 +7,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   addItchGame,
+  sendTestAlert,
   addSteamSeed,
   AdminApiError,
   changeTrendingOverride,
@@ -305,4 +306,17 @@ export async function deleteArticleAction(_prev: ActionResult | null, formData: 
   await requireAdminKey();
   const id = gameId(formData);
   return run(() => deleteArticle(id), "글을 삭제했습니다.");
+}
+
+export async function testAlertAction(): Promise<ActionResult> {
+  await requireAdminKey();
+  try {
+    const { sent } = await sendTestAlert();
+    return sent
+      ? { ok: true, message: "테스트 메일을 보냈어요. 받은편지함(또는 스팸함)을 확인하세요." }
+      : { ok: false, message: "보내지 못했어요. 서버 .env의 RESEND_API_KEY·ALERT_EMAIL_TO를 확인하세요 (서버 로그에 이유가 남아요)." };
+  } catch (e) {
+    if (e instanceof AdminApiError) return { ok: false, message: e.message };
+    throw e;
+  }
 }
