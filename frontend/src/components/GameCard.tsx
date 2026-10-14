@@ -51,7 +51,6 @@ export function GameCard({ game, locale, eager = false }: { game: GameSummary; l
             reviewed={game.reviewed}
             hasPlayVideo={game.hasPlayVideo}
             hasAchievementGuide={game.hasAchievementGuide}
-            multiEnding={game.multiEnding}
           />
         </div>
       </div>
