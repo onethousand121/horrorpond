@@ -172,3 +172,13 @@ test("유저 한글패치: 한국어 화면에만 nofollow 외부 링크와 안�
   await expect(page.locator('a[href="https://patch.example.com/night-ward"]')).toHaveCount(0);
   await expect(infoRow(page, "Korean patch")).toHaveCount(0);
 });
+
+test("추천 글 게임: 게임 소개가 주인장 글보다 먼저 나온다", async ({ page }) => {
+  await page.goto("/games/lighthouse-keeper");
+  const about = page.getByRole("region", { name: "게임 소개" });
+  const articleTitle = page.locator("#article-title");
+  await expect(about).toBeVisible();
+  const aboutBox = await about.boundingBox();
+  const titleBox = await articleTitle.boundingBox();
+  expect(aboutBox!.y).toBeLessThan(titleBox!.y);
+});
