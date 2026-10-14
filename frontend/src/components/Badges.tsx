@@ -142,19 +142,9 @@ function TrophyIcon() {
   );
 }
 
-/** 갈림길 모양 (멀티 엔딩) */
-function BranchIcon() {
-  return (
-    <svg viewBox="0 0 16 16" aria-hidden className="size-[13px] shrink-0">
-      <path d="M8 15V9M8 9L3 3M8 9l5-6" stroke="#c9a7ff" strokeWidth="1.8" strokeLinecap="round" fill="none" />
-      <circle cx="3" cy="3" r="1.8" fill="#c9a7ff" />
-      <circle cx="13" cy="3" r="1.8" fill="#c9a7ff" />
-    </svg>
-  );
-}
-
 /**
- * 주인장이 붙인 콘텐츠 표시 (카드 이미지 오른쪽 위). 모두 같은 칩 모양이고 순서는 협찬 → 추천/후기 → 영상 → 업적 → 멀티 엔딩.
+ * 주인장이 붙인 콘텐츠 표시 (카드 이미지 오른쪽 위). 모두 같은 칩 모양이고 순서는 협찬 → 추천/후기 → 영상 → 업적.
+ * 멀티 엔딩은 그 자체가 스포일러라 카드에 표시하지 않는다.
  * 협찬은 눈에 잘 띄어야 하므로(추천·보증 심사지침) 아이콘 없이 노란 테두리와 글자로 맨 앞에 둔다.
  */
 export function ContentBadges({
@@ -164,7 +154,6 @@ export function ContentBadges({
   reviewed = false,
   hasPlayVideo,
   hasAchievementGuide,
-  multiEnding = false,
 }: {
   locale: Locale;
   sponsored: boolean;
@@ -172,9 +161,8 @@ export function ContentBadges({
   reviewed?: boolean;
   hasPlayVideo: boolean;
   hasAchievementGuide: boolean;
-  multiEnding?: boolean;
 }) {
-  if (!sponsored && !picked && !reviewed && !hasPlayVideo && !hasAchievementGuide && !multiEnding) return null;
+  if (!sponsored && !picked && !reviewed && !hasPlayVideo && !hasAchievementGuide) return null;
   const t = getDictionary(locale);
   return (
     <>
@@ -209,12 +197,6 @@ export function ContentBadges({
         <span className={CHIP} title={t.card.hasAchievementGuide} aria-label={t.card.hasAchievementGuide}>
           <TrophyIcon />
           {t.card.achievementShort}
-        </span>
-      )}
-      {multiEnding && (
-        <span className={CHIP}>
-          <BranchIcon />
-          {t.badge.multiEnding}
         </span>
       )}
     </>

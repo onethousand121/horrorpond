@@ -90,8 +90,6 @@ export interface GameSummary {
   reviewed?: boolean;
   /** 무료 게임. 백엔드 배포 전 응답에는 없다 */
   free?: boolean;
-  /** 멀티 엔딩 게임. 백엔드 배포 전 응답에는 없다 */
-  multiEnding?: boolean;
   /** 유저 한글패치가 있다. 백엔드 배포 전 응답에는 없다 */
   koreanPatch?: boolean;
 }

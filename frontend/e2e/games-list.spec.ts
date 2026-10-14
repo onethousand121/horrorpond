@@ -61,16 +61,15 @@ test("검색어는 q로 넘어가고 결과를 보여준다", async ({ page, req
   await expect(page.getByRole("search").getByRole("searchbox")).toHaveValue("keeper");
 });
 
-test("카드 뱃지: 한글패치(한국어 화면만, 공식 한국어 게임엔 없음), 멀티 엔딩", async ({ page }) => {
+test("카드 뱃지: 한글패치(한국어 화면만, 공식 한국어 게임엔 없음), 멀티 엔딩은 스포일러라 없음", async ({ page }) => {
   await page.goto("/games");
   await expect(card(page, "Night Ward").getByText("한글패치", { exact: true })).toBeVisible();
   await expect(card(page, "Night Ward").getByText("한국어", { exact: true })).toHaveCount(0);
   await expect(card(page, "어두운 집").getByText("한글패치", { exact: true })).toHaveCount(0);
-  await expect(card(page, "등대지기").getByText("멀티 엔딩", { exact: true })).toBeVisible();
-  await expect(card(page, "어두운 집").getByText("멀티 엔딩", { exact: true })).toHaveCount(0);
+  await expect(card(page, "등대지기").getByText("멀티 엔딩", { exact: true })).toHaveCount(0);
 
   await page.goto("/en/games");
   await expect(card(page, "Night Ward")).toBeVisible();
   await expect(card(page, "Night Ward").getByText("Korean patch", { exact: true })).toHaveCount(0);
-  await expect(card(page, "Lighthouse Keeper").getByText("Multiple endings", { exact: true })).toBeVisible();
+  await expect(card(page, "Lighthouse Keeper").getByText("Multiple endings", { exact: true })).toHaveCount(0);
 });

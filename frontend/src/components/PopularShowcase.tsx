@@ -70,7 +70,6 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
               reviewed={game.reviewed}
               hasPlayVideo={game.hasPlayVideo}
               hasAchievementGuide={game.hasAchievementGuide}
-              multiEnding={game.multiEnding}
             />
           </div>
         </div>
