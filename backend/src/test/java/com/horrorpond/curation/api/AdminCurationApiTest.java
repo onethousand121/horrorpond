@@ -150,6 +150,9 @@ class AdminCurationApiTest {
                 .andExpect(jsonPath("$.content[*].sameTitleCount", contains(1, 1)));
         mvc.perform(admin(get("/api/admin/games").param("q", "unique")))
                 .andExpect(jsonPath("$.content[0].sameTitleCount").value(0));
+        // 영어 제목이나 주소(slug)로도 찾는다
+        mvc.perform(admin(get("/api/admin/games").param("q", "doom 3 9050")))
+                .andExpect(jsonPath("$.content[*].slug", contains("doom-3-9050")));
     }
 
     @Test

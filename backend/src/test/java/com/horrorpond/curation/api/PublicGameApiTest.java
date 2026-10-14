@@ -346,6 +346,11 @@ class PublicGameApiTest {
                 .andExpect(jsonPath("$.content", hasSize(0)));
         mvc.perform(get("/api/games").param("q", "x".repeat(101)))
                 .andExpect(status().isBadRequest());
+        // 주소(slug) 모양으로도 찾는다: 공백은 - 로 본다
+        mvc.perform(get("/api/games").param("q", "outlast trials"))
+                .andExpect(jsonPath("$.content[*].slug", contains("outlast-trials")));
+        mvc.perform(get("/api/games").param("q", "outlast-trials"))
+                .andExpect(jsonPath("$.content[*].slug", contains("outlast-trials")));
     }
 
     @Test
