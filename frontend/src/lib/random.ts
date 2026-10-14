@@ -11,10 +11,16 @@ export function pickRandom<T>(items: readonly T[], n: number): T[] {
 }
 
 /**
- * 앞 목록(우선)에서 먼저 무작위로 고르고, 모자라면 뒤 목록에서 채운다. key가 같은 항목은 한 번만.
+ * 단계별로 채운다: 앞 단계부터 무작위로 고르고, 모자라면 다음 단계에서. 단계 순서는 유지하고 key가 같은 항목은 한 번만.
  */
-export function pickRandomPreferring<T>(preferred: readonly T[], rest: readonly T[], n: number, key: (item: T) => string): T[] {
-  const chosen = pickRandom(preferred, n);
-  const seen = new Set(chosen.map(key));
-  return [...chosen, ...pickRandom(rest.filter((item) => !seen.has(key(item))), n - chosen.length)];
+export function pickRandomTiered<T>(tiers: readonly (readonly T[])[], n: number, key: (item: T) => string): T[] {
+  const chosen: T[] = [];
+  const seen = new Set<string>();
+  for (const tier of tiers) {
+    if (chosen.length >= n) break;
+    const picked = pickRandom(tier.filter((item) => !seen.has(key(item))), n - chosen.length);
+    picked.forEach((item) => seen.add(key(item)));
+    chosen.push(...picked);
+  }
+  return chosen;
 }

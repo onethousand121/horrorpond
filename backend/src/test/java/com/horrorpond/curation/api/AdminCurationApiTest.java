@@ -194,7 +194,7 @@ class AdminCurationApiTest {
                 .andExpect(jsonPath("$.kind").value("REVIEW"));
         mvc.perform(admin(post("/api/admin/games/{id}/publish", id))).andExpect(status().isOk());
 
-        // 후기도 글은 그대로 보이지만, 추천 뱃지·추천 목록·주인장 추천에는 나오지 않는다
+        // 후기도 글은 그대로 보이지만, 추천 뱃지·추천 목록에는 나오지 않는다 (주인장 추천 줄에는 추천 다음으로 나온다)
         mvc.perform(get("/api/games/played-4"))
                 .andExpect(jsonPath("$.article.kind").value("REVIEW"))
                 .andExpect(jsonPath("$.article.oneLiner").value("o"));
@@ -203,7 +203,8 @@ class AdminCurationApiTest {
                 .andExpect(jsonPath("$.content[0].reviewed").value(true))
                 .andExpect(jsonPath("$.content[0].oneLiner").value("o"));
         mvc.perform(get("/api/games").param("picked", "true")).andExpect(jsonPath("$.content", hasSize(0)));
-        mvc.perform(get("/api/games").param("keeper", "true")).andExpect(jsonPath("$.content", hasSize(0)));
+        mvc.perform(get("/api/games").param("keeper", "true"))
+                .andExpect(jsonPath("$.content[*].slug", contains("played-4")));
 
         // 추천으로 바꾸려면 장점 포인트가 있어야 한다 (공개된 글)
         mvc.perform(admin(put("/api/admin/games/{id}/article", id))

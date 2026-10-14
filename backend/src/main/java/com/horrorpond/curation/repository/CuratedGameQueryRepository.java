@@ -145,8 +145,8 @@ public class CuratedGameQueryRepository {
             where.and(article.kind.eq(ArticleKind.PICK));
         }
         if (query.keeper()) {
-            // 주인장 추천: 추천 글(후기는 제외)이 있거나 주인장 플레이 영상이 있는 게임
-            where.and(article.kind.eq(ArticleKind.PICK)
+            // 주인장 추천: 주인장 글(추천·후기)이 있거나 주인장 플레이 영상이 있는 게임
+            where.and(article.kind.isNotNull()
                     .or(keeperVideoExists()));
         }
         if (query.release() != null) {
@@ -227,6 +227,21 @@ public class CuratedGameQueryRepository {
         if (query.release() == ReleaseWindow.UPCOMING) {
             return new OrderSpecifier<?>[]{game.releaseDate.asc().nullsLast(), game.id.desc()};
         }
+        OrderSpecifier<?>[] bySort = sortOrder(query);
+        if (!query.keeper()) {
+            return bySort;
+        }
+        // 주인장 추천 목록은 추천 글 → 플레이 후기 → 영상만 있는 게임 순, 그 안에서 고른 정렬
+        OrderSpecifier<?>[] withPriority = new OrderSpecifier<?>[bySort.length + 1];
+        withPriority[0] = new CaseBuilder()
+                .when(article.kind.eq(ArticleKind.PICK)).then(0)
+                .when(article.kind.eq(ArticleKind.REVIEW)).then(1)
+                .otherwise(2).asc();
+        System.arraycopy(bySort, 0, withPriority, 1, bySort.length);
+        return withPriority;
+    }
+
+    private static OrderSpecifier<?>[] sortOrder(PublicGameQuery query) {
         return switch (query.sort()) {
             case LATEST -> query.picked()
                     ? new OrderSpecifier<?>[]{game.publishedAt.desc().nullsLast(), game.id.desc()}
@@ -266,7 +281,7 @@ public class CuratedGameQueryRepository {
      * @param today      RECENT 계산 기준일
      * @param picked     true면 재일 추천(공개된 추천 글이 있는 게임, 후기 제외)만
      * @param korean     true면 한국어를 지원하거나 유저 한글패치가 있는 게임만
-     * @param keeper     true면 주인장 추천(추천 글 또는 주인장 플레이 영상이 있는 게임)만
+     * @param keeper     true면 주인장 추천(추천·후기 글 또는 주인장 플레이 영상이 있는 게임)만, 추천 → 후기 → 영상 순
      * @param free       true면 무료 게임만
      */
     public record PublicGameQuery(Predicate visibility, String search, GenreFilter genre, Boolean coop, ReleaseWindow release,
