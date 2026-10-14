@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 public class CuratedGameQueryRepository {
 
     private static final QGame game = QGame.game;
-    private static final char LIKE_ESCAPE = '!';
+    static final char LIKE_ESCAPE = '!';
     private static final QCurationArticle article = QCurationArticle.curationArticle;
     private static final QPlayVideo playVideo = QPlayVideo.playVideo;
     private static final QAchievementGuide achievementGuide = QAchievementGuide.achievementGuide;
@@ -123,10 +123,11 @@ public class CuratedGameQueryRepository {
     private static BooleanBuilder where(PublicGameQuery query) {
         BooleanBuilder where = new BooleanBuilder(query.visibility());
         if (query.search() != null) {
-            // 언어와 상관없이 한국어·영어 제목 둘 다에서 찾는다
+            // 언어와 상관없이 한국어·영어 제목, 주소(slug, 공백은 -)에서 찾는다
             String pattern = "%" + escapeLike(query.search()) + "%";
             where.and(game.title.likeIgnoreCase(pattern, LIKE_ESCAPE)
-                    .or(game.titleEn.likeIgnoreCase(pattern, LIKE_ESCAPE)));
+                    .or(game.titleEn.likeIgnoreCase(pattern, LIKE_ESCAPE))
+                    .or(game.slug.likeIgnoreCase(slugPattern(query.search()), LIKE_ESCAPE)));
         }
         if (query.coop() != null) {
             where.and(game.coop.eq(query.coop()));
@@ -193,6 +194,11 @@ public class CuratedGameQueryRepository {
     }
 
     /** 검색어의 %, _ 를 글자 그대로 찾도록 이스케이프한다. */
+    /** "red or blue" → "%red-or-blue%" (주소는 영어 이름을 - 로 이은 모양이다) */
+    static String slugPattern(String search) {
+        return "%" + escapeLike(search.strip().replaceAll("\\s+", "-")) + "%";
+    }
+
     static String escapeLike(String value) {
         return value.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
