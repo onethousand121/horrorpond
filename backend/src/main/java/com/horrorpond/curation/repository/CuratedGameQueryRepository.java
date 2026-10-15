@@ -250,6 +250,7 @@ public class CuratedGameQueryRepository {
             case POPULAR -> new OrderSpecifier<?>[]{game.reviewCount.desc().nullsLast(), game.id.desc()};
             case TRENDING -> new OrderSpecifier<?>[]{
                     new CaseBuilder().when(game.trendingOverride.eq(TrendingOverride.PINNED)).then(0).otherwise(1).asc(),
+                    game.trendingPinOrder.asc().nullsLast(),
                     recentReviewGrowth(query.today()).desc().nullsLast(), game.id.desc()};
         };
     }

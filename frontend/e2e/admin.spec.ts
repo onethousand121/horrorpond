@@ -49,6 +49,15 @@ test("맞는 키로 로그인 → 게임 목록 → 로그아웃", async ({ page
   await expect(endings.getByPlaceholder("엔딩 이름")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "한글패치 저장" })).toBeVisible();
 
+  // 지금 뜨는 고정 순서: 위아래로 옮기고 저장
+  await page.goto("/admin/trending");
+  const order = page.locator("ol").filter({ hasText: "등대지기" });
+  await expect(order.locator("li").first()).toContainText("어두운 집");
+  await page.getByRole("button", { name: "등대지기 위로" }).click();
+  await expect(order.locator("li").first()).toContainText("등대지기");
+  await page.getByRole("button", { name: "순서 저장" }).click();
+  await expect(page.getByRole("status")).toContainText("순서를 저장했어요");
+
   await page.getByRole("button", { name: "로그아웃" }).click();
   await expect(page).toHaveURL("/admin/login");
   await page.goto("/admin");

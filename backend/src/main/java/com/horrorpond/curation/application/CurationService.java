@@ -21,10 +21,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -145,15 +148,39 @@ public class CurationService {
         return getDetail(game.getId());
     }
 
-    /** "지금 뜨는"에 고정된 게임 (자동 고정 여부 포함) */
+    /** "지금 뜨는"에 고정된 게임 (자동 고정 여부 포함). 사이트와 같은 순서: 정한 순서 → 순서 없는 게임 */
     @Transactional(readOnly = true)
     public List<TrendingPin> trendingPins() {
         return gameRepository.findByTrendingOverrideOrderByIdAsc(TrendingOverride.PINNED).stream()
-                .map(game -> new TrendingPin(game.getId(), game.getTitle(), game.isTrendingAuto()))
+                .sorted(Comparator.comparing(Game::getTrendingPinOrder, Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(game -> new TrendingPin(game.getId(), game.getTitle(), game.isTrendingAuto(),
+                        game.getTrendingPinOrder()))
                 .toList();
     }
 
-    public record TrendingPin(Long id, String title, boolean auto) {
+    /**
+     * 고정 게임의 순서를 목록 순서대로 정한다. 목록에 없는 고정 게임은 순서를 지운다 (정한 게임들 뒤에 나온다).
+     */
+    public List<TrendingPin> reorderTrendingPins(List<Long> gameIds) {
+        Map<Long, Game> pinned = gameRepository.findByTrendingOverrideOrderByIdAsc(TrendingOverride.PINNED).stream()
+                .collect(Collectors.toMap(Game::getId, Function.identity()));
+        if (new HashSet<>(gameIds).size() != gameIds.size()) {
+            throw new DomainValidationException("gameIds must not repeat");
+        }
+        for (Long id : gameIds) {
+            if (!pinned.containsKey(id)) {
+                throw new DomainValidationException("not a pinned game: " + id);
+            }
+        }
+        pinned.values().forEach(game -> game.changeTrendingPinOrder(null));
+        for (int i = 0; i < gameIds.size(); i++) {
+            pinned.get(gameIds.get(i)).changeTrendingPinOrder(i);
+        }
+        return trendingPins();
+    }
+
+    /** @param order 고정 게임끼리의 순서 (작을수록 앞). 정하지 않았으면 null */
+    public record TrendingPin(Long id, String title, boolean auto, Integer order) {
     }
 
     public AdminGameResponse hide(Long gameId) {

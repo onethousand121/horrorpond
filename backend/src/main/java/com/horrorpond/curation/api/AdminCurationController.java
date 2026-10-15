@@ -167,6 +167,15 @@ public class AdminCurationController {
     public record TrendingOverrideRequest(TrendingOverride override, Boolean auto) {
     }
 
+    /** 고정 게임의 순서를 목록 순서대로 정한다 (사이트 "지금 뜨는" 맨 앞 순서) */
+    @PutMapping("/trending-pins/order")
+    public List<CurationService.TrendingPin> reorderTrendingPins(@RequestBody @Valid TrendingPinOrderRequest request) {
+        return curationService.reorderTrendingPins(request.gameIds());
+    }
+
+    public record TrendingPinOrderRequest(@NotNull @Size(max = 100) List<@NotNull Long> gameIds) {
+    }
+
     /** "지금 뜨는"에 고정된 게임. auto=true는 매주 조사 반영이 고정한 것 */
     @GetMapping("/trending-pins")
     public List<CurationService.TrendingPin> trendingPins() {

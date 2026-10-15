@@ -349,7 +349,13 @@ async function handleAdmin(req, res, path, query) {
     const list = games.filter((g) => (!status || g.status === status) && (!q || g.title.toLowerCase().includes(q)));
     return send(res, 200, page(list.map(toAdminGame), query, 30));
   }
-  if (req.method === "GET" && path === "/api/admin/games/trending-pins") return send(res, 200, []);
+  if (req.method === "GET" && path === "/api/admin/games/trending-pins") {
+    return send(res, 200, [
+      { id: 1, title: "어두운 집", auto: false, order: 0 },
+      { id: 6, title: "등대지기", auto: true, order: null },
+    ]);
+  }
+  if (req.method === "PUT" && path === "/api/admin/games/trending-pins/order") return send(res, 200, []);
   if (req.method === "GET" && path === "/api/admin/games/lookup") {
     const appid = query.get("steamAppId");
     const itchUrl = query.get("itchUrl");

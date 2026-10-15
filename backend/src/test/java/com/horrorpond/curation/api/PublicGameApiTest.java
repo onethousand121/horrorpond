@@ -284,6 +284,23 @@ class PublicGameApiTest {
     }
 
     @Test
+    void pinnedTrendingGamesFollowTheCuratorOrder() throws Exception {
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+        create(spec("pin-a").releaseDate(today.minusDays(60)).reviewCount(10)
+                .trendingOverride(TrendingOverride.PINNED).pinOrder(1));
+        create(spec("pin-b").releaseDate(today.minusDays(60)).reviewCount(10)
+                .trendingOverride(TrendingOverride.PINNED).pinOrder(0));
+        create(spec("pin-unordered").releaseDate(today.minusDays(60)).reviewCount(10)
+                .trendingOverride(TrendingOverride.PINNED));
+        create(spec("rising").releaseDate(today.minusDays(60)).reviewCount(1500).tags("Horror"));
+        metric("rising", today.minusDays(10), 1000);
+
+        // 순서를 정한 고정 게임 → 순서 없는 고정 게임 → 리뷰 증가량 순
+        mvc.perform(get("/api/games").param("sort", "TRENDING"))
+                .andExpect(jsonPath("$.content[*].slug", contains("pin-b", "pin-a", "pin-unordered", "rising")));
+    }
+
+    @Test
     void freeFilterAndPrices() throws Exception {
         create(spec("free-game").price(new StorePrice(true, null, null)));
         create(spec("paid-game").price(new StorePrice(false, 2050000, "KRW")));
@@ -583,6 +600,7 @@ class PublicGameApiTest {
                     .map(slug -> genreRepository.findBySlug(slug).orElseThrow())
                     .toList()));
             game.changeTrendingOverride(spec.trendingOverride);
+            game.changeTrendingPinOrder(spec.pinOrder);
             game.applyPrice(spec.price);
             gameRepository.save(game);
 
@@ -642,6 +660,7 @@ class PublicGameApiTest {
         private List<String> audioLanguages = List.of();
         private String englishTitle;
         private TrendingOverride trendingOverride;
+        private Integer pinOrder;
         private StorePrice price = StorePrice.UNKNOWN;
         private ArticleKind articleKind = ArticleKind.PICK;
         private boolean keeperVideo;
@@ -680,6 +699,8 @@ class PublicGameApiTest {
         GameSpec englishTitle(String value) { englishTitle = value; return this; }
 
         GameSpec trendingOverride(TrendingOverride value) { trendingOverride = value; return this; }
+
+        GameSpec pinOrder(Integer value) { pinOrder = value; return this; }
 
         GameSpec price(StorePrice value) { price = value; return this; }
 

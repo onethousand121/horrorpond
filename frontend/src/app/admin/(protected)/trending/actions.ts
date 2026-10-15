@@ -13,9 +13,10 @@ import {
   getTrendingPins,
   lookupGame,
   publishGame,
+  reorderTrendingPins,
   replaceReferenceVideos,
 } from "@/lib/admin/api";
-import type { AdminGameDetail } from "@/lib/admin/types";
+import type { ActionResult, AdminGameDetail } from "@/lib/admin/types";
 import { CACHE_TAGS } from "@/lib/api";
 import { parseResearch, youtubeIdOf, type ResearchGame } from "@/lib/admin/trendingResearch";
 import { youtubeInfo } from "@/lib/admin/youtubeInfo";
@@ -182,4 +183,22 @@ async function applyReferenceVideo(detail: AdminGameDetail, game: ResearchGame):
     { url: video.url, title: video.title ?? info.title, channelName },
   ]);
   return "추가";
+}
+
+/** 고정 게임 순서 저장. ids는 쉼표로 이은 게임 id (화면 위에서부터) */
+export async function reorderTrendingPinsAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
+  const ids = String(formData.get("ids") ?? "")
+    .split(",")
+    .map(Number)
+    .filter((id) => Number.isInteger(id) && id > 0);
+  try {
+    await reorderTrendingPins(ids);
+  } catch (e) {
+    if (e instanceof AdminApiError) return { ok: false, message: e.message };
+    throw e;
+  }
+  updateTag(CACHE_TAGS.games);
+  revalidatePath("/admin", "layout");
+  return { ok: true, message: "순서를 저장했어요. 메인 \"지금 뜨는\"에 바로 반영돼요." };
 }
