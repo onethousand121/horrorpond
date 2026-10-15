@@ -118,8 +118,23 @@ export function changeTrendingOverride(id: number, override: TrendingOverride | 
 }
 
 /** "지금 뜨는"에 고정된 게임. auto는 매주 조사 반영이 고정한 것 */
-export function getTrendingPins(): Promise<{ id: number; title: string; auto: boolean }[]> {
+export interface TrendingPin {
+  id: number;
+  title: string;
+  /** 매주 조사 반영이 고정했으면 true */
+  auto: boolean;
+  /** 고정 게임끼리의 순서 (작을수록 앞). 정하지 않았으면 null. 백엔드 배포 전 응답에는 없다 */
+  order?: number | null;
+}
+
+/** 사이트 "지금 뜨는"과 같은 순서 (정한 순서 → 순서 없는 게임) */
+export function getTrendingPins(): Promise<TrendingPin[]> {
   return adminFetch(`/api/admin/games/trending-pins`);
+}
+
+/** 고정 게임 순서를 목록 순서대로 저장 */
+export function reorderTrendingPins(gameIds: number[]): Promise<TrendingPin[]> {
+  return adminFetch(`/api/admin/games/trending-pins/order`, { method: "PUT", body: { gameIds } });
 }
 
 /** 상점 정보로 게임 찾기. 없으면 null */

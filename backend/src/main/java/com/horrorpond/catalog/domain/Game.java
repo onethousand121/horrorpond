@@ -141,6 +141,9 @@ public class Game extends BaseTimeEntity {
     @Column(nullable = false)
     private boolean trendingAuto;
 
+    /** "지금 뜨는" 고정 게임끼리의 순서 (작을수록 앞). 고정이 아니거나 정하지 않았으면 null */
+    private Integer trendingPinOrder;
+
     /** 엔딩 구분 (큐레이터 지정). null이면 표시 안 함 */
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
@@ -421,6 +424,17 @@ public class Game extends BaseTimeEntity {
     public void changeTrendingOverride(TrendingOverride override, boolean auto) {
         this.trendingOverride = override;
         this.trendingAuto = auto && override == TrendingOverride.PINNED;
+        if (override != TrendingOverride.PINNED) {
+            this.trendingPinOrder = null;
+        }
+    }
+
+    /** 고정 게임끼리의 순서를 정한다 (null이면 순서 없음: 정한 게임들 뒤에 리뷰 증가량 순) */
+    public void changeTrendingPinOrder(Integer order) {
+        if (order != null && trendingOverride != TrendingOverride.PINNED) {
+            throw new DomainStateException("Only pinned games have a trending order: id=" + id);
+        }
+        this.trendingPinOrder = order;
     }
 
     /** 엔딩 구분을 바꾼다. null이면 표시 안 함 (엔딩 목록은 멀티 엔딩일 때만 둔다: curation GameGuideService) */

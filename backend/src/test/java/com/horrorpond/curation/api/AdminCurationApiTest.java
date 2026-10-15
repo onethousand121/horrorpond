@@ -244,6 +244,41 @@ class AdminCurationApiTest {
     }
 
     @Test
+    void pinnedTrendingGamesCanBeReordered() throws Exception {
+        Long a = steamCandidate(81, "A", "a-81");
+        Long b = steamCandidate(82, "B", "b-82");
+        Long c = steamCandidate(83, "C", "c-83");
+        Long free = steamCandidate(84, "Free", "free-84");
+        for (Long id : List.of(a, b, c)) {
+            mvc.perform(admin(put("/api/admin/games/{id}/trending", id))
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"override\":\"PINNED\"}"));
+        }
+
+        // 목록 순서대로 정하고, 목록에 없는 고정 게임은 뒤로
+        mvc.perform(admin(put("/api/admin/games/trending-pins/order"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"gameIds\":[" + c + "," + a + "]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].id", contains(c.intValue(), a.intValue(), b.intValue())))
+                .andExpect(jsonPath("$[*].order", contains(0, 1, null)));
+        mvc.perform(admin(get("/api/admin/games/trending-pins")))
+                .andExpect(jsonPath("$[*].id", contains(c.intValue(), a.intValue(), b.intValue())));
+
+        // 고정이 아닌 게임이나 중복은 400, 순서는 그대로
+        mvc.perform(admin(put("/api/admin/games/trending-pins/order"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"gameIds\":[" + free + "]}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(admin(put("/api/admin/games/trending-pins/order"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"gameIds\":[" + a + "," + a + "]}"))
+                .andExpect(status().isBadRequest());
+
+        // 고정을 풀면 순서도 지워진다
+        mvc.perform(admin(put("/api/admin/games/{id}/trending", c))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"override\":null}"));
+        mvc.perform(admin(get("/api/admin/games/trending-pins")))
+                .andExpect(jsonPath("$[*].id", contains(a.intValue(), b.intValue())));
+    }
+
+    @Test
     void lookupByStoreAndAutoPinsForWeeklyResearch() throws Exception {
         Long id = steamCandidate(77, "Lookup", "lookup-77");
         mvc.perform(admin(get("/api/admin/games/lookup").param("steamAppId", "77")))

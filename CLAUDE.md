@@ -25,7 +25,8 @@
   성인 게임(adult)은 자동 노출 제외, 고정 노출해도 이미지 흐림 + 19 표시, 상세는 소개·미디어 없이 Steam 링크만, noindex·사이트맵 제외 장르 = 큐레이터 지정 장르 ∪ SteamSpy 태그 매핑(genre.steam_tags)
 - "지금 뜨는"(sort=TRENDING): 최근 7일 리뷰 증가량(지금 리뷰 수 − 7~14일 전 game_metric_daily 최댓값, 출시 7일 이내는 0부터) desc.
   기록 없는 게임은 빠짐. 상위 5개 태그에 Horror 계열 필요(DB 함수 horror_in_top_tags, itch는 예외).
-  큐레이터 조정 game.trending_override: PINNED(맨 앞) / EXCLUDED(제외) — 관리 화면 "지금 뜨는" 칸
+  큐레이터 조정 game.trending_override: PINNED(맨 앞) / EXCLUDED(제외) — 관리 화면 "지금 뜨는" 칸.
+  고정 게임끼리는 game.trending_pin_order 순(관리 화면 /admin/trending "고정 순서", PUT trending-pins/order), 순서 없는 고정 게임은 그 뒤
   매주 반영: Perplexity 조사 JSON을 관리 화면 /admin/trending에 붙여넣기 → 서버 액션이 lookup(appid·itch 주소)·추가·
   고정(trending_auto=true)·참고 영상(oEmbed 확인)·지난주 자동 고정 해제(결과 5개 이상일 때, 관리자 고정은 유지)
 - 장르: 자체 택소노미(curator 관리) + SteamSpy 태그 자동 매핑. Steam genres/categories는 참고용 raw 데이터로만 보관

@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getTrendingPins } from "@/lib/admin/api";
 import { ImportForm } from "./ImportForm";
+import { PinOrderEditor } from "./PinOrderEditor";
 
 export const metadata: Metadata = { title: "지금 뜨는 조사 반영" };
 
 // itch.io 신규 게임은 페이지를 바로 받아 오느라 몇 초씩 걸린다 (Vercel 함수 시간 상한)
 export const maxDuration = 60;
 
-export default function TrendingImportPage() {
+export default async function TrendingImportPage() {
+  const pins = await getTrendingPins();
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -22,6 +25,11 @@ export default function TrendingImportPage() {
         </p>
       </div>
       <ImportForm />
+      <section className="space-y-3">
+        <h2 className="text-lg font-bold">고정 순서</h2>
+        {/* 조사 반영 후 목록이 바뀌면 다시 그리도록 key를 고정 목록으로 */}
+        <PinOrderEditor key={pins.map((pin) => pin.id).join(",")} pins={pins} />
+      </section>
     </div>
   );
 }
