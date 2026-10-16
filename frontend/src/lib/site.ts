@@ -20,4 +20,5 @@ export const CURATOR = {
   name: "류재일",
   youtubeUrl: "https://www.youtube.com/@ryujaeil",
   youtubeChannelId: "UCogL3pDWR26j0R3H0UH4sbg",
+  steamCuratorUrl: "https://store.steampowered.com/curator/46592504/",
 } as const;

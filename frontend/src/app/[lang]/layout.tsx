@@ -91,6 +91,9 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
               <a href={CURATOR.youtubeUrl} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
                 {dict.nav.youtube}
               </a>
+              <a href={CURATOR.steamCuratorUrl} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+                {dict.nav.steamCurator}
+              </a>
             </nav>
             <span>
               {SITE_NAME} · {dict.site.runBy} {dict.site.curatorName} · {dict.site.steamCredit}
