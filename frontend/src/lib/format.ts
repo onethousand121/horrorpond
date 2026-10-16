@@ -38,23 +38,42 @@ export function formatDate(value: string, locale: Locale = "ko"): string {
   return SEOUL_DATE.format(date).replaceAll("-", ".");
 }
 
-/** 출시일. releaseDate가 없으면 Steam 원문(releaseDateText, 예: "2027년 4분기")을 쓴다. */
+/** 오늘 날짜(Asia/Seoul, yyyy-MM-dd) */
+export function seoulToday(now: Date = new Date()): string {
+  return SEOUL_DATE.format(now);
+}
+
+/**
+ * 출시일. releaseDate가 없으면 Steam 원문(releaseDateText, 예: "2027년 4분기")을 쓴다.
+ * 출시일이 오늘인데 아직 출시 전이면 "오늘 출시 예정"으로 보여준다 (Steam은 날짜만 줘서 시각은 모른다).
+ */
 export function formatReleaseDate(
   game: { releaseDate: string | null; releaseDateText?: string | null; comingSoon?: boolean },
   locale: Locale = "ko",
 ): string | null {
-  if (game.releaseDate) return formatDate(game.releaseDate, locale);
+  if (game.releaseDate) {
+    if (isReleasingToday({ comingSoon: game.comingSoon ?? false, releaseDate: game.releaseDate })) {
+      return getDictionary(locale).format.releasingToday;
+    }
+    return formatDate(game.releaseDate, locale);
+  }
   if (game.releaseDateText) return game.releaseDateText;
   return game.comingSoon ? getDictionary(locale).format.comingSoon : null;
 }
 
 /**
- * 아직 출시 전인지. Steam 데이터는 주기적으로 갱신되므로, 출시 예정으로 남아 있어도 출시일이 지났으면 출시된 것으로 본다
+ * 아직 출시 전인지. Steam은 출시 날짜만 주고 실제 출시는 그날 정해진 시각에 풀리므로, 출시일이 오늘이어도
+ * 출시 예정이면 출시 전으로 본다. 출시일이 지났는데 출시 예정으로 남은 게임은 갱신이 늦은 것으로 보고 출시된 것으로 본다
  * (백엔드 ReleaseWindow와 같은 규칙).
  */
-export function isUpcoming(game: { comingSoon: boolean; releaseDate: string | null }): boolean {
+export function isUpcoming(game: { comingSoon: boolean; releaseDate: string | null }, today: string = seoulToday()): boolean {
   if (!game.comingSoon) return false;
-  return !game.releaseDate || game.releaseDate > SEOUL_DATE.format(new Date());
+  return !game.releaseDate || game.releaseDate >= today;
+}
+
+/** 출시일이 오늘인데 아직 출시 전 */
+export function isReleasingToday(game: { comingSoon: boolean; releaseDate: string | null }, today: string = seoulToday()): boolean {
+  return game.comingSoon && game.releaseDate === today;
 }
 
 export interface DeveloperGroup {

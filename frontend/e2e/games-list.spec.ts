@@ -73,3 +73,17 @@ test("카드 뱃지: 한글패치(한국어 화면만, 공식 한국어 게임�
   await expect(card(page, "Night Ward").getByText("Korean patch", { exact: true })).toHaveCount(0);
   await expect(card(page, "Lighthouse Keeper").getByText("Multiple endings", { exact: true })).toHaveCount(0);
 });
+
+test("출시일이 오늘인데 아직 안 풀린 게임은 출시 예정 목록에 있고 최근 출시엔 없다", async ({ page }) => {
+  await page.goto("/games?view=upcoming");
+  const today = card(page, "Midnight Gate");
+  await expect(today.getByText("출시 예정", { exact: true })).toBeVisible();
+  await expect(today.getByText("오늘 출시 예정", { exact: true })).toBeVisible();
+
+  await page.goto("/games?view=recent");
+  await expect(card(page, "어두운 집")).toBeVisible();
+  await expect(card(page, "Midnight Gate")).toHaveCount(0);
+
+  await page.goto("/en/games?view=upcoming");
+  await expect(card(page, "Midnight Gate").getByText("Releasing today", { exact: true })).toBeVisible();
+});

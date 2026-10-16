@@ -12,6 +12,13 @@ const genres = [
   { slug: "survival", name: "생존 공포", nameEn: "Survival", description: null },
 ];
 
+/** 오늘·내일 (Asia/Seoul, yyyy-MM-dd). 출시일이 오늘인 fixture가 실행한 날짜를 따라가게 한다 */
+const SEOUL_DATE = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" });
+const seoulDate = (offsetDays = 0) => SEOUL_DATE.format(new Date(Date.now() + offsetDays * 86_400_000));
+
+/** 백엔드 ReleaseWindow와 같은 규칙: 출시 예정 표시가 남아 있고 출시일이 없거나 오늘 이후면 출시 전 */
+const isUpcoming = (g) => g.comingSoon && (!g.releaseDate || g.releaseDate >= seoulDate());
+
 function steamGame(id, appid, fields) {
   return {
     id,
@@ -139,6 +146,18 @@ const games = [
     reviewCount: 300,
     koreanPatches: [{ url: "https://patch.example.com/night-ward", author: "병동 한글화팀", note: "v1.0 기준" }],
   }),
+  // 출시일이 오늘인데 Steam에서 아직 안 풀린 게임 (출시 예정으로 본다)
+  steamGame(8, 1008, {
+    slug: "midnight-gate",
+    title: "Midnight Gate",
+    shortDescription: "자정에 열리는 문.",
+    en: { shortDescription: "A gate that opens at midnight." },
+    comingSoon: true,
+    releaseDate: seoulDate(),
+    reviewCount: null,
+    priceAmount: 990000,
+    priceCurrency: "KRW",
+  }),
 ];
 
 function localized(game, lang) {
@@ -212,8 +231,8 @@ function toDetail(raw, lang) {
     achievements: g.achievements,
     source: g.source,
     free: g.free,
-    priceAmount: g.comingSoon ? null : g.priceAmount,
-    priceCurrency: g.comingSoon ? null : g.priceCurrency,
+    priceAmount: g.priceAmount,
+    priceCurrency: g.priceCurrency,
     endingType: g.endingType,
     endings: g.endingType === "MULTIPLE" ? g.endings : [],
     koreanPatches: g.koreanPatches,
@@ -291,9 +310,11 @@ function filterGames(query) {
     // 주인장 추천: 글(추천·후기) 또는 주인장 영상이 있는 게임
     if (bool(query, "keeper") && !g.article && g.playVideos.length === 0) return false;
     if (query.get("genre") && !g.genreSlugs.includes(query.get("genre"))) return false;
-    if (release === "UPCOMING" && !g.comingSoon) return false;
-    if ((release === "RECENT" || release === "TODAY") && g.comingSoon) return false;
-    if (release === "TOMORROW") return false;
+    if (release === "UPCOMING" && !isUpcoming(g)) return false;
+    if (release === "RECENT" && (isUpcoming(g) || !g.releaseDate)) return false;
+    // 오늘·내일 출시 숫자는 출시일 기준 (아직 안 풀린 게임도 센다)
+    if (release === "TODAY" && g.releaseDate !== seoulDate()) return false;
+    if (release === "TOMORROW" && g.releaseDate !== seoulDate(1)) return false;
     if (q && ![g.title, g.en?.title ?? ""].some((t) => t.toLowerCase().includes(q))) return false;
     return true;
   });

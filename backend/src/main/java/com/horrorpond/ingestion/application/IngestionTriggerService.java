@@ -47,6 +47,9 @@ public class IngestionTriggerService implements DisposableBean {
         if (steps == null || steps.isEmpty()) {
             throw new DomainValidationException("steps must not be empty");
         }
+        if (!IngestionPipeline.ALL_STEPS.containsAll(steps)) {
+            throw new DomainValidationException("steps must be pipeline steps: " + IngestionPipeline.ALL_STEPS);
+        }
         LockConfiguration config = new LockConfiguration(
                 clock.instant(), IngestionPipeline.LOCK_NAME, lockAtMostFor, Duration.ZERO);
         SimpleLock lock = lockProvider.lock(config)

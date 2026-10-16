@@ -51,6 +51,8 @@ public class IngestionPipeline {
                     case ITCH -> itchIngestionService.run(trigger);
                     case METRICS -> reviewMetricsService.run(trigger);
                     case TRANSLATE -> translationService.run(trigger);
+                    // 매시간 따로 돈다 (ReleaseCheckScheduler). ALL_STEPS에 없어 여기 오지 않는다
+                    case RELEASE_CHECK -> null;
                 };
                 if (jobId != null) {
                     jobIds.add(jobId);

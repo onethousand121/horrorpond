@@ -22,7 +22,8 @@ public record IngestionProperties(
         @DefaultValue Enrichment enrichment,
         @DefaultValue Metrics metrics,
         @DefaultValue Itch itch,
-        @DefaultValue Scheduler scheduler
+        @DefaultValue Scheduler scheduler,
+        @DefaultValue ReleaseCheck releaseCheck
 ) {
 
     static final double MAX_RUN_TO_LOCK_RATIO = 0.8;
@@ -37,6 +38,16 @@ public record IngestionProperties(
     public boolean isEnrichmentRunWithinLock() {
         return estimatedEnrichmentDuration().plus(estimatedMetricsDuration()).plus(estimatedItchDuration())
                 .compareTo(runTimeBudget()) <= 0;
+    }
+
+    /**
+     * 매시간 출시 확인도 자기 락 유지 시간 안에 끝나야 한다. 게임마다 appdetails(한국어, 영어)와 429 대기 1번을 넣는다.
+     */
+    @AssertTrue(message = "release-check.max-per-run x 2 x request-interval + rate-limit-wait"
+            + " must not exceed 80% of release-check.lock-at-most-for")
+    public boolean isReleaseCheckWithinLock() {
+        return requestInterval.multipliedBy(2L * releaseCheck.maxPerRun()).plus(rateLimitWait)
+                .compareTo(releaseCheck.runTimeBudget()) <= 0;
     }
 
     /**
@@ -131,5 +142,25 @@ public record IngestionProperties(
             @DefaultValue("0 0 4 * * *") String cron,
             @DefaultValue("Asia/Seoul") String zone
     ) {
+    }
+
+    /**
+     * 매시간 출시 확인: 출시일이 어제~내일인데 아직 "출시 예정"인 Steam 게임을 다시 받아, Steam에서 풀리면 1시간 안에 반영한다.
+     * 하루 1회 수집과 같은 락을 써서 함께 돌지 않는다.
+     *
+     * @param maxPerRun     한 번에 다시 받을 게임 수
+     * @param lockAtMostFor 이 실행의 락 유지 시간 (하루 1회 수집보다 짧게)
+     */
+    public record ReleaseCheck(
+            @DefaultValue("true") boolean enabled,
+            @DefaultValue("0 20 * * * *") String cron,
+            @DefaultValue("Asia/Seoul") String zone,
+            @DefaultValue("60") @Positive int maxPerRun,
+            @DefaultValue("PT15M") Duration lockAtMostFor
+    ) {
+
+        public Duration runTimeBudget() {
+            return Duration.ofMillis((long) (lockAtMostFor.toMillis() * MAX_RUN_TO_LOCK_RATIO));
+        }
     }
 }

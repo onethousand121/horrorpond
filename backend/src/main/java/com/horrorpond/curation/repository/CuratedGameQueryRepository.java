@@ -150,12 +150,14 @@ public class CuratedGameQueryRepository {
                     .or(keeperVideoExists()));
         }
         if (query.release() != null) {
-            // Steam 데이터는 주기적으로 갱신되므로, 출시일이 지났는데 아직 출시 예정으로 남은 게임은 최근 출시로 본다
+            // Steam은 출시 날짜만 주고 그날 정해진 시각에 풀리므로, 출시일이 오늘이어도 출시 예정이면 출시 전으로 본다.
+            // 출시일이 지났는데 아직 출시 예정으로 남은 게임은 갱신이 늦은 것으로 보고 최근 출시로 본다 (프론트 isUpcoming과 같은 규칙)
             where.and(switch (query.release()) {
                 case UPCOMING -> game.comingSoon.isTrue()
-                        .and(game.releaseDate.isNull().or(game.releaseDate.after(query.today())));
+                        .and(game.releaseDate.isNull().or(game.releaseDate.goe(query.today())));
                 case RECENT -> game.releaseDate.between(query.today().minusDays(ReleaseWindow.RECENT_DAYS),
-                        query.today());
+                                query.today())
+                        .and(game.comingSoon.isFalse().or(game.releaseDate.lt(query.today())));
                 case TODAY -> game.releaseDate.eq(query.today());
                 case TOMORROW -> game.releaseDate.eq(query.today().plusDays(1));
             });

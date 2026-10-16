@@ -95,6 +95,16 @@ class IngestionPropertiesValidationTest {
                 .run(context -> assertThat(context).hasFailed());
     }
 
+    @Test
+    void releaseCheckMustFitItsShortLock() {
+        // 220 × 3s + 60s = 12분 = 15분의 80% → 허용, 221개면 넘는다
+        runner.withPropertyValues("ingestion.release-check.max-per-run=220")
+                .run(context -> assertThat(context).hasNotFailed());
+        runner.withPropertyValues("ingestion.release-check.max-per-run=221")
+                .run(context -> assertThat(context).hasFailed()
+                        .getFailure().rootCause().hasMessageContaining("release-check.lock-at-most-for"));
+    }
+
     @EnableConfigurationProperties(IngestionProperties.class)
     static class Config {
     }

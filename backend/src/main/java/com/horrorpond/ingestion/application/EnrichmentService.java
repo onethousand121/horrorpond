@@ -5,7 +5,6 @@ import com.horrorpond.ingestion.client.IngestionProperties;
 import com.horrorpond.ingestion.client.Sleeper;
 import com.horrorpond.ingestion.client.SteamRateLimitedException;
 import com.horrorpond.ingestion.client.SteamSpyClient;
-import com.horrorpond.ingestion.client.SteamStoreClient;
 import com.horrorpond.ingestion.client.SteamTransientException;
 import com.horrorpond.ingestion.domain.DiscoveredBy;
 import com.horrorpond.ingestion.domain.FetchStatus;
@@ -32,8 +31,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * seed별 appdetails를 받아 원본 스냅샷으로 저장한다. appdetails에 리뷰 수가 없으면 appreviews로 채우고,
- * 영어 사이트용 텍스트(l=english)를 같은 스냅샷에 붙인다.
+ * seed별 appdetails를 받아 원본 스냅샷으로 저장한다. 받는 방법(리뷰 수 보충, 영어 텍스트)은 {@link SteamAppDetailsFetcher}.
  * SteamSpy로 발견한 seed는 먼저 SteamSpy 상위 태그로 공포게임인지 판정하고, 아니면 Steam 호출 없이 제외한다.
  * HTTP 호출과 대기는 트랜잭션 밖에서 하고, 저장은 {@link EnrichmentItemWriter}가 1건씩 커밋한다.
  */
@@ -49,7 +47,7 @@ public class EnrichmentService {
     static final int MAX_CONSECUTIVE_TAG_CHECK_FAILURES = 3;
 
     private final SteamAppSeedRepository seedRepository;
-    private final SteamStoreClient storeClient;
+    private final SteamAppDetailsFetcher appDetailsFetcher;
     private final SteamSpyClient steamSpyClient;
     private final EnrichmentItemWriter itemWriter;
     private final IngestionJobRecorder jobRecorder;
@@ -187,8 +185,7 @@ public class EnrichmentService {
             }
             while (true) {
                 try {
-                    AppDetailsResult result = withEnglish(appid,
-                            withReviewCount(appid, storeClient.fetchAppDetails(appid)));
+                    AppDetailsResult result = appDetailsFetcher.fetch(appid);
                     consecutiveRateLimits = 0;
                     try {
                         itemWriter.write(appid, result);
@@ -230,39 +227,6 @@ public class EnrichmentService {
             itemWriter.markFailed(appid);
         } catch (DataAccessException e) {
             log.warn("Marking seed failed also failed: appid={}", appid, e);
-        }
-    }
-
-    /**
-     * 자동 노출 기준이 리뷰 수라, appdetails에 리뷰 수가 빠진 게임은 appreviews로 한 번 더 받는다.
-     * 실패하면 리뷰 수 없이 저장하고 다음 갱신 때 다시 받는다 (429는 호출한 쪽의 대기/재시도로 넘긴다).
-     */
-    private AppDetailsResult withReviewCount(int appid, AppDetailsResult result) {
-        if (!(result instanceof AppDetailsResult.Found found) || found.hasReviewCount()) {
-            return result;
-        }
-        try {
-            Integer reviewCount = storeClient.fetchReviewCount(appid);
-            return reviewCount == null ? found : found.withReviewCount(reviewCount);
-        } catch (SteamTransientException e) {
-            log.warn("appreviews failed after retries: appid={}, {}", appid, e.getMessage());
-            return found;
-        }
-    }
-
-    /**
-     * 영어 사이트용 텍스트. 실패하면 영어 없이 저장하고(정규화 때 이전 영어 값을 유지) 다음 갱신 때 다시 받는다.
-     */
-    private AppDetailsResult withEnglish(int appid, AppDetailsResult result) {
-        if (!(result instanceof AppDetailsResult.Found found)) {
-            return result;
-        }
-        try {
-            String english = storeClient.fetchEnglishText(appid);
-            return english == null ? found : found.withEnglish(english);
-        } catch (SteamTransientException e) {
-            log.warn("appdetails(english) failed after retries: appid={}, {}", appid, e.getMessage());
-            return found;
         }
     }
 
