@@ -58,10 +58,11 @@ class EnrichmentTimeBudgetTest {
             new IngestionProperties.Metrics(0, 30, 10),
             new IngestionProperties.Itch("https://itch.test", Duration.ofSeconds(2), 0, 200, 0, Duration.ofDays(7),
                     Duration.ofDays(1), 3),
-            new IngestionProperties.Scheduler(false, "-", "UTC"));
+            new IngestionProperties.Scheduler(false, "-", "UTC"),
+            new IngestionProperties.ReleaseCheck(false, "-", "UTC", 60, Duration.ofMinutes(15)));
 
     private final EnrichmentService service = new EnrichmentService(
-            seedRepository, storeClient, steamSpyClient, itemWriter, jobRecorder, properties, sleeper, clock);
+            seedRepository, new SteamAppDetailsFetcher(storeClient), steamSpyClient, itemWriter, jobRecorder, properties, sleeper, clock);
 
     @BeforeEach
     void setUp() {

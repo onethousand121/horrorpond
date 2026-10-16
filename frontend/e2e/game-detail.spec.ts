@@ -28,6 +28,18 @@ test("출시 예정 게임: 가격 줄이 없다", async ({ page }) => {
   await expect(infoRow(page, "가격")).toHaveCount(0);
 });
 
+test("출시일이 오늘인데 아직 안 풀린 게임: 오늘 출시 예정, 가격·출시일 JSON-LD 없음", async ({ page }) => {
+  await page.goto("/games/midnight-gate");
+  await expect(infoRow(page, "출시일").locator("dd")).toHaveText("오늘 출시 예정");
+  await expect(infoRow(page, "가격")).toHaveCount(0);
+  const data = JSON.parse((await page.locator('script[type="application/ld+json"]').textContent()) ?? "{}");
+  expect(data.datePublished).toBeUndefined();
+  expect(data.offers).toBeUndefined();
+
+  await page.goto("/en/games/midnight-gate");
+  await expect(infoRow(page, "Release date").locator("dd")).toHaveText("Releasing today");
+});
+
 test("itch.io 게임: 평가 수와 itch.io 링크", async ({ page }) => {
   await page.goto("/games/itch-whisper");
   await expect(infoRow(page, "itch.io 평가")).toBeVisible();

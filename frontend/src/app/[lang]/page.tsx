@@ -82,7 +82,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         </p>
         <ul aria-label={t.statsLabel} className="flex flex-wrap gap-x-5 gap-y-1 font-pixel text-[11px] text-muted">
           {[
-            // 오늘 출시는 최근 출시순 맨 앞, 내일 출시는 출시 예정(가까운 순) 맨 앞에 나온다
+            // 출시일 기준 숫자. 오늘 출시는 최근 출시순 맨 앞(아직 안 풀렸으면 출시 예정 맨 앞), 내일 출시는 출시 예정 맨 앞에 나온다
             { label: t.statToday, value: stats.releasedToday, href: "/games?view=recent" },
             { label: t.statTomorrow, value: stats.releasingTomorrow, href: "/games?view=upcoming" },
           ]

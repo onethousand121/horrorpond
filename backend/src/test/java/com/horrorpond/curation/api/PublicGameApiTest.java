@@ -216,6 +216,8 @@ class PublicGameApiTest {
     void hubStatsCountOnlyVisibleGames() throws Exception {
         LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
         create(spec("today").releaseDate(today));
+        // 출시일이 오늘인데 아직 안 풀린 게임도 "오늘 출시"로 센다 (출시일 기준)
+        create(spec("today-locked").comingSoon(true).releaseDate(today));
         create(spec("yesterday").releaseDate(today.minusDays(1)));
         create(spec("tomorrow").comingSoon(true).releaseDate(today.plusDays(1)));
         create(spec("tomorrow-2").comingSoon(true).releaseDate(today.plusDays(1)));
@@ -224,8 +226,10 @@ class PublicGameApiTest {
 
         mvc.perform(get("/api/stats"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.releasedToday").value(1))
+                .andExpect(jsonPath("$.releasedToday").value(2))
                 .andExpect(jsonPath("$.releasingTomorrow").value(2));
+        mvc.perform(get("/api/games").param("release", "TODAY"))
+                .andExpect(jsonPath("$.content[*].slug", containsInAnyOrder("today", "today-locked")));
         mvc.perform(get("/api/games").param("release", "TOMORROW"))
                 .andExpect(jsonPath("$.content[*].slug", containsInAnyOrder("tomorrow", "tomorrow-2")));
     }
@@ -342,12 +346,16 @@ class PublicGameApiTest {
         create(spec("recent").releaseDate(today.minusDays(10)).reviewCount(50));
         // 출시 예정으로 수집됐지만 출시일이 지난 게임 (다음 갱신 전)
         create(spec("released-stale").comingSoon(true).releaseDate(today.minusDays(1)));
+        // 출시일이 오늘이고 Steam에서 아직 안 풀림 → 출시 예정 / 오늘 풀림 → 최근 출시
+        create(spec("today-locked").comingSoon(true).releaseDate(today));
+        create(spec("today-released").releaseDate(today));
         create(spec("older").releaseDate(today.minusDays(200)).reviewCount(9000));
 
         mvc.perform(get("/api/games").param("release", "UPCOMING"))
-                .andExpect(jsonPath("$.content[*].slug", contains("sooner", "soon")));
+                .andExpect(jsonPath("$.content[*].slug", contains("today-locked", "sooner", "soon")));
         mvc.perform(get("/api/games").param("release", "RECENT"))
-                .andExpect(jsonPath("$.content[*].slug", containsInAnyOrder("recent", "released-stale")));
+                .andExpect(jsonPath("$.content[*].slug",
+                        containsInAnyOrder("recent", "released-stale", "today-released")));
         mvc.perform(get("/api/games").param("sort", "POPULAR"))
                 .andExpect(jsonPath("$.content[0].slug").value("older"))
                 .andExpect(jsonPath("$.content[1].slug").value("recent"));

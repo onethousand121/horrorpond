@@ -200,7 +200,7 @@ const ko = {
     body: "주소가 바뀌었거나, 아직 소개되지 않은 게임일 수 있습니다.",
     browse: "전체 게임 보기",
   },
-  format: { comingSoon: "출시 예정" },
+  format: { comingSoon: "출시 예정", releasingToday: "오늘 출시 예정" },
 };
 
 export type Dictionary = typeof ko;
@@ -366,7 +366,7 @@ const en: Dictionary = {
     body: "The address may have changed, or the game isn't listed yet.",
     browse: "Browse all games",
   },
-  format: { comingSoon: "Coming soon" },
+  format: { comingSoon: "Coming soon", releasingToday: "Releasing today" },
 };
 
 const DICTIONARIES: Record<Locale, Dictionary> = { ko, en };
