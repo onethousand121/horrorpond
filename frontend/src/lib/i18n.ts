@@ -53,7 +53,7 @@ const ko = {
       "lurkpond는 Valve Corporation 및 Steam과 관련이 없는 개인 운영 사이트입니다. 게임 이름, 이미지, 상표의 권리는 각 개발사·배급사에 있습니다.",
     home: "홈",
   },
-  nav: { games: "게임", coop: "협동", about: "소개", youtube: "YouTube", privacy: "개인정보처리방침" },
+  nav: { games: "게임", coop: "협동", about: "소개", youtube: "YouTube", steamCurator: "Steam 큐레이터", privacy: "개인정보처리방침" },
   language: { label: "언어", ko: "한국어", en: "English" },
   search: {
     label: "게임 검색",
@@ -219,7 +219,7 @@ const en: Dictionary = {
       "lurkpond is an independent site not affiliated with Valve Corporation or Steam. Game names, images and trademarks belong to their respective developers and publishers.",
     home: "Home",
   },
-  nav: { games: "Games", coop: "Co-op", about: "About", youtube: "YouTube", privacy: "Privacy" },
+  nav: { games: "Games", coop: "Co-op", about: "About", youtube: "YouTube", steamCurator: "Steam Curator", privacy: "Privacy" },
   language: { label: "Language", ko: "한국어", en: "English" },
   search: {
     label: "Search games",
