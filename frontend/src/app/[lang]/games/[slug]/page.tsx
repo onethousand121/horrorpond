@@ -168,7 +168,7 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
           {game.headerImageUrl && (
             <Image
               src={game.headerImageUrl}
-              alt=""
+              alt={game.title}
               fill
               priority
               sizes="(min-width: 1152px) 1152px, 100vw"

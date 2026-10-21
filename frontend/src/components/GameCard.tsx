@@ -22,7 +22,7 @@ export function GameCard({ game, locale, eager = false }: { game: GameSummary; l
         {game.headerImageUrl && (
           <Image
             src={game.headerImageUrl}
-            alt=""
+            alt={game.title}
             fill
             loading={eager ? "eager" : undefined}
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
