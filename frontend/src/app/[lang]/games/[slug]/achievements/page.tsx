@@ -52,7 +52,7 @@ export default async function AchievementsPage({ params }: PageProps<"/[lang]/ga
         {game.headerImageUrl && (
           <Image
             src={game.headerImageUrl}
-            alt=""
+            alt={game.title}
             width={184}
             height={86}
             className="hidden rounded-lg border border-border sm:block"

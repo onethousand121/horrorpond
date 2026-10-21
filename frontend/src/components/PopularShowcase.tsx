@@ -47,7 +47,7 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
             <Image
               key={game.slug}
               src={game.headerImageUrl}
-              alt=""
+              alt={game.title}
               fill
               priority={active === 0}
               sizes="(min-width: 1024px) 690px, 100vw"
