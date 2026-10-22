@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
 import { connection } from "next/server";
 import { getGames, getGenres, MAX_PAGE_SIZE } from "@/lib/api";
-import { localePath } from "@/lib/i18n";
+import { collectionLocales, COLLECTIONS } from "@/lib/collections";
+import { alternateLanguages, LOCALES, localePath, type Locale } from "@/lib/i18n";
 import { SITE_URL } from "@/lib/site";
 import type { GameSummary } from "@/lib/types";
 
@@ -31,16 +32,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter((game) => !game.adult && game.hasAchievementGuide)
       .map((game) => `/games/${game.slug}/achievements`),
   ];
+  const entries: { path: string; locales: readonly Locale[] }[] = [
+    ...paths.map((path) => ({ path, locales: LOCALES })),
+    // 모음 페이지. 한국어 전용 모음은 한국어 주소만
+    ...COLLECTIONS.map((c) => ({ path: `/collections/${c.slug}`, locales: collectionLocales(c) })),
+  ];
   // 언어마다 따로 항목을 두고, 서로를 hreflang으로 연결한다 (x-default는 한국어)
-  return paths.flatMap((path) => {
-    const languages = {
-      ko: `${SITE_URL}${path}`,
-      en: `${SITE_URL}${localePath("en", path)}`,
-      "x-default": `${SITE_URL}${path}`,
-    };
-    return [
-      { url: languages.ko, alternates: { languages } },
-      { url: languages.en, alternates: { languages } },
-    ];
+  return entries.flatMap(({ path, locales }) => {
+    const languages = Object.fromEntries(
+      Object.entries(alternateLanguages(path, locales)).map(([key, href]) => [key, `${SITE_URL}${href}`]),
+    );
+    return locales.map((locale) => ({ url: `${SITE_URL}${localePath(locale, path)}`, alternates: { languages } }));
   });
 }
