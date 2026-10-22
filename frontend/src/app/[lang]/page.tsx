@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { CollectionLinks } from "@/components/CollectionLinks";
 import { GameRow } from "@/components/GameRow";
 import { KeeperFrog } from "@/components/KeeperFrog";
 import { PopularShowcase } from "@/components/PopularShowcase";
@@ -183,6 +184,11 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           <GameRow games={keeperPicks} locale={lang} />
         </section>
       )}
+
+      <section className="space-y-3">
+        <h2 className="font-pixel text-[16px]">{dict.collections.nav}</h2>
+        <CollectionLinks locale={lang} label={dict.collections.nav} />
+      </section>
     </div>
   );
 }

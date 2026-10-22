@@ -123,6 +123,8 @@ export interface Article {
   publishedAt: string | null;
   /** PICK(추천) | REVIEW(플레이 후기). 백엔드 배포 전 응답에는 없다 (그때는 추천) */
   kind?: ArticleKind;
+  /** 글이 실제로 쓰인 언어. 영어 화면이라도 번역이 없으면 ko (백엔드 배포 전 응답에는 없다) */
+  language?: "ko" | "en";
 }
 
 export interface GameDetail {

@@ -112,7 +112,22 @@ const games = [
   steamGame(6, 1006, {
     slug: "lighthouse-keeper",
     title: "등대지기",
-    en: { title: "Lighthouse Keeper", shortDescription: "Keep the light on, whatever knocks." },
+    en: {
+      title: "Lighthouse Keeper",
+      shortDescription: "Keep the light on, whatever knocks.",
+      // 큐레이터 글 영어 번역 (백엔드: 번역이 있으면 영어 화면에 영어 글, language "en")
+      article: {
+        kind: "PICK",
+        title: "A night at the lighthouse",
+        oneLiner: "The keeper played this one all night",
+        body: "## What I liked\n\nThe sound design is genuinely scary.",
+        highlights: ["Sound", "Tension"],
+        sponsored: false,
+        sponsorDisclosure: null,
+        publishedAt: "2026-09-10T03:00:00Z",
+        language: "en",
+      },
+    },
     shortDescription: "무엇이 두드리든 불을 지켜라.",
     languages: ["ko", "en"],
     coop: true,
@@ -128,6 +143,7 @@ const games = [
       sponsored: false,
       sponsorDisclosure: null,
       publishedAt: "2026-09-10T03:00:00Z",
+      language: "ko",
     },
     playVideos: [{ youtubeId: "dQw4w9WgXcQ", title: "등대지기 1화", channelName: null }],
     endingType: "MULTIPLE",

@@ -101,7 +101,7 @@ export function PopularShowcase({ games, locale }: { games: GameSummary[]; local
               </span>
             ))}
           </div>
-          {(game.picked || game.reviewed) && game.oneLiner ? (
+          {!game.adult && (game.picked || game.reviewed) && game.oneLiner ? (
             <p lang="ko" className="border-l-2 border-accent-2/60 pl-3 text-sm text-foreground/90">{game.oneLiner}</p>
           ) : null}
           {!game.adult && game.shortDescription && (

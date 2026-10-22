@@ -71,7 +71,7 @@ test("JSON-LD: 출시된 유료 게임은 정가(offers)가 있고 출시 예정
   expect(upcoming.datePublished).toBeUndefined();
 });
 
-test("추천 글 게임: 한국어는 한 줄 소개가 설명, 영어는 게임 소개가 설명", async ({ page }) => {
+test("추천 글 게임: 한국어는 한국어 글, 영어는 번역된 글과 그 한 줄 소개가 설명", async ({ page }) => {
   await page.goto("/games/lighthouse-keeper");
   await expect(page.getByText("주인장이 밤새 붙잡고 한 게임").first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "등대에서 보낸 밤" })).toBeVisible();
@@ -79,9 +79,13 @@ test("추천 글 게임: 한국어는 한 줄 소개가 설명, 영어는 게임
 
   await page.goto("/en/games/lighthouse-keeper");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Lighthouse Keeper");
+  await expect(page.getByRole("heading", { name: "A night at the lighthouse" })).toBeVisible();
+  await expect(page.getByText("The sound design is genuinely scary.")).toBeVisible();
+  // 번역된 글에는 "한국어로 쓴 글" 안내가 없다
+  await expect(page.getByText("This post is written in Korean.")).toHaveCount(0);
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     "content",
-    "Keep the light on, whatever knocks.",
+    "The keeper played this one all night",
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/en\/games\/lighthouse-keeper$/);
 });

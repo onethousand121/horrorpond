@@ -5,6 +5,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Logo } from "@/components/Logo";
 import { SearchBox } from "@/components/SearchBox";
 import { galmuri, PRETENDARD_CSS } from "@/lib/fonts";
+import { collectionsFor } from "@/lib/collections";
 import { getDictionary, isLocale, LOCALES, localePath } from "@/lib/i18n";
 import { CURATOR, SITE_INDEXING, SITE_NAME, SITE_URL } from "@/lib/site";
 import "../globals.css";
@@ -98,6 +99,13 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
             <span>
               {SITE_NAME} · {dict.site.runBy} {dict.site.curatorName} · {dict.site.steamCredit}
             </span>
+            <nav aria-label={dict.collections.nav} className="flex w-full flex-wrap gap-x-4 gap-y-2">
+              {collectionsFor(lang).map((c) => (
+                <Link key={c.slug} href={localePath(lang, `/collections/${c.slug}`)} className="hover:text-foreground">
+                  {dict.collections.items[c.slug].title}
+                </Link>
+              ))}
+            </nav>
             <p className="w-full text-[11px] leading-relaxed text-muted/70">{dict.site.disclaimer}</p>
           </div>
         </footer>

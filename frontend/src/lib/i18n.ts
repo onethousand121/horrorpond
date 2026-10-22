@@ -23,18 +23,27 @@ export function localePath(locale: Locale, path: string): string {
  * 페이지 메타데이터의 canonical + hreflang. path는 언어 접두사 없는 주소("/games/x")
  * 검색엔진이 한국어·영어 페이지를 같은 내용의 언어별 버전으로 묶는다.
  */
-export function alternatesFor(locale: Locale, path: string) {
+export function alternatesFor(locale: Locale, path: string, locales: readonly Locale[] = LOCALES) {
   return {
     canonical: localePath(locale, path),
-    languages: { ko: path, en: localePath("en", path), "x-default": path },
+    languages: alternateLanguages(path, locales),
   };
+}
+
+/** hreflang 주소 (언어 접두사 없는 상대 주소). x-default는 한국어. 한 언어에만 있는 페이지는 그 언어만 */
+export function alternateLanguages(path: string, locales: readonly Locale[] = LOCALES): Record<string, string> {
+  const languages: Record<string, string> = {};
+  for (const locale of locales) languages[locale] = localePath(locale, path);
+  languages["x-default"] = localePath(locales.includes(DEFAULT_LOCALE) ? DEFAULT_LOCALE : locales[0], path);
+  return languages;
 }
 
 /** 주소에서 언어 접두사를 뗀다: "/en/games" → "/games", "/ko" → "/" */
 export function stripLocale(pathname: string): string {
   for (const locale of LOCALES) {
     if (pathname === `/${locale}`) return "/";
-    if (pathname.startsWith(`/${locale}/`)) return pathname.slice(locale.length + 1);
+    // 앞의 슬래시를 하나로 모은다: /ko//evil.com 이 "//evil.com"(프로토콜 상대 주소)이 되어 다른 사이트로 가지 않게
+    if (pathname.startsWith(`/${locale}/`)) return "/" + pathname.slice(locale.length + 1).replace(/^\/+/, "");
   }
   return pathname;
 }
@@ -152,6 +161,59 @@ const ko = {
     description: "친구와 함께 무서워할 수 있는 협동 공포게임",
     intro: "혼자는 무섭다면, 친구와 함께. 온라인·로컬 협동을 지원하는 게임만 모았습니다.",
     empty: "협동 게임이 아직 없습니다.",
+  },
+  collections: {
+    nav: "공포게임 모음",
+    others: "다른 공포게임 모음",
+    seeAll: "전체 보기",
+    empty: "지금은 이 모음에 들어갈 게임이 없습니다.",
+    items: {
+      trending: {
+        title: "지금 뜨는 공포게임",
+        description: "최근 일주일 동안 Steam 리뷰가 가장 빠르게 늘어난 공포게임 순위. 요즘 많이 하는 공포게임을 한눈에 볼 수 있어요.",
+        intro: [
+          "요즘 사람들이 가장 많이 하고 있는 공포게임을 모았습니다.",
+          "최근 7일 동안 Steam 리뷰가 늘어난 수를 기준으로 순위를 매기고, 주인장이 매주 커뮤니티와 영상 반응을 살펴 눈여겨볼 게임을 앞에 올려 둡니다.",
+          "데이터는 매일 새로 받아서, 순위도 날마다 바뀝니다.",
+        ],
+      },
+      upcoming: {
+        title: "출시 예정 공포게임",
+        description: "곧 나올 Steam 공포게임과 출시일을 한눈에. 찜해 둘 신작을 찾아보세요.",
+        intro: [
+          "곧 출시되는 공포게임을 모았습니다.",
+          "Steam에 출시 예정으로 올라온 공포게임을 매일 확인하고, 출시일이 다가오면 더 자주 다시 확인해 연기나 출시 소식을 반영합니다.",
+          "찜해 둘 신작을 찾고 있다면 여기서부터 보세요.",
+        ],
+      },
+      free: {
+        title: "무료 공포게임",
+        description: "돈 들이지 않고 바로 해 볼 수 있는 무료 공포게임 모음. Steam과 itch.io의 인기 무료 공포게임을 리뷰 많은 순으로 소개합니다.",
+        intro: [
+          "지금 무료로 받을 수 있는 공포게임을 모았습니다.",
+          "Steam과 itch.io에서 무료로 내려받을 수 있는 공포게임을 리뷰·평가가 많은 순으로 보여줍니다.",
+          "가격은 매일 수집한 정가 기준이라, 잠깐 무료로 풀린 할인 이벤트는 포함되지 않습니다.",
+        ],
+      },
+      korean: {
+        title: "한국어 지원 공포게임",
+        description: "한국어로 즐길 수 있는 공포게임 모음. 공식 한국어를 지원하거나 유저 한글패치가 있는 Steam·itch.io 공포게임을 소개합니다.",
+        intro: [
+          "한국어로 플레이할 수 있는 공포게임을 모았습니다.",
+          "Steam 상점의 지원 언어에 한국어가 있는 게임과, 공식 한국어는 없지만 유저 한글패치를 주인장이 확인해 둔 게임을 함께 담았어요.",
+          "리뷰가 많은 순으로 보여주고, 지원 언어 정보는 매일 Steam에서 새로 받아 반영합니다.",
+        ],
+      },
+      picks: {
+        title: "주인장 추천 공포게임",
+        description: "공포게임 유튜버 류재일이 직접 플레이하고 고른 공포게임. 추천 글, 플레이 후기, 플레이 영상이 있는 게임만 모았습니다.",
+        intro: [
+          "주인장이 직접 플레이해 본 공포게임만 모았습니다.",
+          "추천 글이나 플레이 후기를 남겼거나 유튜브에 플레이 영상을 올린 게임이 들어가고, 새 영상과 글이 올라올 때마다 늘어납니다.",
+          "무엇을 할지 고민된다면 주인장의 선택부터 믿어 보세요.",
+        ],
+      },
+    },
   },
   genre: { nav: "장르", empty: "이 장르의 게임이 아직 없습니다." },
   detail: {
@@ -318,6 +380,55 @@ const en: Dictionary = {
     intro: "Too scary alone? Bring friends. Only games with online or local co-op.",
     empty: "No co-op games yet.",
   },
+  collections: {
+    nav: "Horror game collections",
+    others: "More horror game collections",
+    seeAll: "See all",
+    empty: "No games in this collection right now.",
+    items: {
+      trending: {
+        title: "Trending horror games right now",
+        description: "The horror games gaining Steam reviews fastest this week. See what everyone is playing right now.",
+        intro: [
+          "These are the horror games people are playing the most right now.",
+          "They're ranked by how many Steam reviews they gained over the last seven days, and every week the keeper checks community and video buzz to move notable games to the front.",
+          "The data is refreshed daily, so the ranking changes every day.",
+        ],
+      },
+      upcoming: {
+        title: "Upcoming horror games",
+        description: "Upcoming horror games on Steam, with release dates. Find the next scare to wishlist.",
+        intro: [
+          "Horror games that are about to come out.",
+          "We check every horror game listed as coming soon on Steam each day, and check more often as the release date gets close, so delays and launches show up quickly.",
+          "Looking for something to wishlist? Start here.",
+        ],
+      },
+      free: {
+        title: "Free horror games",
+        description: "Free horror games you can play right now. Popular free-to-play horror on Steam and itch.io, sorted by reviews.",
+        intro: [
+          "Horror games you can download for free right now.",
+          "This list shows free horror games on Steam and itch.io, with the most reviewed and rated ones first.",
+          "Prices come from the regular list price we collect daily, so temporary giveaways and sales aren't included.",
+        ],
+      },
+      korean: {
+        title: "Horror games with Korean support",
+        description: "Horror games you can play in Korean.",
+        intro: ["Horror games you can play in Korean."],
+      },
+      picks: {
+        title: "Keeper's picks: hand-picked horror games",
+        description: "Horror games played and picked by horror YouTuber Jaeil, with recommendations, play notes or gameplay videos.",
+        intro: [
+          "Only horror games the keeper has actually played.",
+          "A game makes the list when the keeper writes a recommendation or play notes for it, or uploads a gameplay video to YouTube, so it grows with every new video and post.",
+          "Can't decide what to play next? Trust the keeper's taste.",
+        ],
+      },
+    },
+  },
   genre: { nav: "Genres", empty: "No games in this genre yet." },
   detail: {
     pickLabel: "Keeper's pick",
@@ -343,7 +454,7 @@ const en: Dictionary = {
     viewOnItch: "View on itch.io ↗",
     highlightsLabel: "Highlights",
     highlightsTitle: "Why you should play it",
-    articleKoreanOnly: "This recommendation is written in Korean.",
+    articleKoreanOnly: "This post is written in Korean.",
     // 한글패치는 한국어 화면에만 보인다
     koreanPatch: "Korean patch",
     koreanPatchAuthor: "Fan Korean patch",

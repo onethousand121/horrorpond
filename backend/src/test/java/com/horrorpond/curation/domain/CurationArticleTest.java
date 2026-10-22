@@ -1,6 +1,7 @@
 package com.horrorpond.curation.domain;
 
 import com.horrorpond.common.domain.DomainValidationException;
+import com.horrorpond.common.domain.Language;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -98,6 +99,56 @@ class CurationArticleTest {
         article.clearSponsored();
         assertThat(article.isSponsored()).isFalse();
         assertThat(article.getSponsorDisclosure()).isNull();
+    }
+
+    @Test
+    void translationIsShownOnlyInEnglishAndOnlyWhenPresent() {
+        CurationArticle article = draft(List.of("무섭다"));
+
+        assertThat(article.title(Language.EN)).isEqualTo("title");
+        assertThat(article.isShownIn(Language.EN)).isFalse();
+
+        article.translate(" English title ", "English one liner", "English body", List.of("Scary"));
+
+        assertThat(article.title(Language.EN)).isEqualTo("English title");
+        assertThat(article.oneLiner(Language.EN)).isEqualTo("English one liner");
+        assertThat(article.body(Language.EN)).isEqualTo("English body");
+        assertThat(article.highlights(Language.EN)).containsExactly("Scary");
+        assertThat(article.title(Language.KO)).isEqualTo("title");
+        assertThat(article.highlights(Language.KO)).containsExactly("무섭다");
+    }
+
+    @Test
+    void translationFollowsArticleRules() {
+        CurationArticle article = draft(List.of("ok"));
+
+        assertThatThrownBy(() -> article.translate("t", " ", "body", List.of()))
+                .isInstanceOf(DomainValidationException.class);
+        assertThatThrownBy(() -> article.translate("t", "o", "b", List.of("1", "2", "3", "4", "5", "6")))
+                .isInstanceOf(DomainValidationException.class);
+        assertThat(article.hasTranslation()).isFalse();
+    }
+
+    @Test
+    void editingKoreanMakesTranslationStaleUntilRetranslated() {
+        CurationArticle article = draft(List.of("ok"));
+        article.translate("t", "o", "b", null);
+        assertThat(article.isTranslationStale()).isFalse();
+        assertThat(article.getHighlightsEn()).isEmpty();
+
+        article.edit("title", "one liner", "body", List.of("ok"));
+        assertThat(article.isTranslationStale()).isFalse();
+
+        article.edit("title", "one liner", "new body", List.of("ok"));
+        assertThat(article.isTranslationStale()).isTrue();
+
+        article.translate("t", "o", "b2", null);
+        assertThat(article.isTranslationStale()).isFalse();
+
+        article.clearTranslation();
+        assertThat(article.hasTranslation()).isFalse();
+        assertThat(article.isTranslationStale()).isFalse();
+        assertThat(article.body(Language.EN)).isEqualTo("new body");
     }
 
     private static CurationArticle draft(List<String> highlights) {

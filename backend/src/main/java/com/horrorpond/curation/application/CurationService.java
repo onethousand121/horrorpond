@@ -103,6 +103,28 @@ public class CurationService {
     }
 
     /**
+     * 영어 번역을 넣거나 바꾼다. 글이 없으면 404 (한국어 글을 먼저 써야 한다).
+     */
+    public AdminArticleResponse translateArticle(Long gameId, TranslationCommand command) {
+        CurationArticle article = findArticle(gameId);
+        article.translate(command.title(), command.oneLiner(), command.body(), command.highlights());
+        return AdminArticleResponse.from(article);
+    }
+
+    /** 영어 번역을 지운다 (영어 화면에는 다시 한국어 글이 보인다) */
+    public AdminArticleResponse clearTranslation(Long gameId) {
+        CurationArticle article = findArticle(gameId);
+        article.clearTranslation();
+        return AdminArticleResponse.from(article);
+    }
+
+    private CurationArticle findArticle(Long gameId) {
+        findGame(gameId);
+        return articleRepository.findByGameId(gameId)
+                .orElseThrow(() -> new NotFoundException("Article not found: gameId=" + gameId));
+    }
+
+    /**
      * 추천 내리기: 글은 초안으로 남긴다.
      */
     public AdminGameResponse unpublishArticle(Long gameId) {
@@ -213,5 +235,8 @@ public class CurationService {
 
     public record ArticleCommand(ArticleKind kind, String title, String oneLiner, String body,
                                  List<String> highlights, boolean sponsored, String sponsorDisclosure) {
+    }
+
+    public record TranslationCommand(String title, String oneLiner, String body, List<String> highlights) {
     }
 }

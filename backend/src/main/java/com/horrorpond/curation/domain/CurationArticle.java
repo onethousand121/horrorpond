@@ -2,6 +2,7 @@ package com.horrorpond.curation.domain;
 
 import com.horrorpond.common.domain.BaseTimeEntity;
 import com.horrorpond.common.domain.DomainValidationException;
+import com.horrorpond.common.domain.Language;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -17,8 +18,12 @@ import lombok.ToString;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -72,6 +77,24 @@ public class CurationArticle extends BaseTimeEntity {
 
     private Instant publishedAt;
 
+    /** 영어 번역 (선택). 제목·한 줄 소개·본문은 함께 있거나 함께 없다 */
+    @Column(length = MAX_TITLE_LENGTH)
+    private String titleEn;
+
+    @Column(length = MAX_ONE_LINER_LENGTH)
+    private String oneLinerEn;
+
+    @Column(columnDefinition = "text")
+    private String bodyEn;
+
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(columnDefinition = "text[]")
+    private List<String> highlightsEn;
+
+    /** 번역할 때의 한국어 글 요약값 (sourceDigest). 지금 값과 다르면 번역이 오래된 것 */
+    @Column(length = 64)
+    private String enSourceDigest;
+
     public static CurationArticle draft(Long gameId, String title, String oneLiner, String body,
                                         List<String> highlights) {
         return draft(gameId, ArticleKind.PICK, title, oneLiner, body, highlights);
@@ -105,6 +128,87 @@ public class CurationArticle extends BaseTimeEntity {
         this.oneLiner = requireText(oneLiner, "oneLiner", MAX_ONE_LINER_LENGTH);
         this.body = requireText(body, "body", Integer.MAX_VALUE);
         this.highlights = validated;
+    }
+
+    /**
+     * 영어 번역을 넣거나 바꾼다. 지금의 한국어 글을 기준으로 번역했다고 기록한다.
+     * 장점 포인트는 한국어와 같은 규칙(최대 5개, 40자)이며 비워 둘 수 있다.
+     */
+    public void translate(String titleEn, String oneLinerEn, String bodyEn, List<String> highlightsEn) {
+        String title = requireText(titleEn, "titleEn", MAX_TITLE_LENGTH);
+        String oneLiner = requireText(oneLinerEn, "oneLinerEn", MAX_ONE_LINER_LENGTH);
+        String body = requireText(bodyEn, "bodyEn", Integer.MAX_VALUE);
+        List<String> highlights = validateHighlights(highlightsEn);
+        this.titleEn = title;
+        this.oneLinerEn = oneLiner;
+        this.bodyEn = body;
+        this.highlightsEn = highlights;
+        this.enSourceDigest = sourceDigest();
+    }
+
+    public void clearTranslation() {
+        this.titleEn = null;
+        this.oneLinerEn = null;
+        this.bodyEn = null;
+        this.highlightsEn = null;
+        this.enSourceDigest = null;
+    }
+
+    public boolean hasTranslation() {
+        return titleEn != null;
+    }
+
+    /** 번역한 뒤 한국어 글(제목·한 줄 소개·본문·장점)이 바뀌었는지 */
+    public boolean isTranslationStale() {
+        return hasTranslation() && !sourceDigest().equals(enSourceDigest);
+    }
+
+    /** 영어 화면이고 번역이 있으면 영어, 아니면 한국어 */
+    public boolean isShownIn(Language language) {
+        return language == Language.EN && hasTranslation();
+    }
+
+    public String title(Language language) {
+        return isShownIn(language) ? titleEn : title;
+    }
+
+    public String oneLiner(Language language) {
+        return isShownIn(language) ? oneLinerEn : oneLiner;
+    }
+
+    public String body(Language language) {
+        return isShownIn(language) ? bodyEn : body;
+    }
+
+    public List<String> highlights(Language language) {
+        return isShownIn(language) ? getHighlightsEn() : getHighlights();
+    }
+
+    public List<String> getHighlightsEn() {
+        return highlightsEn == null ? List.of() : Collections.unmodifiableList(highlightsEn);
+    }
+
+    /** 목록 조회(QueryDSL 행)에서도 같은 규칙으로 고른다 */
+    public static String pick(Language language, String korean, String english) {
+        return language == Language.EN && english != null ? english : korean;
+    }
+
+    public static List<String> pickHighlights(Language language, String englishOneLiner, List<String> korean,
+                                              List<String> english) {
+        if (language == Language.EN && englishOneLiner != null) {
+            return english == null ? List.of() : english;
+        }
+        return korean == null ? List.of() : korean;
+    }
+
+    private String sourceDigest() {
+        String source = String.join("\u0000", title, oneLiner, body, String.join("\u0001", highlights));
+        try {
+            byte[] hash = MessageDigest.getInstance("SHA-256").digest(source.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public void markSponsored(String disclosure) {

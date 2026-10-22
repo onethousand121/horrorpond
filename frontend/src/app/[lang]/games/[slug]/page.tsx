@@ -73,8 +73,8 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/games/[slu
   if (game.adult) {
     return { title: game.title, description: getDictionary(lang).adult.notice, robots: { index: false, follow: false } };
   }
-  // 큐레이터 글은 한국어뿐이라 영어 페이지는 게임 소개를 먼저 쓴다
-  const description = (lang === "en"
+  // 영어 페이지는 큐레이터 글이 번역돼 있을 때만 글의 한 줄 소개를 먼저 쓴다
+  const description = (lang === "en" && game.article?.language !== "en"
     ? game.shortDescription ?? game.article?.oneLiner
     : game.article?.oneLiner ?? game.shortDescription) ?? undefined;
   return {
@@ -212,7 +212,7 @@ export default async function GameDetailPage({ params }: PageProps<"/[lang]/game
                   <p>
                     {isReview ? <KeeperReviewBadge locale={lang} /> : <KeeperPickBadge locale={lang} />}
                   </p>
-                  {t.articleKoreanOnly && <p className="text-sm text-muted">{t.articleKoreanOnly}</p>}
+                  {t.articleKoreanOnly && article.language !== "en" && <p className="text-sm text-muted">{t.articleKoreanOnly}</p>}
                   {article.sponsored && (
                     <aside
                       aria-label={t.sponsorNotice}

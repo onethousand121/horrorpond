@@ -142,16 +142,17 @@ public class EnrichmentService {
             jobRecorder.progress(jobId, processed, failed);
             SteamAppSeed seed = seeds.get(i);
             int appid = seed.getAppid();
-            // SteamSpy 태그: 모든 seed가 한 번 받는다(장르 자동 분류). SteamSpy로 발견한 seed는 이 태그로 공포 판정도 한다
+            // SteamSpy 태그: 모든 seed가 받는다(장르 자동 분류, 비어 있으면 7일마다 다시). 자동 발견 seed는 이 태그로 공포 판정도 한다.
+            // 이미 고른 수집 대상에서만 받으므로 다시 받는 횟수도 수집 예산(maxPerRun·시간) 안에 있다
             boolean checkHorror = seed.needsHorrorTagCheck();
-            if (checkHorror || seed.needsSpyTags()) {
+            if (checkHorror || seed.needsSpyTags(clock.instant())) {
                 List<String> tags;
                 try {
                     tags = steamSpyClient.fetchTopTags(appid);
                 } catch (SteamTransientException e) {
                     log.warn("SteamSpy tags failed after retries: appid={}, {}", appid, e.getMessage());
                     if (!checkHorror) {
-                        tags = null; // 수동 추가 seed는 태그 없이 진행하고 다음 갱신 때 다시 받는다
+                        tags = null; // 판정 안 하는 seed는 태그 없이 진행하고 다음 갱신 때 다시 받는다
                     } else {
                         // 판정 실패는 Steam 실패 횟수에 넣지 않는다. UNCHECKED로 남아 다음 실행에서 다시 판정한다.
                         failed++;

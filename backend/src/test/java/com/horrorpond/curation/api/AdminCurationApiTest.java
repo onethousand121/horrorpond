@@ -112,6 +112,75 @@ class AdminCurationApiTest {
     }
 
     @Test
+    void englishTranslationIsServedOnEnglishPagesOnly() throws Exception {
+        Long id = steamCandidate(739630, "Phasmophobia", "phasmophobia-739630");
+        mvc.perform(admin(put("/api/admin/games/{id}/curation", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"slug\":\"phasmophobia\",\"genreSlugs\":[]}"))
+                .andExpect(status().isOk());
+        String translation = """
+                {"title":"A night chasing the unseen","oneLiner":"Four-player ghost hunting",
+                 "body":"English body","highlights":["Great co-op","Real voice chat"]}
+                """;
+
+        // 글이 없으면 번역할 수 없다
+        mvc.perform(admin(put("/api/admin/games/{id}/article/translation", id))
+                        .contentType(MediaType.APPLICATION_JSON).content(translation))
+                .andExpect(status().isNotFound());
+
+        mvc.perform(admin(put("/api/admin/games/{id}/article", id))
+                        .contentType(MediaType.APPLICATION_JSON).content(ARTICLE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.titleEn").doesNotExist())
+                .andExpect(jsonPath("$.translationStale").value(false));
+        mvc.perform(admin(post("/api/admin/games/{id}/publish", id))).andExpect(status().isOk());
+
+        // 번역 전: 영어 화면도 한국어 글
+        mvc.perform(get("/api/games/phasmophobia").param("lang", "en"))
+                .andExpect(jsonPath("$.article.title").value("보이지 않는 것을 쫓는 밤"))
+                .andExpect(jsonPath("$.article.language").value("ko"));
+
+        mvc.perform(admin(put("/api/admin/games/{id}/article/translation", id))
+                        .contentType(MediaType.APPLICATION_JSON).content(translation))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.titleEn").value("A night chasing the unseen"))
+                .andExpect(jsonPath("$.highlightsEn", hasSize(2)))
+                .andExpect(jsonPath("$.translationStale").value(false));
+
+        mvc.perform(get("/api/games/phasmophobia").param("lang", "en"))
+                .andExpect(jsonPath("$.article.title").value("A night chasing the unseen"))
+                .andExpect(jsonPath("$.article.body").value("English body"))
+                .andExpect(jsonPath("$.article.highlights", hasSize(2)))
+                .andExpect(jsonPath("$.article.language").value("en"));
+        mvc.perform(get("/api/games/phasmophobia"))
+                .andExpect(jsonPath("$.article.title").value("보이지 않는 것을 쫓는 밤"))
+                .andExpect(jsonPath("$.article.language").value("ko"));
+        mvc.perform(get("/api/games").param("lang", "en"))
+                .andExpect(jsonPath("$.content[0].oneLiner").value("Four-player ghost hunting"))
+                .andExpect(jsonPath("$.content[0].highlights[0]").value("Great co-op"));
+        mvc.perform(get("/api/games"))
+                .andExpect(jsonPath("$.content[0].oneLiner").value("4인 협동 유령 조사"));
+
+        // 한국어 글을 고치면 "번역 갱신 필요"
+        mvc.perform(admin(put("/api/admin/games/{id}/article", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(ARTICLE.replace("4인 협동 유령 조사", "4인 협동 유령 조사 게임")))
+                .andExpect(jsonPath("$.translationStale").value(true));
+
+        // 규칙 위반은 400
+        mvc.perform(admin(put("/api/admin/games/{id}/article/translation", id))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"title\":\"t\",\"oneLiner\":\"\",\"body\":\"b\"}"))
+                .andExpect(status().isBadRequest());
+
+        // 번역을 지우면 영어 화면도 다시 한국어
+        mvc.perform(admin(delete("/api/admin/games/{id}/article/translation", id)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.titleEn").doesNotExist());
+        mvc.perform(get("/api/games/phasmophobia").param("lang", "en"))
+                .andExpect(jsonPath("$.article.language").value("ko"));
+    }
+
+    @Test
     void detailIncludesCuratorFieldsAndArticle() throws Exception {
         Long id = steamCandidate(739630, "Phasmophobia", "phasmophobia-739630");
 
@@ -153,6 +222,11 @@ class AdminCurationApiTest {
         // 영어 제목이나 주소(slug)로도 찾는다
         mvc.perform(admin(get("/api/admin/games").param("q", "doom 3 9050")))
                 .andExpect(jsonPath("$.content[*].slug", contains("doom-3-9050")));
+        // 공백·문장부호를 지운 모양으로도 찾는다
+        mvc.perform(admin(get("/api/admin/games").param("q", "doom39050")))
+                .andExpect(jsonPath("$.content[*].slug", contains("doom-3-9050")));
+        mvc.perform(admin(get("/api/admin/games").param("q", "DOOM3")))
+                .andExpect(jsonPath("$.content[*].slug", contains("doom-3-208200", "doom-3-9050")));
     }
 
     @Test

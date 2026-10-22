@@ -53,6 +53,13 @@ export interface AdminArticle {
   sponsorDisclosure: string | null;
   /** ISO-8601 Instant */
   publishedAt: string | null;
+  /** 영어 번역 (없으면 null, 백엔드 배포 전 응답에는 없다) */
+  titleEn?: string | null;
+  oneLinerEn?: string | null;
+  bodyEn?: string | null;
+  highlightsEn?: string[];
+  /** 번역한 뒤 한국어 글이 바뀌었으면 true */
+  translationStale?: boolean;
 }
 
 export interface AdminGameDetail {

@@ -105,6 +105,19 @@ export function upsertArticle(
   return adminFetch<AdminArticle>(`/api/admin/games/${id}/article`, { method: "PUT", body });
 }
 
+/** 큐레이터 글 영어 번역 저장 (한국어 글이 있어야 한다) */
+export function translateArticle(
+  id: number,
+  body: { title: string; oneLiner: string; body: string; highlights: string[] },
+): Promise<AdminArticle> {
+  return adminFetch<AdminArticle>(`/api/admin/games/${id}/article/translation`, { method: "PUT", body });
+}
+
+/** 영어 번역 삭제 (영어 화면에는 다시 한국어 글) */
+export function clearArticleTranslation(id: number): Promise<AdminArticle> {
+  return adminFetch<AdminArticle>(`/api/admin/games/${id}/article/translation`, { method: "DELETE" });
+}
+
 export function publishGame(id: number) {
   return adminFetch<AdminGame>(`/api/admin/games/${id}/publish`, { method: "POST" });
 }

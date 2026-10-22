@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AdultBadge, ContentBadges, CoopBadge, GenreBadge, KoreanBadge, KoreanPatchBadge, FreeBadge } from "@/components/Badges";
 import { HighlightList } from "@/components/HighlightList";
-import { formatCount, formatReleaseDate, isUpcoming } from "@/lib/format";
+import { formatCount, formatReleaseDate, isReleasingToday, isUpcoming } from "@/lib/format";
 import { getDictionary, localePath, type Locale } from "@/lib/i18n";
 import type { GameSummary } from "@/lib/types";
 
@@ -15,7 +15,9 @@ const CARD_GENRES = 2;
  */
 export function GameCard({ game, locale, eager = false }: { game: GameSummary; locale: Locale; eager?: boolean }) {
   const dict = getDictionary(locale);
-  const release = formatReleaseDate(game, locale);
+  // 출시일이 오늘인데 아직 안 풀렸으면 왼쪽 위 표시가 "오늘 출시 예정"이 되고, 아래 출시일 줄에는 같은 말을 또 쓰지 않는다
+  const releasingToday = isReleasingToday(game);
+  const release = releasingToday ? null : formatReleaseDate(game, locale);
   return (
     <article className="glow-hover group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface hover:-translate-y-0.5">
       <div className="relative aspect-[460/215] bg-surface-2">
@@ -40,7 +42,9 @@ export function GameCard({ game, locale, eager = false }: { game: GameSummary; l
         )}
         <div className="absolute top-2 left-2 flex gap-1.5">
           {isUpcoming(game) && (
-            <span className="rounded bg-background/85 px-1.5 py-0.5 font-pixel text-[11px] text-accent">{dict.card.upcoming}</span>
+            <span className="rounded bg-background/85 px-1.5 py-0.5 font-pixel text-[11px] text-accent">
+              {releasingToday ? dict.format.releasingToday : dict.card.upcoming}
+            </span>
           )}
         </div>
         <div className="absolute top-2 right-2 flex flex-wrap justify-end gap-1.5">
@@ -68,8 +72,8 @@ export function GameCard({ game, locale, eager = false }: { game: GameSummary; l
               {game.source === "ITCH" ? dict.card.ratings : dict.card.reviews} {formatCount(game.reviewCount, locale)}
             </span>}
         </p>
-        {(game.picked || game.reviewed) && game.oneLiner && <p lang="ko" className="text-sm text-foreground/85">{game.oneLiner}</p>}
-        {(game.picked || game.reviewed) && <HighlightList items={game.highlights.slice(0, CARD_HIGHLIGHTS)} compact />}
+        {!game.adult && (game.picked || game.reviewed) && game.oneLiner && <p lang="ko" className="text-sm text-foreground/85">{game.oneLiner}</p>}
+        {!game.adult && (game.picked || game.reviewed) && <HighlightList items={game.highlights.slice(0, CARD_HIGHLIGHTS)} compact />}
         <div className="mt-auto flex flex-wrap gap-1.5 pt-1">
           <KoreanBadge locale={locale} languages={game.languages} />
           <KoreanPatchBadge locale={locale} koreanPatch={game.koreanPatch} languages={game.languages} />
