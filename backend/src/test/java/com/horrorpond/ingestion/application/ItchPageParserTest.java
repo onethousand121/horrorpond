@@ -65,6 +65,18 @@ class ItchPageParserTest {
     }
 
     @Test
+    void utcPublishTimeIsConvertedToKoreanDate() {
+        String lateUtc = ItchFixtures.gamePage(42, "Night Shift", "Short.", 1)
+                .replace("03 March 2024 @ 11:00 UTC", "03 March 2024 @ 15:30 UTC");
+        String earlyUtc = ItchFixtures.gamePage(42, "Night Shift", "Short.", 1)
+                .replace("03 March 2024 @ 11:00 UTC", "03 March 2024 @ 14:59 UTC");
+
+        // UTC 15:30 = 한국 다음 날 00:30
+        assertThat(parser.parseGame(lateUtc).releaseDate()).isEqualTo(LocalDate.of(2024, 3, 4));
+        assertThat(parser.parseGame(earlyUtc).releaseDate()).isEqualTo(LocalDate.of(2024, 3, 3));
+    }
+
+    @Test
     void gameWithoutRatingsOrPublishedDate() {
         String html = ItchFixtures.gamePage(7, "Tiny", "Short.", null)
                 .replaceAll("<tr><td>Published</td>.*?</tr>", "");

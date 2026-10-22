@@ -133,8 +133,10 @@ public class CuratedGameQueryRepository {
             where.and(game.coop.eq(query.coop()));
         }
         if (query.free()) {
-            // 출시 전 게임은 사이트에 가격·무료 표시가 없으므로 무료 목록에서도 뺀다
-            where.and(game.free.isTrue()).and(game.comingSoon.isFalse());
+            // 출시 전 게임은 사이트에 가격·무료 표시가 없으므로 무료 목록에서도 뺀다.
+            // 출시일이 지났는데 coming_soon이 남은 게임은 사이트가 출시로 보므로(RECENT와 같은 기준) 포함한다
+            where.and(game.free.isTrue())
+                    .and(game.comingSoon.isFalse().or(game.releaseDate.lt(query.today())));
         }
         if (query.korean()) {
             // 공식 한국어 지원 또는 유저 한글패치가 있는 게임

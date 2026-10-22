@@ -44,12 +44,16 @@ public class EnrichmentItemWriter {
     }
 
     /**
+     * 태그가 바뀌었고 이미 받은 스냅샷이 있으면, appdetails가 그대로여도 다음 정리에서 Game 태그를 다시 반영하게 한다.
+     *
      * @param horrorTag 공포 판정을 하지 않은 seed(수동 추가)면 null
      */
     @Transactional
     public void recordSpyTags(int appid, List<String> tags, HorrorTag horrorTag) {
         SteamAppSeed seed = seedRepository.findById(appid).orElseThrow();
-        seed.recordSpyTags(tags);
+        if (seed.recordSpyTags(tags)) {
+            snapshotRepository.findById(appid).ifPresent(SteamRawSnapshot::requestRenormalize);
+        }
         if (horrorTag != null) {
             seed.recordHorrorTag(horrorTag, clock.instant());
         }

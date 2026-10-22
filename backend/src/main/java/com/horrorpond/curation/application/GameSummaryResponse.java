@@ -59,10 +59,12 @@ public record GameSummaryResponse(
 
     /**
      * 제목·소개·출시일 텍스트는 요청 언어로 (영어가 없으면 한국어). 큐레이터 글은 영어 번역이 있을 때만 영어로.
+     * 성인 게임은 상세처럼 큐레이터 글(한 줄 평·포인트)을 내보내지 않는다.
      */
     static GameSummaryResponse of(CuratedGameRow row, List<GenreSummary> genres, Language language) {
-        List<String> highlights = CurationArticle.pickHighlights(language, row.oneLinerEn(), row.highlights(),
-                row.highlightsEn());
+        List<String> highlights = row.adult() ? List.of()
+                : CurationArticle.pickHighlights(language, row.oneLinerEn(), row.highlights(), row.highlightsEn());
+        String oneLiner = row.adult() ? null : CurationArticle.pick(language, row.oneLiner(), row.oneLinerEn());
         List<String> tags = row.tags() == null ? List.of() : row.tags();
         return new GameSummaryResponse(row.slug(), language.pick(row.title(), row.titleEn()), row.headerImageUrl(),
                 row.releaseDate(), language.pick(row.releaseDateText(), row.releaseDateTextEn()),
@@ -72,7 +74,7 @@ public record GameSummaryResponse(
                 List.copyOf(tags.subList(0, Math.min(MAX_TAGS, tags.size()))),
                 row.languages() == null ? List.of() : List.copyOf(row.languages()),
                 row.audioLanguages() == null ? List.of() : List.copyOf(row.audioLanguages()), genres, row.picked(),
-                CurationArticle.pick(language, row.oneLiner(), row.oneLinerEn()),
+                oneLiner,
                 List.copyOf(highlights.subList(0, Math.min(MAX_HIGHLIGHTS, highlights.size()))),
                 row.sponsored(), row.hasPlayVideo(), row.hasAchievementGuide(), row.source(),
                 row.reviewed(), row.free(), row.endingType() == EndingType.MULTIPLE, row.hasKoreanPatch());

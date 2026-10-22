@@ -169,7 +169,13 @@ class PublicGameApiTest {
 
         mvc.perform(get("/api/games"))
                 .andExpect(jsonPath("$.content[*].slug", contains("pinned-adult")))
-                .andExpect(jsonPath("$.content[0].adult").value(true));
+                .andExpect(jsonPath("$.content[0].adult").value(true))
+                // 상세처럼 목록 카드에도 큐레이터 글을 내보내지 않는다
+                .andExpect(jsonPath("$.content[0].oneLiner").doesNotExist())
+                .andExpect(jsonPath("$.content[0].highlights", hasSize(0)));
+        mvc.perform(get("/api/games").param("lang", "en"))
+                .andExpect(jsonPath("$.content[0].oneLiner").doesNotExist())
+                .andExpect(jsonPath("$.content[0].highlights", hasSize(0)));
         mvc.perform(get("/api/games/pinned-adult"))
                 .andExpect(jsonPath("$.adult").value(true));
     }
@@ -311,9 +317,14 @@ class PublicGameApiTest {
         create(spec("unknown-price"));
         // 출시 전 게임은 가격·무료 표시가 없으니 무료 목록에도 없다
         create(spec("free-upcoming").releaseDate(null).comingSoon(true).price(new StorePrice(true, null, null)));
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+        create(spec("free-today").releaseDate(today).comingSoon(true).price(new StorePrice(true, null, null)));
+        // 출시일이 지났는데 Steam이 아직 출시 예정으로 두면 사이트는 출시로 보고 "무료" 뱃지를 붙인다
+        create(spec("free-overdue").releaseDate(today.minusDays(1)).comingSoon(true)
+                .price(new StorePrice(true, null, null)));
 
         mvc.perform(get("/api/games").param("free", "true"))
-                .andExpect(jsonPath("$.content[*].slug", contains("free-game")))
+                .andExpect(jsonPath("$.content[*].slug", containsInAnyOrder("free-game", "free-overdue")))
                 .andExpect(jsonPath("$.content[0].free").value(true));
         mvc.perform(get("/api/games/paid-game"))
                 .andExpect(jsonPath("$.free").value(false))

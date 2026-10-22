@@ -11,6 +11,9 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -58,6 +61,8 @@ public class ItchPageParser {
             "\"(?:price_?)?[cC]urrency\":\"([A-Za-z]{3})\"|itemprop=\"priceCurrency\"[^>]*content=\"([A-Za-z]{3})\"");
     /** "$4.99" 모양의 달러 표시 (CA$·A$ 같은 다른 달러는 제외) */
     private static final Pattern DOLLAR_PRICE = Pattern.compile("(?<![A-Za-z])\\$\\d");
+    /** 출시일은 사이트 기준(한국) 날짜로 둔다 */
+    private static final ZoneId SITE_ZONE = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter ITCH_DATE = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.ENGLISH);
     private static final DateTimeFormatter EN_DATE = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH);
 
@@ -255,10 +260,19 @@ public class ItchPageParser {
             }
             Matcher abbr = ABBR_TITLE.matcher(cell);
             if (abbr.find()) {
-                // "16 September 2026 @ 03:22 UTC"
-                String date = abbr.group(1).split("@", 2)[0].strip();
+                // "16 September 2026 @ 03:22 UTC": 다른 출시일처럼 한국 날짜로 바꾼다 (UTC 15시 이후면 다음 날)
+                String[] parts = abbr.group(1).split("@", 2);
                 try {
-                    return LocalDate.parse(date, ITCH_DATE);
+                    LocalDate date = LocalDate.parse(parts[0].strip(), ITCH_DATE);
+                    if (parts.length < 2) {
+                        return date;
+                    }
+                    String time = parts[1].strip();
+                    if (!time.endsWith("UTC")) {
+                        return date;
+                    }
+                    LocalTime utcTime = LocalTime.parse(time.substring(0, time.length() - 3).strip());
+                    return date.atTime(utcTime).atZone(ZoneOffset.UTC).withZoneSameInstant(SITE_ZONE).toLocalDate();
                 } catch (DateTimeParseException ignored) {
                     // 모양이 다르면 출시일 없이 둔다
                 }

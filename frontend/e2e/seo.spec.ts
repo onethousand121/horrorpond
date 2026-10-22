@@ -41,3 +41,11 @@ test("범위를 넘은 페이지는 404", async ({ page }) => {
   // 백엔드 int 범위를 넘는 값은 1페이지로 본다
   expect((await page.goto("/games?page=3000000000"))?.status()).toBe(200);
 });
+
+test("/ko 주소 정리는 다른 사이트로 보내지 않는다", async ({ request }) => {
+  const res = await request.get("/ko//evil.com/games", { maxRedirects: 0 });
+  expect(res.status()).toBe(308);
+  const location = new URL(res.headers()["location"], "http://lurkpond.test");
+  expect(res.headers()["location"]).not.toMatch(/^\/\//);
+  expect(location.hostname).not.toBe("evil.com");
+});
