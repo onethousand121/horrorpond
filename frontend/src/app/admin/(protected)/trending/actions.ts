@@ -61,20 +61,31 @@ export async function applyTrendingResearchAction(_prev: ImportState | null, for
   }
 
   const rows: ImportRow[] = [];
-  const pinnedNow = new Set<number>();
+  const progress: Progress = { pinnedNow: new Set<number>(), changed: false };
   try {
-    return await applyAll(research, rows, pinnedNow);
+    return await applyAll(research, rows, progress);
   } finally {
-    // 중간에 실패해도 이미 반영된 고정이 사이트에 보이게 캐시를 비운다
-    updateTag(CACHE_TAGS.games);
-    revalidatePath("/admin", "layout");
+    // 중간에 실패해도 이미 반영된 변경이 사이트에 보이게 캐시를 비운다.
+    // 백엔드 변경이 하나도 성공하지 않았으면(예: 첫 호출에서 인증 실패 → 로그인으로 redirect) 캐시를 건드리지 않는다.
+    // finally는 예외(redirect 포함)를 그대로 다시 던진다
+    if (progress.changed) {
+      updateTag(CACHE_TAGS.games);
+      revalidatePath("/admin", "layout");
+    }
   }
 }
 
-async function applyAll(research: ReturnType<typeof parseResearch>, rows: ImportRow[], pinnedNow: Set<number>): Promise<ImportState> {
+/** 이번 반영에서 자동 고정한 게임과, 백엔드 변경이 하나라도 성공했는지 */
+interface Progress {
+  pinnedNow: Set<number>;
+  changed: boolean;
+}
+
+async function applyAll(research: ReturnType<typeof parseResearch>, rows: ImportRow[], progress: Progress): Promise<ImportState> {
+  const { pinnedNow } = progress;
   for (const game of research.games) {
     try {
-      rows.push(await applyGame(game, pinnedNow));
+      rows.push(await applyGame(game, progress));
     } catch (e) {
       if (!(e instanceof AdminApiError)) throw e;
       rows.push({ title: game.title, gameId: null, action: "오류", video: "-", note: e.message });
@@ -87,6 +98,7 @@ async function applyAll(research: ReturnType<typeof parseResearch>, rows: Import
     for (const pin of await getTrendingPins()) {
       if (pin.auto && !pinnedNow.has(pin.id)) {
         await changeTrendingOverride(pin.id, null);
+        progress.changed = true;
         rows.push({ title: pin.title, gameId: pin.id, action: "고정 해제", video: "-", note: "이번 주 결과에 없음" });
       }
     }
@@ -103,7 +115,7 @@ async function applyAll(research: ReturnType<typeof parseResearch>, rows: Import
   };
 }
 
-async function applyGame(game: ResearchGame, pinnedNow: Set<number>): Promise<ImportRow> {
+async function applyGame(game: ResearchGame, progress: Progress): Promise<ImportRow> {
   const row: ImportRow = { title: game.title, gameId: null, action: "", video: "-", note: game.why ?? "" };
   if (game.confidence === "low") {
     return { ...row, action: "확인 필요", note: "신뢰도 낮음 — 직접 확인 후 관리 화면에서 고정해 주세요" };
@@ -122,6 +134,7 @@ async function applyGame(game: ResearchGame, pinnedNow: Set<number>): Promise<Im
     if (game.steamAppId !== null) {
       try {
         await addSteamSeed(game.steamAppId);
+        progress.changed = true;
         return { ...row, action: "신규 추가", note: "다음 새벽 수집 후 들어와요. 고정은 다음 주 반영 때" };
       } catch (e) {
         if (e instanceof AdminApiError && e.status === 409) {
@@ -131,6 +144,7 @@ async function applyGame(game: ResearchGame, pinnedNow: Set<number>): Promise<Im
       }
     }
     const { gameId } = await addItchGame(game.itchUrl!);
+    progress.changed = true;
     detail = await getAdminGame(gameId);
     if (detail === null) return { ...row, action: "오류", note: "itch.io 게임을 받았지만 찾지 못함" };
     row.note = `itch.io에서 새로 받음. ${row.note}`;
@@ -145,18 +159,23 @@ async function applyGame(game: ResearchGame, pinnedNow: Set<number>): Promise<Im
   }
   if (!detail.publiclyVisible) {
     await publishGame(detail.id);
+    progress.changed = true;
     row.note = `사이트에 안 보이던 게임이라 고정 노출함. ${row.note}`;
   }
 
   if (detail.trendingOverride === "PINNED" && !detail.trendingAuto) {
     row.action = "고정 유지"; // 관리자가 직접 고정한 게임은 자동 고정으로 바꾸지 않는다
   } else {
-    if (detail.trendingOverride !== "PINNED") await changeTrendingOverride(detail.id, "PINNED", true);
+    if (detail.trendingOverride !== "PINNED") {
+      await changeTrendingOverride(detail.id, "PINNED", true);
+      progress.changed = true;
+    }
     row.action = "고정";
-    pinnedNow.add(detail.id);
+    progress.pinnedNow.add(detail.id);
   }
 
   row.video = await applyReferenceVideo(detail, game);
+  if (row.video === "추가") progress.changed = true;
   return row;
 }
 
