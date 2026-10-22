@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { pathForLocale } from "@/lib/collections";
 import { LOCALE_COOKIE, LOCALES, localePath, stripLocale, type Locale } from "@/lib/i18n";
 
 const LABELS: Record<Locale, string> = { ko: "KO", en: "EN" };
@@ -21,7 +22,8 @@ export function LanguageSwitcher({ current, label }: { current: Locale; label: s
   return (
     <nav aria-label={label} className="flex items-center gap-1 font-pixel text-[11px]">
       {LOCALES.map((locale) => {
-        const href = localePath(locale, pathname);
+        // 그 언어에 없는 페이지(한국어 전용 모음)는 목록으로 보낸다
+        const href = localePath(locale, pathForLocale(locale, pathname));
         return (
           <a
             key={locale}
