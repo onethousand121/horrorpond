@@ -68,7 +68,7 @@ public record GameDetailResponse(
 ) {
 
     /**
-     * 제목·소개·출시일 텍스트는 요청 언어로 (영어가 없으면 한국어). 큐레이터 글은 한국어만 있다.
+     * 제목·소개·출시일 텍스트는 요청 언어로 (영어가 없으면 한국어). 큐레이터 글은 영어 번역이 있을 때만 영어로.
      * 성인 게임은 API에서부터 소개·미디어·글·영상·업적·엔딩 공략·한글패치를 비운다 (사이트는 Steam 링크만 보여준다).
      */
     static GameDetailResponse of(Game game, List<GenreSummary> genres, CurationArticle article, Language language,
@@ -93,7 +93,7 @@ public record GameDetailResponse(
                 game.getStoreLinks().stream()
                         .map(link -> new StoreLinkResponse(link.getStore(), link.getUrl()))
                         .toList(),
-                adult || article == null ? null : Article.from(article), adult ? List.of() : playVideos,
+                adult || article == null ? null : Article.from(article, language), adult ? List.of() : playVideos,
                 adult ? List.of() : achievements, game.getSource(),
                 adult ? List.of() : referenceVideos, game.isFree(), game.getPriceAmount(), game.getPriceCurrency(),
                 adult ? null : game.getEndingType(),
@@ -119,15 +119,17 @@ public record GameDetailResponse(
      * @param body markdown 원문. 렌더링은 프론트엔드가 한다.
      */
     /**
-     * @param kind PICK(추천) | REVIEW(플레이 후기)
+     * @param kind     PICK(추천) | REVIEW(플레이 후기)
+     * @param language 글이 실제로 쓰인 언어 ko | en (영어 화면이라도 번역이 없으면 ko)
      */
     public record Article(String title, String oneLiner, String body, List<String> highlights,
-                          boolean sponsored, String sponsorDisclosure, Instant publishedAt, ArticleKind kind) {
+                          boolean sponsored, String sponsorDisclosure, Instant publishedAt, ArticleKind kind,
+                          String language) {
 
-        static Article from(CurationArticle article) {
-            return new Article(article.getTitle(), article.getOneLiner(), article.getBody(),
-                    List.copyOf(article.getHighlights()), article.isSponsored(), article.getSponsorDisclosure(),
-                    article.getPublishedAt(), article.getKind());
+        static Article from(CurationArticle article, Language language) {
+            return new Article(article.title(language), article.oneLiner(language), article.body(language),
+                    List.copyOf(article.highlights(language)), article.isSponsored(), article.getSponsorDisclosure(),
+                    article.getPublishedAt(), article.getKind(), article.isShownIn(language) ? "en" : "ko");
         }
     }
 }

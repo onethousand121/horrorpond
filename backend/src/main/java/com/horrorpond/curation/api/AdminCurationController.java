@@ -79,6 +79,18 @@ public class AdminCurationController {
                 request.sponsorDisclosure()));
     }
 
+    /** 큐레이터 글 영어 번역을 넣거나 바꾼다. 글 규칙은 한국어와 같다 (도메인 검증) */
+    @PutMapping("/{id}/article/translation")
+    public AdminArticleResponse translateArticle(@PathVariable Long id, @RequestBody TranslationRequest request) {
+        return curationService.translateArticle(id, new CurationService.TranslationCommand(request.title(),
+                request.oneLiner(), request.body(), request.highlights()));
+    }
+
+    @DeleteMapping("/{id}/article/translation")
+    public AdminArticleResponse clearTranslation(@PathVariable Long id) {
+        return curationService.clearTranslation(id);
+    }
+
     /**
      * 플레이 영상 목록 전체를 바꾼다 (순서 = 목록 순서, 빈 목록이면 모두 삭제).
      */
@@ -252,5 +264,8 @@ public class AdminCurationController {
             List<String> highlights,
             boolean sponsored,
             String sponsorDisclosure) {
+    }
+
+    public record TranslationRequest(String title, String oneLiner, String body, List<String> highlights) {
     }
 }

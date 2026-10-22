@@ -343,7 +343,7 @@ const en: Dictionary = {
     viewOnItch: "View on itch.io ↗",
     highlightsLabel: "Highlights",
     highlightsTitle: "Why you should play it",
-    articleKoreanOnly: "This recommendation is written in Korean.",
+    articleKoreanOnly: "This post is written in Korean.",
     // 한글패치는 한국어 화면에만 보인다
     koreanPatch: "Korean patch",
     koreanPatchAuthor: "Fan Korean patch",

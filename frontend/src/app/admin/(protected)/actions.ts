@@ -11,6 +11,7 @@ import {
   addSteamSeed,
   AdminApiError,
   changeTrendingOverride,
+  clearArticleTranslation,
   deleteArticle,
   hideGame,
   publishGame,
@@ -23,6 +24,7 @@ import {
   unpublishArticle,
   updateCuration,
   upsertArticle,
+  translateArticle,
 } from "@/lib/admin/api";
 import { CACHE_TAGS } from "@/lib/api";
 import { youtubeInfo } from "@/lib/admin/youtubeInfo";
@@ -300,6 +302,33 @@ export async function unpublishArticleAction(_prev: ActionResult | null, formDat
   await requireAdminKey();
   const id = gameId(formData);
   return run(() => unpublishArticle(id), "글을 내렸습니다. 초안으로 남아 있어 다시 공개할 수 있습니다.");
+}
+
+/** 큐레이터 글 영어 번역 저장. 장점 포인트 빈 칸은 버린다 */
+export async function saveTranslationAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
+  const id = gameId(formData);
+  const highlights = formData
+    .getAll("highlightEn")
+    .map((value) => String(value).trim())
+    .filter(Boolean)
+    .slice(0, ARTICLE_LIMITS.highlights);
+  return run(
+    () =>
+      translateArticle(id, {
+        title: String(formData.get("titleEn") ?? ""),
+        oneLiner: String(formData.get("oneLinerEn") ?? ""),
+        body: String(formData.get("bodyEn") ?? ""),
+        highlights,
+      }),
+    "영어 번역을 저장했습니다. 영어 화면(/en)에 바로 반영됩니다.",
+  );
+}
+
+export async function clearTranslationAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
+  const id = gameId(formData);
+  return run(() => clearArticleTranslation(id), "영어 번역을 지웠습니다. 영어 화면에는 한국어 글이 보입니다.");
 }
 
 export async function deleteArticleAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {

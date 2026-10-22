@@ -17,6 +17,7 @@ import {
 } from "../../actions";
 import { ActionButton } from "../../components/ActionButton";
 import { ArticleForm } from "../../components/ArticleForm";
+import { TranslationForm } from "../../components/TranslationForm";
 import { CurationForm } from "../../components/CurationForm";
 import { AchievementForm, EndingForm, KoreanPatchForm, PlayVideoForm, ReferenceVideoForm } from "../../components/GuideForms";
 import { AdultBadge, ArticleStatusBadge, GameStatusBadge, VisibilityBadge } from "../../components/StatusBadge";
@@ -184,6 +185,13 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
         </div>
         {/* 삭제·저장 후 서버 값으로 다시 그리도록 글이 바뀌면 새로 마운트한다 */}
         <ArticleForm key={article ? `${article.status}-${article.kind}-${article.title}` : "new"} gameId={game.id} article={article} />
+        {article && (
+          <TranslationForm
+            key={`${article.titleEn ?? "none"}-${article.translationStale ? "stale" : "fresh"}`}
+            gameId={game.id}
+            article={article}
+          />
+        )}
         {/* 엔딩은 글과 따로 저장한다 (폼 안에 폼을 둘 수 없어 글 폼 바로 아래에 둔다) */}
         <details className="rounded border border-border p-3">
           <summary className="cursor-pointer text-sm font-medium">

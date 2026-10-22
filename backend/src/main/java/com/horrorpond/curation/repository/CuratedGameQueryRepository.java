@@ -68,6 +68,7 @@ public class CuratedGameQueryRepository {
                         game.comingSoon, game.coop, game.adult, game.reviewCount, game.tags,
                         game.languages, game.audioLanguages,
                         isArticle(ArticleKind.PICK), article.oneLiner, article.highlights,
+                        article.oneLinerEn, article.highlightsEn,
                         article.sponsored.coalesce(false),
                         keeperVideoExists(),
                         JPAExpressions.selectOne().from(achievementGuide)
@@ -317,6 +318,8 @@ public class CuratedGameQueryRepository {
             boolean picked,
             String oneLiner,
             List<String> highlights,
+            String oneLinerEn,
+            List<String> highlightsEn,
             boolean sponsored,
             boolean hasPlayVideo,
             boolean hasAchievementGuide,
