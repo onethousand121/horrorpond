@@ -42,7 +42,8 @@ export function alternateLanguages(path: string, locales: readonly Locale[] = LO
 export function stripLocale(pathname: string): string {
   for (const locale of LOCALES) {
     if (pathname === `/${locale}`) return "/";
-    if (pathname.startsWith(`/${locale}/`)) return pathname.slice(locale.length + 1);
+    // 앞의 슬래시를 하나로 모은다: /ko//evil.com 이 "//evil.com"(프로토콜 상대 주소)이 되어 다른 사이트로 가지 않게
+    if (pathname.startsWith(`/${locale}/`)) return "/" + pathname.slice(locale.length + 1).replace(/^\/+/, "");
   }
   return pathname;
 }
