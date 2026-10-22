@@ -308,6 +308,32 @@ class IngestionPipelineIntegrationTest {
     }
 
     @Test
+    void emptySpyTagsAreRefetchedAfterAWeekAndAppliedEvenIfAppDetailsDidNotChange() {
+        seedRepository.save(SteamAppSeed.discovered(739630, DiscoveredBy.MANUAL, clock.instant()));
+        expectTags(739630); // SteamSpy가 아직 모르는 신작: 태그 없음
+        expectAppDetails(739630);
+        enrichmentService.run(TriggerType.MANUAL);
+        normalizeService.run(TriggerType.MANUAL);
+        SERVER.verify();
+        SERVER.reset();
+        assertThat(jdbc.queryForObject("SELECT cardinality(tags) FROM game", Integer.class)).isZero();
+
+        // 다음 날(출시 무렵 재확인 등)에는 빈 태그를 다시 받지 않는다
+        assertThat(seedRepository.findById(739630).orElseThrow().needsSpyTags(clock.instant())).isFalse();
+
+        // 8일 뒤 갱신: appdetails는 그대로(같은 payload)지만 태그가 생겼다
+        jdbc.update("UPDATE steam_app_seed SET last_fetched_at = now() - interval '8 days'");
+        expectTags(739630, "Horror", "Psychological Horror");
+        expectAppDetails(739630);
+        assertJob(enrichmentService.run(TriggerType.MANUAL), JobType.ENRICHMENT, JobStatus.SUCCEEDED, 1, 0);
+        SERVER.verify();
+
+        assertJob(normalizeService.run(TriggerType.MANUAL), JobType.NORMALIZE, JobStatus.SUCCEEDED, 1, 0);
+        assertThat(jdbc.queryForList("SELECT unnest(tags) FROM game", String.class))
+                .containsExactly("Horror", "Psychological Horror");
+    }
+
+    @Test
     void normalizeRerunWithSamePayloadProcessesNothing() {
         ingest(739630);
 

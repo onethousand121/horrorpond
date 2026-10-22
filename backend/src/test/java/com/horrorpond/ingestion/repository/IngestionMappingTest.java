@@ -59,6 +59,36 @@ class IngestionMappingTest {
                 .containsExactly(1, 2);
     }
 
+    @Test
+    void notHorrorSeedRequestedManuallyReturnsToRefreshAndRetryQueues() {
+        Instant old = NOW.minus(java.time.Duration.ofDays(30));
+        SteamAppSeed refreshed = SteamAppSeed.discovered(1, DiscoveredBy.STEAMSPY_TAG, old);
+        refreshed.recordHorrorTag(com.horrorpond.ingestion.domain.HorrorTag.NOT_HORROR, old);
+        refreshed.requestManually();
+        refreshed.markFetched(FetchStatus.OK, old);
+        SteamAppSeed failed = SteamAppSeed.discovered(2, DiscoveredBy.STEAMSPY_TAG, old);
+        failed.recordHorrorTag(com.horrorpond.ingestion.domain.HorrorTag.NOT_HORROR, old);
+        failed.requestManually();
+        failed.markFailed(old);
+        seedRepository.save(refreshed);
+        seedRepository.save(failed);
+        flushAndClear();
+
+        assertThat(seedRepository.findByFetchStatusAndHorrorTagNotAndLastFetchedAtBeforeOrderByLastFetchedAtAscAppidAsc(
+                FetchStatus.OK, com.horrorpond.ingestion.domain.HorrorTag.NOT_HORROR, NOW,
+                org.springframework.data.domain.Limit.of(10)))
+                .extracting(SteamAppSeed::getAppid).containsExactly(1);
+        assertThat(seedRepository
+                .findByFetchStatusAndHorrorTagNotAndFailCountLessThanAndLastFetchedAtBeforeOrderByLastFetchedAtAscAppidAsc(
+                        FetchStatus.FAILED, com.horrorpond.ingestion.domain.HorrorTag.NOT_HORROR, 3, NOW,
+                        org.springframework.data.domain.Limit.of(10)))
+                .extracting(SteamAppSeed::getAppid).containsExactly(2);
+        SteamAppSeed reloaded = seedRepository.findById(1).orElseThrow();
+        assertThat(reloaded.getHorrorTagCheckedAt()).isNull();
+        // 수동 seed는 다시 판정하지 않는다
+        assertThat(reloaded.needsHorrorTagCheck()).isFalse();
+    }
+
     private void steamGame(int appid, boolean comingSoon, java.time.LocalDate releaseDate, Instant fetchedAt,
                            boolean hidden) {
         com.horrorpond.catalog.domain.Game game = com.horrorpond.catalog.domain.Game.candidateFromSteam(

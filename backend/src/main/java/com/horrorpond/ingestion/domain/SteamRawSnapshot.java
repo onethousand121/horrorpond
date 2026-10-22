@@ -83,6 +83,13 @@ public class SteamRawSnapshot implements Persistable<Integer> {
         this.normalizedHash = payloadHash;
     }
 
+    /**
+     * payload는 그대로지만 정리에 쓰는 다른 값(SteamSpy 태그)이 바뀌어 다음 정리에서 다시 반영하게 한다.
+     */
+    public void requestRenormalize() {
+        this.normalizedHash = null;
+    }
+
     public boolean needsNormalize() {
         return !payloadHash.equals(normalizedHash);
     }

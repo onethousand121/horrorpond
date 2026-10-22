@@ -19,6 +19,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.domain.Persistable;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,9 @@ import java.util.Objects;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString
 public class SteamAppSeed implements Persistable<Integer> {
+
+    /** 빈 SteamSpy 태그를 다시 받기까지 기다리는 시간 */
+    public static final Duration EMPTY_SPY_TAGS_RETRY_AFTER = Duration.ofDays(7);
 
     @Id
     private Integer appid;
@@ -86,14 +90,26 @@ public class SteamAppSeed implements Persistable<Integer> {
     }
 
     /**
-     * 태그는 공포 판정과 별개로 모든 seed가 한 번 받는다(장르 자동 분류용). 수동 추가 seed도 포함.
+     * 태그는 공포 판정과 별개로 모든 seed가 받는다(장르 자동 분류용). 수동 추가 seed도 포함.
+     * 아직 안 받았거나, 비어 있는데(SteamSpy가 아직 모르는 신작) 마지막 수집이 {@link #EMPTY_SPY_TAGS_RETRY_AFTER}보다
+     * 오래됐으면 다시 받는다. 태그는 appdetails 바로 앞에서 받으므로 마지막 수집 시각(lastFetchedAt)을 태그 시각으로 쓴다.
      */
-    public boolean needsSpyTags() {
-        return spyTags == null;
+    public boolean needsSpyTags(Instant now) {
+        if (spyTags == null) {
+            return true;
+        }
+        return spyTags.isEmpty()
+                && (lastFetchedAt == null || !lastFetchedAt.isAfter(now.minus(EMPTY_SPY_TAGS_RETRY_AFTER)));
     }
 
-    public void recordSpyTags(List<String> tags) {
-        this.spyTags = new ArrayList<>(Objects.requireNonNull(tags, "tags"));
+    /**
+     * @return 태그가 바뀌었으면 true (이미 정리한 Game에 다시 반영해야 한다)
+     */
+    public boolean recordSpyTags(List<String> tags) {
+        List<String> recorded = new ArrayList<>(Objects.requireNonNull(tags, "tags"));
+        boolean changed = !recorded.equals(spyTags);
+        this.spyTags = recorded;
+        return changed;
     }
 
     public void recordHorrorTag(HorrorTag result, Instant now) {
@@ -126,6 +142,9 @@ public class SteamAppSeed implements Persistable<Integer> {
         this.discoveredBy = DiscoveredBy.MANUAL;
         this.fetchStatus = FetchStatus.PENDING;
         this.failCount = 0;
+        // NOT_HORROR로 남으면 이번 수집 뒤 갱신·재시도 대상에서 영영 빠진다. 수동 seed는 판정하지 않으므로 판정 전으로 되돌린다
+        this.horrorTag = HorrorTag.UNCHECKED;
+        this.horrorTagCheckedAt = null;
     }
 
     public void markFailed(Instant now) {
