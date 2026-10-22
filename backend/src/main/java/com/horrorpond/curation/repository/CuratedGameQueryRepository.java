@@ -22,6 +22,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -124,10 +126,7 @@ public class CuratedGameQueryRepository {
         BooleanBuilder where = new BooleanBuilder(query.visibility());
         if (query.search() != null) {
             // 언어와 상관없이 한국어·영어 제목, 주소(slug, 공백은 -)에서 찾는다
-            String pattern = "%" + escapeLike(query.search()) + "%";
-            where.and(game.title.likeIgnoreCase(pattern, LIKE_ESCAPE)
-                    .or(game.titleEn.likeIgnoreCase(pattern, LIKE_ESCAPE))
-                    .or(game.slug.likeIgnoreCase(slugPattern(query.search()), LIKE_ESCAPE)));
+            where.and(searchMatches(query.search()));
         }
         if (query.coop() != null) {
             where.and(game.coop.eq(query.coop()));
@@ -195,12 +194,49 @@ public class CuratedGameQueryRepository {
         return new CaseBuilder().when(article.kind.eq(kind)).then(true).otherwise(false);
     }
 
-    /** 검색어의 %, _ 를 글자 그대로 찾도록 이스케이프한다. */
+    /**
+     * 한국어·영어 제목, 주소(slug)에서 찾는다. 공개 검색과 관리 화면 검색이 함께 쓴다.
+     * 그대로 포함되는지 외에, 공백·문장부호(-)를 지우고 소문자로 맞춘 모양끼리도 비교한다
+     * ("redorblue" ↔ "Red or Blue", "영덕 폐가" ↔ "영덕폐가").
+     */
+    static BooleanExpression searchMatches(String search) {
+        String pattern = "%" + escapeLike(search) + "%";
+        BooleanExpression matches = game.title.likeIgnoreCase(pattern, LIKE_ESCAPE)
+                .or(game.titleEn.likeIgnoreCase(pattern, LIKE_ESCAPE))
+                .or(game.slug.likeIgnoreCase(slugPattern(search), LIKE_ESCAPE));
+        String compact = compactSearch(search);
+        if (compact.isEmpty()) {
+            return matches;
+        }
+        String compactPattern = "%" + escapeLike(compact) + "%";
+        return matches.or(compacted(game.title).like(compactPattern, LIKE_ESCAPE))
+                .or(compacted(game.titleEn).like(compactPattern, LIKE_ESCAPE))
+                .or(compacted(game.slug).like(compactPattern, LIKE_ESCAPE));
+    }
+
+    /**
+     * DB 쪽: 소문자로 바꾸고 공백·문장부호를 모두 지운다 (compactSearch와 같은 규칙, PostgreSQL regexp_replace).
+     * Hibernate는 function()의 결과 타입을 모르므로 like 에 쓰려면 문자열로 cast 한다.
+     */
+    private static StringExpression compacted(StringExpression column) {
+        return Expressions.stringTemplate(
+                "cast(function('regexp_replace', lower({0}), '[[:space:][:punct:]]', '', 'g') as String)", column);
+    }
+
+    /**
+     * 검색어 쪽: 소문자로 바꾸고 공백·문장부호를 지운다. 단 %, _ 는 남겨 둔다
+     * (이스케이프되어 글자 그대로 찾으므로, 문장부호가 지워진 DB 값과는 맞지 않는다 = 와일드카드로 쓰이지 않는다).
+     */
+    static String compactSearch(String search) {
+        return search.toLowerCase(Locale.ROOT).replaceAll("[\\p{IsWhite_Space}\\p{P}\\p{S}&&[^%_]]", "");
+    }
+
     /** "red or blue" → "%red-or-blue%" (주소는 영어 이름을 - 로 이은 모양이다) */
     static String slugPattern(String search) {
         return "%" + escapeLike(search.strip().replaceAll("\\s+", "-")) + "%";
     }
 
+    /** 검색어의 %, _ 를 글자 그대로 찾도록 이스케이프한다. */
     static String escapeLike(String value) {
         return value.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }

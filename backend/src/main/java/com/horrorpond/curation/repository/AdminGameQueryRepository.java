@@ -40,12 +40,7 @@ public class AdminGameQueryRepository {
         }
         if (titleQuery != null && !titleQuery.isBlank()) {
             // 공개 검색과 같이 한국어·영어 제목, 주소(slug)에서 찾는다
-            String search = titleQuery.strip();
-            String pattern = "%" + CuratedGameQueryRepository.escapeLike(search) + "%";
-            where.and(game.title.likeIgnoreCase(pattern, CuratedGameQueryRepository.LIKE_ESCAPE)
-                    .or(game.titleEn.likeIgnoreCase(pattern, CuratedGameQueryRepository.LIKE_ESCAPE))
-                    .or(game.slug.likeIgnoreCase(CuratedGameQueryRepository.slugPattern(search),
-                            CuratedGameQueryRepository.LIKE_ESCAPE)));
+            where.and(CuratedGameQueryRepository.searchMatches(titleQuery.strip()));
         }
         List<AdminGameRow> rows = queryFactory
                 .select(Projections.constructor(AdminGameRow.class,
