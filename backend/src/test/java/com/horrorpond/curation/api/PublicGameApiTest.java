@@ -385,6 +385,30 @@ class PublicGameApiTest {
     }
 
     @Test
+    void searchIgnoresSpacesAndPunctuation() throws Exception {
+        create(spec("red-or-blue").title("레드 오어 블루").englishTitle("Red or Blue"));
+        create(spec("yeongdeok").title("영덕 폐가: 그날 밤"));
+        create(spec("phasmo"));
+
+        for (String q : List.of("redorblue", "RedOrBlue", "red-or-blue", "Red or Blue", "red.or blue", "레드오어블루")) {
+            mvc.perform(get("/api/games").param("q", q))
+                    .andExpect(jsonPath("$.content[*].slug", contains("red-or-blue")));
+        }
+        // _ 와 % 는 지우지 않고 글자 그대로 찾는다 (와일드카드로 쓰이지 않는다)
+        mvc.perform(get("/api/games").param("q", "red_or_blue"))
+                .andExpect(jsonPath("$.content", hasSize(0)));
+        mvc.perform(get("/api/games").param("q", "영덕폐가"))
+                .andExpect(jsonPath("$.content[*].slug", contains("yeongdeok")));
+        mvc.perform(get("/api/games").param("q", "영덕 폐가 그날"))
+                .andExpect(jsonPath("$.content[*].slug", contains("yeongdeok")));
+        // 문장부호만 있는 검색어는 빈 비교를 하지 않는다 (모든 게임이 나오지 않는다)
+        mvc.perform(get("/api/games").param("q", "-"))
+                .andExpect(jsonPath("$.content[*].slug", contains("red-or-blue")));
+        mvc.perform(get("/api/games").param("q", "!!"))
+                .andExpect(jsonPath("$.content", hasSize(0)));
+    }
+
+    @Test
     void englishFallsBackToKoreanAndSearchMatchesBothTitles() throws Exception {
         create(spec("translated").englishTitle("Silent Pond").genres("psychological"));
         create(spec("korean-only").genres("psychological"));
@@ -594,8 +618,9 @@ class PublicGameApiTest {
                     .mapToObj(i -> new SteamGameData.Media(MediaType.SCREENSHOT, "https://media/" + spec.slug + "/" + i,
                             "https://thumb/" + spec.slug + "/" + i))
                     .toList();
-            Game game = Game.candidateFromSteam(appid, "Title " + spec.slug, spec.slug);
-            game.applySteamData(new SteamGameData("Title " + spec.slug, "Description " + spec.slug,
+            String title = spec.title != null ? spec.title : "Title " + spec.slug;
+            Game game = Game.candidateFromSteam(appid, title, spec.slug);
+            game.applySteamData(new SteamGameData(title, "Description " + spec.slug,
                     "https://img/" + spec.slug + ".jpg", spec.releaseDate,
                     spec.releaseDate == null ? "Coming soon" : spec.releaseDate.toString(), spec.comingSoon, spec.coop,
                     spec.reviewCount, spec.adult, media, credits));
@@ -667,6 +692,7 @@ class PublicGameApiTest {
         private List<String> languages = List.of();
         private List<String> audioLanguages = List.of();
         private String englishTitle;
+        private String title;
         private TrendingOverride trendingOverride;
         private Integer pinOrder;
         private StorePrice price = StorePrice.UNKNOWN;
@@ -705,6 +731,8 @@ class PublicGameApiTest {
         GameSpec languages(List<String> all, List<String> audio) { languages = all; audioLanguages = audio; return this; }
 
         GameSpec englishTitle(String value) { englishTitle = value; return this; }
+
+        GameSpec title(String value) { title = value; return this; }
 
         GameSpec trendingOverride(TrendingOverride value) { trendingOverride = value; return this; }
 

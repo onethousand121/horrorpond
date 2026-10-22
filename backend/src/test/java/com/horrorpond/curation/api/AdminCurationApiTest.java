@@ -222,6 +222,11 @@ class AdminCurationApiTest {
         // 영어 제목이나 주소(slug)로도 찾는다
         mvc.perform(admin(get("/api/admin/games").param("q", "doom 3 9050")))
                 .andExpect(jsonPath("$.content[*].slug", contains("doom-3-9050")));
+        // 공백·문장부호를 지운 모양으로도 찾는다
+        mvc.perform(admin(get("/api/admin/games").param("q", "doom39050")))
+                .andExpect(jsonPath("$.content[*].slug", contains("doom-3-9050")));
+        mvc.perform(admin(get("/api/admin/games").param("q", "DOOM3")))
+                .andExpect(jsonPath("$.content[*].slug", contains("doom-3-208200", "doom-3-9050")));
     }
 
     @Test
