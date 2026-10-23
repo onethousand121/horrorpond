@@ -1,20 +1,25 @@
 import type { MetadataRoute } from "next";
 import { connection } from "next/server";
-import { getGames, getGenres, MAX_PAGE_SIZE } from "@/lib/api";
+import { getGames, getGenres, getSitemapGames, MAX_PAGE_SIZE, type SitemapGame } from "@/lib/api";
 import { collectionLocales, COLLECTIONS } from "@/lib/collections";
 import { alternateLanguages, LOCALES, localePath, type Locale } from "@/lib/i18n";
 import { SITE_URL } from "@/lib/site";
-import type { GameSummary } from "@/lib/types";
 
 // 요청 시 렌더링: 고정 경로는 빌드 때 사전 렌더링되므로, connection()으로 빌드가 백엔드에 의존하지 않게 한다.
 // 백엔드 호출은 lib/api의 fetch 데이터 캐시(1시간, 태그 기반 갱신)가 막아 준다.
 
 
-async function allPublishedGames(): Promise<GameSummary[]> {
-  const games: GameSummary[] = [];
+/**
+ * 공개 게임(성인 제외) 주소 목록. 사이트맵 전용 API 한 번으로 받고,
+ * 그 API가 없는 이전 백엔드면 목록 API를 페이지마다 넘기며 모은다.
+ */
+async function allPublishedGames(): Promise<SitemapGame[]> {
+  const sitemapGames = await getSitemapGames();
+  if (sitemapGames) return sitemapGames;
+  const games: SitemapGame[] = [];
   for (let page = 0; ; page++) {
     const result = await getGames({ page, size: MAX_PAGE_SIZE });
-    games.push(...result.content);
+    games.push(...result.content.filter((game) => !game.adult));
     if (!result.hasNext) return games;
   }
 }
@@ -26,11 +31,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const paths = [
     ...["/", "/games", "/coop", "/about", "/privacy"],
     ...genres.map((genre) => `/genres/${genre.slug}`),
-    // 성인 게임 페이지는 noindex라 사이트맵에서도 뺀다
-    ...games.filter((game) => !game.adult).map((game) => `/games/${game.slug}`),
-    ...games
-      .filter((game) => !game.adult && game.hasAchievementGuide)
-      .map((game) => `/games/${game.slug}/achievements`),
+    // 성인 게임 페이지는 noindex라 사이트맵에서도 뺀다 (allPublishedGames가 이미 뺐다)
+    ...games.map((game) => `/games/${game.slug}`),
+    ...games.filter((game) => game.hasAchievementGuide).map((game) => `/games/${game.slug}/achievements`),
   ];
   const entries: { path: string; locales: readonly Locale[] }[] = [
     ...paths.map((path) => ({ path, locales: LOCALES })),

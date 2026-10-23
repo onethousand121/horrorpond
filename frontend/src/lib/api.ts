@@ -77,6 +77,23 @@ export interface GetGamesParams {
   size?: number;
 }
 
+/** 사이트맵용 공개 게임 (성인 게임은 백엔드에서 뺀다) */
+export interface SitemapGame {
+  slug: string;
+  hasAchievementGuide: boolean;
+}
+
+/**
+ * 공개 게임 주소 전체를 한 번에 받는다. 이 API가 없는 이전 백엔드(블루/그린 전환 중)면 null.
+ */
+export async function getSitemapGames(): Promise<SitemapGame[] | null> {
+  const path = "/api/sitemap/games";
+  const res = await apiFetch(path, [CACHE_TAGS.games]);
+  if (res.status === 404) return null;
+  if (!res.ok) throw await failure(res, path);
+  return res.json();
+}
+
 export async function getGames(params: GetGamesParams = {}): Promise<PageResponse<GameSummary>> {
   const query = new URLSearchParams();
   if (params.q) query.set("q", params.q);

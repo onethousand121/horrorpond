@@ -9,6 +9,7 @@ import com.horrorpond.common.domain.Language;
 import com.horrorpond.common.error.NotFoundException;
 import com.horrorpond.curation.domain.CurationArticle;
 import com.horrorpond.curation.repository.CuratedGameQueryRepository;
+import com.horrorpond.curation.repository.CuratedGameQueryRepository.SitemapRow;
 import com.horrorpond.curation.repository.CuratedGameQueryRepository.CuratedGameRow;
 import com.horrorpond.curation.repository.CuratedGameQueryRepository.GenreFilter;
 import com.horrorpond.curation.repository.CuratedGameQueryRepository.PublicGameQuery;
@@ -62,6 +63,11 @@ public class PublicGameQueryService {
         GenreResolver resolver = new GenreResolver(genres);
         return rows.map(row -> GameSummaryResponse.of(row,
                 resolver.resolve(curatorGenres.getOrDefault(row.id(), List.of()), row.tags(), language), language));
+    }
+
+    /** 사이트맵용 공개 게임 주소 목록 (성인 게임 제외) */
+    public List<SitemapRow> sitemap() {
+        return curatedGameQueryRepository.findSitemapRows(exposurePolicy.visible(QGame.game));
     }
 
     public HubStatsResponse stats() {
