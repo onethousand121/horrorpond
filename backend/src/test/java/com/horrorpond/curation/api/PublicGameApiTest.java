@@ -103,6 +103,25 @@ class PublicGameApiTest {
     }
 
     @Test
+    void sitemapListsVisibleNonAdultGamesWithAchievementFlag() throws Exception {
+        create(spec("pinned").articleStatus(null));
+        create(spec("pinned-adult").articleStatus(null).adult(true));                   // 노출되지만 사이트맵 제외
+        create(spec("auto-reviewed").gameStatus(GameStatus.CANDIDATE).reviewCount(10));
+        create(spec("auto-few").gameStatus(GameStatus.CANDIDATE).reviewCount(9));       // 노출 안 됨
+        create(spec("hidden").gameStatus(GameStatus.HIDDEN).reviewCount(5000));
+        jdbc.update("""
+                INSERT INTO achievement_guide (game_id, name, sort_order)
+                SELECT id, '첫 업적', 0 FROM game WHERE slug = 'pinned'
+                """);
+
+        mvc.perform(get("/api/sitemap/games"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].slug", containsInAnyOrder("pinned", "auto-reviewed")))
+                .andExpect(jsonPath("$[?(@.slug == 'pinned')].hasAchievementGuide", contains(true)))
+                .andExpect(jsonPath("$[?(@.slug == 'auto-reviewed')].hasAchievementGuide", contains(false)));
+    }
+
+    @Test
     void exposureRules() throws Exception {
         create(spec("pinned").articleStatus(null));                                     // 공개(글 없음)
         create(spec("pinned-adult").articleStatus(null).adult(true));                   // 공개는 성인이어도 노출

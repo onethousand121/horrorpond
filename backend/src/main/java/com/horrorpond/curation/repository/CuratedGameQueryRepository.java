@@ -92,6 +92,24 @@ public class CuratedGameQueryRepository {
                 .fetchOne());
     }
 
+    /**
+     * 사이트맵용: 공개된 게임 전체의 주소와 업적 공략 여부를 쿼리 1번으로 읽는다.
+     * 성인 게임은 상세가 noindex라 뺀다.
+     */
+    public List<SitemapRow> findSitemapRows(BooleanExpression visible) {
+        return queryFactory
+                .select(Projections.constructor(SitemapRow.class, game.slug,
+                        JPAExpressions.selectOne().from(achievementGuide)
+                                .where(achievementGuide.gameId.eq(game.id)).exists()))
+                .from(game)
+                .where(visible, game.adult.isFalse())
+                .orderBy(game.id.asc())
+                .fetch();
+    }
+
+    public record SitemapRow(String slug, boolean hasAchievementGuide) {
+    }
+
     /** 목록과 같은 조건의 개수만 센다 (허브 통계용) */
     public long countVisible(PublicGameQuery query) {
         Long count = queryFactory

@@ -369,6 +369,11 @@ function handlePublic(req, res, path, query) {
     const game = games.find((g) => g.slug === slug && g.status !== "HIDDEN");
     return game ? send(res, 200, toDetail(game, lang)) : notFound(res, `game ${slug}`);
   }
+  if (path === "/api/sitemap/games") {
+    // 백엔드와 같이: 공개 목록과 같은 게임 중 성인 게임은 뺀다
+    const visible = filterGames(new URLSearchParams()).filter((g) => !g.adult);
+    return send(res, 200, visible.map((g) => ({ slug: g.slug, hasAchievementGuide: (g.achievements ?? []).length > 0 })));
+  }
   if (path === "/api/genres") {
     return send(res, 200, genres.map((g) => ({ slug: g.slug, name: lang === "en" ? g.nameEn : g.name, description: g.description })));
   }
