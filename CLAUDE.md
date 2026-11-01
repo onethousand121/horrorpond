@@ -1,8 +1,12 @@
+## 새 세션 시작 시
+- 운영자와의 작업 약속(항상 한국어, 머지 전 확인, 04:00–05:30 KST 머지 금지 등), 개발·테스트·배포 절차, 진행 상황은 docs/HANDOFF.md를 먼저 읽는다
+
 ## Architecture Decisions (horrorpond MVP)
 - Frontend: Next.js App Router, ISR(revalidate 3600), 서버 컴포넌트에서만 백엔드 호출
   다국어(ko/en): 라우트는 app/[lang], 한국어는 접두사 없는 주소(proxy가 /ko로 rewrite), 영어는 /en.
   언어 선택 쿠키(NEXT_LOCALE) 우선, 첫 화면(/)만 브라우저 언어로 /en 이동. UI 문구는 lib/i18n 사전
   SEO: 페이지마다 alternatesFor(canonical+hreflang), 상세에 VideoGame JSON-LD, 업적 공략 전용 페이지(/games/{slug}/achievements),
+  색인용 모음 페이지(/collections/{trending|upcoming|free|korean|picks}, korean은 한국어만), 사이트맵은 GET /api/sitemap/games 한 번으로,
   검색엔진 소유 확인은 GOOGLE_/NAVER_SITE_VERIFICATION 환경변수
   빌드는 백엔드에 의존하지 않음: 동적 경로는 generateStaticParams가 [] 반환,
   데이터를 쓰는 고정 경로는 connection()으로 요청 시 렌더링 + fetch 데이터 캐시(1h, 태그)
@@ -57,7 +61,7 @@
   game.is_free·price_amount·price_currency에. 카드에 "무료" 뱃지, 상세에 정가 + "할인은 상점에서 확인", 목록 필터 free=true.
   할인가는 보여주지 않고(하루 1회 수집이라 금방 틀림), 출시 전 게임은 가격을 숨긴다
   영어 텍스트(이름·짧은 소개·출시일)는 appdetails(l=english, filters=basic,release_date)로 받아 같은 스냅샷의 english 키에 붙인다.
-  공개 API는 lang=ko|en (영어 값이 없으면 한국어). 큐레이터 글은 한국어만
+  공개 API는 lang=ko|en (영어 값이 없으면 한국어). 큐레이터 글은 선택적 영어 번역(curation_article.*_en, 관리 화면에서 입력)이 있을 때만 영어 화면에 영어로
 - 트리거: @Scheduled 일 1회 + POST /api/admin/ingestion/run (X-Admin-Key)
   실행이 끝나면 FAILED 단계가 있을 때만 알림 메일 1통(IngestionAlertNotifier → Resend HTTP API).
   RESEND_API_KEY·ALERT_EMAIL_TO 환경변수가 없으면 로그만 남긴다
