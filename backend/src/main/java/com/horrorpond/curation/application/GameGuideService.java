@@ -66,7 +66,7 @@ public class GameGuideService {
                 .toList();
     }
 
-    /** 엔딩 목록 (멀티 엔딩일 때만 있다) */
+    /** 엔딩 목록 (멀티 엔딩은 여러 개, 단일 엔딩은 최대 1개) */
     @Transactional(readOnly = true)
     public List<EndingGuideResponse> endings(Long gameId) {
         return endingGuideRepository.findByGameIdOrderBySortOrderAsc(gameId).stream()
@@ -114,21 +114,25 @@ public class GameGuideService {
         List<AchievementGuide> guides = new ArrayList<>();
         for (int i = 0; i < commands.size(); i++) {
             AchievementCommand command = commands.get(i);
-            guides.add(AchievementGuide.create(gameId, command.name(), command.description(), command.videoUrl(), i));
+            guides.add(AchievementGuide.create(gameId, command.name(), command.description(), command.videoUrl(),
+                    command.iconUrl(), i));
         }
         achievementGuideRepository.deleteByGameId(gameId);
         return achievementGuideRepository.saveAll(guides).stream().map(AchievementGuideResponse::from).toList();
     }
 
     /**
-     * 엔딩 구분과 엔딩 목록을 함께 바꾼다. 엔딩 목록은 멀티 엔딩일 때만 둘 수 있다
-     * (단일·표시 안 함에 목록을 보내면 400, 빈 목록이면 기존 목록을 지운다).
+     * 엔딩 구분과 엔딩 목록을 함께 바꾼다. 멀티 엔딩은 여러 개, 단일 엔딩은 그 엔딩의 스포일러 설명용으로 1개까지,
+     * 표시 안 함은 목록 없음 (어기면 400, 빈 목록이면 기존 목록을 지운다).
      */
     public EndingsResponse replaceEndings(Long gameId, EndingType endingType, List<EndingCommand> commands) {
         Game game = gameRepository.findById(gameId)
                 .orElseThrow(() -> new NotFoundException("Game not found: " + gameId));
-        if (endingType != EndingType.MULTIPLE && !commands.isEmpty()) {
-            throw new DomainValidationException("Endings are allowed only for MULTIPLE ending games");
+        if (endingType == null && !commands.isEmpty()) {
+            throw new DomainValidationException("Endings are not allowed when the ending type is not shown");
+        }
+        if (endingType == EndingType.SINGLE && commands.size() > 1) {
+            throw new DomainValidationException("A SINGLE ending game can have at most 1 ending");
         }
         requireAtMost(commands, EndingGuide.MAX_PER_GAME, "endings");
         List<EndingGuide> endings = new ArrayList<>();
@@ -184,8 +188,9 @@ public class GameGuideService {
 
     /**
      * @param videoUrl 공략 영상 주소. 비어 있으면 영상 없음
+     * @param iconUrl  Steam 업적 아이콘 주소. 비어 있으면 아이콘 없음
      */
-    public record AchievementCommand(String name, String description, String videoUrl) {
+    public record AchievementCommand(String name, String description, String videoUrl, String iconUrl) {
     }
 
     /**

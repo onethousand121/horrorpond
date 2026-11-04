@@ -155,19 +155,21 @@ test("영어 화면: 엔딩 안내는 영어", async ({ page }) => {
   await expect(endings.locator("summary")).toHaveText(/Ending info · Spoilers · click to reveal/);
 });
 
-test("단일 엔딩: 한 줄 안내 (글이 없으면 본문 아래)", async ({ page }) => {
+test("단일 엔딩: 큐레이터가 적은 엔딩 설명이 스포일러로 접혀 있다 (글이 없으면 본문 아래)", async ({ page }) => {
   await page.goto("/games/dark-house");
   const endings = page.getByRole("region", { name: "엔딩", exact: true });
   await expect(endings).toBeVisible();
   // 멀티 엔딩과 같은 모양으로 접혀 있어 펼치기 전에는 구분되지 않는다
   await expect(endings.locator("summary")).toHaveText(/엔딩 정보 · 스포일러 주의 · 눌러서 보기/);
-  await expect(endings.getByText("엔딩이 하나뿐인 게임이에요.")).toBeHidden();
+  await expect(endings.getByText("집은 결국 당신을 기억한다.")).toBeHidden();
   await endings.locator("summary").click();
-  await expect(endings.getByText("엔딩이 하나뿐인 게임이에요.")).toBeVisible();
+  await expect(endings.getByText("집은 결국 당신을 기억한다.")).toBeVisible();
+  // 설명이 있으면 "엔딩이 하나" 안내 대신 설명을 보여 준다
+  await expect(endings.getByText("엔딩이 하나뿐인 게임이에요.")).toHaveCount(0);
 
   await page.goto("/en/games/dark-house");
   await page.getByRole("region", { name: "Endings", exact: true }).locator("summary").click();
-  await expect(page.getByText("This game has a single ending.")).toBeVisible();
+  await expect(page.getByText("집은 결국 당신을 기억한다.")).toBeVisible();
 });
 
 test("엔딩 구분이 없으면 엔딩 영역이 없다", async ({ page }) => {

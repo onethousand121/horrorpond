@@ -526,7 +526,8 @@ class AdminCurationApiTest {
         mvc.perform(admin(put("/api/admin/games/{id}/achievements", id))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"achievements":[{"name":"Survivor","description":"Finish without dying","videoUrl":"https://youtu.be/dQw4w9WgXcQ"},
+                                {"achievements":[{"name":"Survivor","description":"Finish without dying","videoUrl":"https://youtu.be/dQw4w9WgXcQ",
+                                                  "iconUrl":"https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/1/abc.jpg"},
                                                  {"name":"Explorer","description":"","videoUrl":""}]}"""))
                 .andExpect(status().isOk());
 
@@ -536,7 +537,10 @@ class AdminCurationApiTest {
                 .andExpect(jsonPath("$.achievements[*].name", contains("Survivor", "Explorer")))
                 .andExpect(jsonPath("$.achievements[0].youtubeId").value("dQw4w9WgXcQ"))
                 .andExpect(jsonPath("$.achievements[1].youtubeId").doesNotExist())
-                .andExpect(jsonPath("$.achievements[1].description").doesNotExist());
+                .andExpect(jsonPath("$.achievements[1].description").doesNotExist())
+                .andExpect(jsonPath("$.achievements[0].iconUrl")
+                        .value("https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/1/abc.jpg"))
+                .andExpect(jsonPath("$.achievements[1].iconUrl").doesNotExist());
         mvc.perform(get("/api/games"))
                 .andExpect(jsonPath("$.content[0].hasPlayVideo").value(true))
                 .andExpect(jsonPath("$.content[0].hasAchievementGuide").value(true));
@@ -556,6 +560,15 @@ class AdminCurationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"achievements\":[{\"name\":\" \"}]}"))
                 .andExpect(status().isBadRequest());
+        // 아이콘은 Steam 업적 이미지 주소만 받는다
+        for (String icon : List.of("http://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/1/a.jpg",
+                "https://evil.example/steamcommunity/public/images/apps/1/a.jpg",
+                "https://cdn.fastly.steamstatic.com/other/a.jpg", "javascript:alert(1)")) {
+            mvc.perform(admin(put("/api/admin/games/{id}/achievements", id))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"achievements\":[{\"name\":\"x\",\"iconUrl\":\"" + icon + "\"}]}"))
+                    .andExpect(status().isBadRequest());
+        }
         mvc.perform(get("/api/games/guided-1"))
                 .andExpect(jsonPath("$.playVideos", hasSize(2)))
                 .andExpect(jsonPath("$.achievements", hasSize(2)));
@@ -600,10 +613,10 @@ class AdminCurationApiTest {
                 .andExpect(jsonPath("$.endingType").value("MULTIPLE"))
                 .andExpect(jsonPath("$.endings", hasSize(2)));
 
-        // 멀티 엔딩이 아닌데 목록이 있거나, 이름·주소가 잘못되면 400이고 기존 값은 그대로
+        // 단일 엔딩에 2개 이상, 표시 안 함에 목록이 있거나, 이름·주소가 잘못되면 400이고 기존 값은 그대로
         mvc.perform(admin(put("/api/admin/games/{id}/endings", id))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"endingType\":\"SINGLE\",\"endings\":[{\"name\":\"하나\"}]}"))
+                        .content("{\"endingType\":\"SINGLE\",\"endings\":[{\"name\":\"하나\"},{\"name\":\"둘\"}]}"))
                 .andExpect(status().isBadRequest());
         mvc.perform(admin(put("/api/admin/games/{id}/endings", id))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -617,7 +630,20 @@ class AdminCurationApiTest {
                 .andExpect(jsonPath("$.endingType").value("MULTIPLE"))
                 .andExpect(jsonPath("$.endings", hasSize(2)));
 
-        // 단일 엔딩으로 바꾸면 목록은 지워진다
+        // 단일 엔딩은 스포일러 설명 1개까지 둘 수 있다 (멀티 엔딩 표시는 꺼진다)
+        mvc.perform(admin(put("/api/admin/games/{id}/endings", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"endingType":"SINGLE","endings":[{"name":"엔딩","description":"결국 혼자 남는다"}]}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.endings", hasSize(1)));
+        mvc.perform(get("/api/games/endings-1"))
+                .andExpect(jsonPath("$.endingType").value("SINGLE"))
+                .andExpect(jsonPath("$.endings[0].name").value("엔딩"))
+                .andExpect(jsonPath("$.endings[0].description").value("결국 혼자 남는다"));
+        mvc.perform(get("/api/games")).andExpect(jsonPath("$.content[0].multiEnding").value(false));
+
+        // 단일 엔딩을 빈 목록으로 저장하면 설명이 지워진다
         mvc.perform(admin(put("/api/admin/games/{id}/endings", id))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"endingType\":\"SINGLE\",\"endings\":[]}"))

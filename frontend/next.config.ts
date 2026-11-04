@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
         hostname: "shared.akamai.steamstatic.com",
         pathname: "/store_item_assets/steam/apps/**",
       },
+      // Steam 업적 아이콘 (achievement_guide.icon_url, 백엔드 AchievementIconUrl과 같은 호스트)
+      ...["cdn.akamai.steamstatic.com", "cdn.fastly.steamstatic.com", "cdn.cloudflare.steamstatic.com", "steamcdn-a.akamaihd.net"].map(
+        (hostname) => ({ protocol: "https" as const, hostname, pathname: "/steamcommunity/public/images/apps/**" }),
+      ),
       // 유튜브 영상 썸네일 (lib/youtube)
       { protocol: "https", hostname: "i.ytimg.com", pathname: "/vi/**" },
       // itch.io 게임 표지·스크린샷

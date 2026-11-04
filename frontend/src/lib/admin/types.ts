@@ -106,6 +106,7 @@ export const GUIDE_LIMITS = {
   achievements: 100,
   achievementName: 200,
   achievementDescription: 500,
+  achievementIconUrl: 500,
   endings: 30,
   endingName: 100,
   endingDescription: 2000,

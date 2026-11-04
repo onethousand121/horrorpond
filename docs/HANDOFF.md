@@ -64,6 +64,8 @@
   }
   docker image inspect postgres:16 >/dev/null 2>&1 || { docker pull -q mirror.gcr.io/library/postgres:16 && docker tag mirror.gcr.io/library/postgres:16 postgres:16; }
   ```
+- Maven Central이 429(요청 과다)로 막히면 Gradle에 Google 미러를 쓰는 init 스크립트를 임시로 준다
+  (`maven-central.storage-download.googleapis.com/maven2/`를 저장소 맨 앞에 추가, 저장소에는 커밋하지 않음).
 - 개발 중에는 바뀐 영역만: `./gradlew test --tests 'com.horrorpond.curation.*'`. 커밋 전 전체 `./gradlew test` (현재 294개).
 - 새 Spring 테스트 컨텍스트(설정이 다른 `@SpringBootTest`)를 늘리면 Postgres 연결 수가 넘친다. 기존 테스트 클래스에 추가한다.
 - 프론트 (`frontend/`):
@@ -71,10 +73,10 @@
   npm ci            # 처음 한 번
   API_BASE_URL=http://127.0.0.1:4010 npm run build   # 라우트 타입도 이때 생성됨 (tsc 전에 빌드)
   npx tsc --noEmit && npm run lint
-  PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome CI=1 npm run test:e2e   # 현재 42개, mock API는 e2e/mock-api.mjs
+  PW_CHROMIUM_PATH=/opt/pw-browsers/chromium CI=1 npm run test:e2e   # 현재 42개, mock API는 e2e/mock-api.mjs
   ```
   e2e가 부하로 한 개 시간 초과나면 그 파일만 다시 돌려 확인한다.
-- 마이그레이션 최신은 **V21** (큐레이터 글 영어 번역). 다음은 V22. 추가만, 적용된 파일 수정 금지.
+- 마이그레이션 최신은 **V22** (업적 아이콘). 다음은 V23. 추가만, 적용된 파일 수정 금지.
 
 ### 비밀값·환경변수 (값은 운영자만 안다)
 - 서버 `~/horrorpond/.env`: `POSTGRES_PASSWORD`, `ADMIN_API_KEY`, `API_DOMAIN`, `APP_MEM_LIMIT`, `DEEPL_API_KEY`,

@@ -4,6 +4,9 @@ import com.horrorpond.ingestion.application.IngestionAlertNotifier;
 import com.horrorpond.ingestion.application.IngestionTriggerService;
 import com.horrorpond.ingestion.application.ItchIngestionService;
 import com.horrorpond.ingestion.application.SeedService;
+import com.horrorpond.ingestion.client.SteamCommunityClient;
+import com.horrorpond.ingestion.client.SteamCommunityClient.SteamAchievement;
+import com.horrorpond.ingestion.client.SteamTransientException;
 import com.horrorpond.ingestion.domain.DiscoveredBy;
 import com.horrorpond.ingestion.domain.FetchStatus;
 import com.horrorpond.ingestion.domain.IngestionJob;
@@ -28,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
@@ -47,6 +51,7 @@ public class IngestionAdminController {
     private final ItchIngestionService itchIngestionService;
     private final IngestionJobRepository jobRepository;
     private final IngestionAlertNotifier alertNotifier;
+    private final SteamCommunityClient steamCommunityClient;
 
     @PostMapping("/run")
     @ResponseStatus(HttpStatus.ACCEPTED)
@@ -79,6 +84,19 @@ public class IngestionAdminController {
     }
 
     /** 수집 실패 알림 메일 설정을 확인하는 테스트 메일 */
+    /**
+     * Steam 커뮤니티 업적 목록(이름·설명·아이콘, 영어). 관리 화면의 "Steam에서 불러오기"가 폼을 채우는 데만 쓰고 저장은 하지 않는다.
+     * Steam이 응답하지 않거나 페이지를 읽지 못하면 502.
+     */
+    @GetMapping("/steam-achievements")
+    public List<SteamAchievement> steamAchievements(@RequestParam @Positive int appid) {
+        try {
+            return steamCommunityClient.fetchAchievements(appid);
+        } catch (SteamTransientException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Steam 업적을 불러오지 못했습니다", e);
+        }
+    }
+
     @PostMapping("/alert-test")
     public AlertTestResponse sendTestAlert() {
         return new AlertTestResponse(alertNotifier.sendTest());

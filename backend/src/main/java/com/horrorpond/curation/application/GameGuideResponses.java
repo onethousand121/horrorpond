@@ -31,10 +31,11 @@ public final class GameGuideResponses {
      * @param description 없으면 null
      * @param youtubeId   공략 영상. 없으면 null
      */
-    public record AchievementGuideResponse(String name, String description, String youtubeId) {
+    public record AchievementGuideResponse(String name, String description, String youtubeId, String iconUrl) {
 
         static AchievementGuideResponse from(AchievementGuide guide) {
-            return new AchievementGuideResponse(guide.getName(), guide.getDescription(), guide.getYoutubeId());
+            return new AchievementGuideResponse(guide.getName(), guide.getDescription(), guide.getYoutubeId(),
+                    guide.getIconUrl());
         }
     }
 
@@ -51,7 +52,7 @@ public final class GameGuideResponses {
 
     /**
      * @param endingType null이면 표시 안 함
-     * @param endings    멀티 엔딩일 때만 있다. 아니면 빈 목록
+     * @param endings    멀티 엔딩은 여러 개, 단일 엔딩은 최대 1개(스포일러 설명), 표시 안 함은 빈 목록
      */
     public record EndingsResponse(EndingType endingType, List<EndingGuideResponse> endings) {
     }

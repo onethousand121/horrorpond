@@ -21,9 +21,12 @@
   큐레이터 글은 선택. 종류(curation_article.kind)는 PICK("주인장 추천", 장점 포인트 1개 이상 필요, 추천 목록·주인장 추천 줄)
   | REVIEW("플레이 후기", 포인트 선택, 후기 뱃지, picked 목록에는 안 나옴). 주인장 추천 줄·탭(keeper=true)은 추천 → 후기 → 주인장 영상만 순. 플레이 영상(play_video)·업적 공략(achievement_guide)도 선택이며 없으면 사이트에서 영역을 숨긴다
   (관리 화면에서 목록 전체를 한 번에 저장, 유튜브 주소는 YoutubeVideoId가 검증).
+  업적 아이콘: achievement_guide.icon_url(Steam 커뮤니티 CDN 업적 이미지 주소만, AchievementIconUrl이 검증. 이미지는 저장하지 않음).
+  관리 화면 "Steam에서 불러오기" = GET /api/admin/ingestion/steam-achievements?appid (SteamCommunityClient가 업적 페이지에 심긴 JSON을 읽음, 영어, 저장 안 함)
   play_video.kind = KEEPER(주인장 영상, 뱃지·주인장 추천 기준) | REFERENCE(다른 채널 참고 영상, channel_name 필수).
   참고 영상은 주인장 영상이 없을 때만 상세에 "참고 영상 · 채널"로 보이고 뱃지·추천 줄에는 안 쓴다. API는 /videos와 /reference-videos로 분리
-  엔딩: game.ending_type(SINGLE | MULTIPLE | null=표시 안 함) + ending_guide(이름·보는 방법·영상, MULTIPLE일 때만 목록 허용). PUT /endings가 구분과 목록을 함께 교체.
+  엔딩: game.ending_type(SINGLE | MULTIPLE | null=표시 안 함) + ending_guide(이름·보는 방법·영상, MULTIPLE은 여러 개, SINGLE은 엔딩 설명 1개까지, null은 없음). PUT /endings가 구분과 목록을 함께 교체.
+  단일 엔딩에 설명이 있으면 펼쳤을 때 그 설명, 없으면 "엔딩이 하나" 안내.
   상세는 큐레이터 글 아래(글이 없으면 업적 공략 아래)에 SINGLE·MULTIPLE 모두 같은 모양의 닫힌 details 스포일러("엔딩 정보 · 스포일러 주의", 개수도 펼쳐야 보임). 멀티 엔딩 여부 자체가 스포일러라 카드에는 표시하지 않는다
   유저 한글패치: korean_patch(https 배포처 주소·제작자·메모, KoreanPatch가 검증). korean=true 필터에 포함, 카드 "한글패치" 뱃지(공식 한국어면 안 붙음)·상세 지원 언어 아래 nofollow ugc 링크, 한국어 화면만
   성인 게임(adult)은 자동 노출 제외, 고정 노출해도 이미지 흐림 + 19 표시, 상세는 소개·미디어 없이 Steam 링크만, noindex·사이트맵 제외 장르 = 큐레이터 지정 장르 ∪ SteamSpy 태그 매핑(genre.steam_tags)
