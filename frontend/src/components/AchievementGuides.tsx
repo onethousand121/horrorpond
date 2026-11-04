@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { YouTubeEmbed } from "@/components/YouTubeEmbed";
 import { getDictionary, type Locale } from "@/lib/i18n";
+import { textLang } from "@/lib/textLang";
 import type { AchievementGuide } from "@/lib/types";
 
 /**
@@ -31,7 +32,7 @@ export function AchievementGuides({ achievements, locale }: { achievements: Achi
           </span>
         );
         return (
-          <li key={`${achievement.name}-${index}`}>
+          <li key={`${achievement.name}-${index}`} lang={textLang(achievement.name, achievement.description)}>
             {achievement.youtubeId ? (
               <details className="group">
                 <summary className="flex cursor-pointer list-none items-start gap-3 p-4 hover:bg-surface-2/60">

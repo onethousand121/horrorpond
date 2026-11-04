@@ -122,7 +122,7 @@ public class AdminCurationController {
                                                               @Valid @RequestBody AchievementsRequest request) {
         return gameGuideService.replaceAchievements(id, request.achievements().stream()
                 .map(a -> new GameGuideService.AchievementCommand(a.name(), a.description(), a.videoUrl(),
-                        a.iconUrl()))
+                        a.iconUrl(), a.nameEn(), a.descriptionEn()))
                 .toList());
     }
 
@@ -133,7 +133,8 @@ public class AdminCurationController {
     @PutMapping("/{id}/endings")
     public EndingsResponse replaceEndings(@PathVariable Long id, @Valid @RequestBody EndingsRequest request) {
         return gameGuideService.replaceEndings(id, request.endingType(), request.endings().stream()
-                .map(e -> new GameGuideService.EndingCommand(e.name(), e.description(), e.videoUrl()))
+                .map(e -> new GameGuideService.EndingCommand(e.name(), e.description(), e.videoUrl(), e.nameEn(),
+                        e.descriptionEn()))
                 .toList());
     }
 
@@ -237,14 +238,15 @@ public class AdminCurationController {
     public record AchievementsRequest(@NotNull List<@NotNull AchievementItem> achievements) {
     }
 
-    public record AchievementItem(String name, String description, String videoUrl, String iconUrl) {
+    public record AchievementItem(String name, String description, String videoUrl, String iconUrl, String nameEn,
+                                  String descriptionEn) {
     }
 
     /** 이름 필수·길이·개수·영상 주소는 도메인(EndingGuide)이, 구분과 목록의 짝은 GameGuideService가 검증한다 */
     public record EndingsRequest(EndingType endingType, @NotNull List<@NotNull EndingItem> endings) {
     }
 
-    public record EndingItem(String name, String description, String videoUrl) {
+    public record EndingItem(String name, String description, String videoUrl, String nameEn, String descriptionEn) {
     }
 
     /** https 주소·길이·개수는 도메인(KoreanPatch)이 검증한다 */

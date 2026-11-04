@@ -94,10 +94,10 @@ public record GameDetailResponse(
                         .map(link -> new StoreLinkResponse(link.getStore(), link.getUrl()))
                         .toList(),
                 adult || article == null ? null : Article.from(article, language), adult ? List.of() : playVideos,
-                adult ? List.of() : achievements, game.getSource(),
+                adult ? List.of() : achievements.stream().map(a -> a.in(language)).toList(), game.getSource(),
                 adult ? List.of() : referenceVideos, game.isFree(), game.getPriceAmount(), game.getPriceCurrency(),
                 adult ? null : game.getEndingType(),
-                adult || game.getEndingType() == null ? List.of() : endings,
+                adult || game.getEndingType() == null ? List.of() : endings.stream().map(e -> e.in(language)).toList(),
                 adult ? List.of() : koreanPatches);
     }
 

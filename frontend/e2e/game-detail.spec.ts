@@ -135,7 +135,8 @@ test("멀티 엔딩: 추천 글 아래에 스포일러로 접혀 있고, 누르�
   await expect(endings.getByRole("heading", { name: "바다로" })).toBeVisible();
   // 설명은 줄바꿈을 살린 일반 텍스트
   await expect(endings.getByText("마지막 밤까지 불을 지킨다.")).toBeVisible();
-  await expect(endings.locator("ol")).toHaveAttribute("lang", "ko");
+  // 번역이 없는 한국어 엔딩은 항목마다 한국어로 표시한다
+  await expect(endings.locator("ol > li").first()).toHaveAttribute("lang", "ko");
   // 영상은 눌러야 재생되는 썸네일
   await expect(endings.getByRole("button", { name: "새벽의 등대 엔딩 영상 재생" })).toBeVisible();
   await expect(endings.locator("iframe")).toHaveCount(0);
@@ -167,9 +168,11 @@ test("단일 엔딩: 큐레이터가 적은 엔딩 설명이 스포일러로 접
   // 설명이 있으면 "엔딩이 하나" 안내 대신 설명을 보여 준다
   await expect(endings.getByText("엔딩이 하나뿐인 게임이에요.")).toHaveCount(0);
 
+  // 영어 화면은 영어 번역을 보여 준다
   await page.goto("/en/games/dark-house");
   await page.getByRole("region", { name: "Endings", exact: true }).locator("summary").click();
-  await expect(page.getByText("집은 결국 당신을 기억한다.")).toBeVisible();
+  await expect(page.getByText("The house remembers you after all.")).toBeVisible();
+  await expect(page.getByText("집은 결국 당신을 기억한다.")).toHaveCount(0);
 });
 
 test("엔딩 구분이 없으면 엔딩 영역이 없다", async ({ page }) => {
