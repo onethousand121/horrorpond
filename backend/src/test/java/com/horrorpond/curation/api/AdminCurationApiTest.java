@@ -527,7 +527,7 @@ class AdminCurationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"achievements":[{"name":"Survivor","description":"Finish without dying","videoUrl":"https://youtu.be/dQw4w9WgXcQ",
-                                                  "iconUrl":"https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/1/abc.jpg"},
+                                                  "iconUrl":"https://shared.fastly.steamstatic.com/community_assets/images/apps/1/abc.jpg"},
                                                  {"name":"Explorer","description":"","videoUrl":""}]}"""))
                 .andExpect(status().isOk());
 
@@ -539,7 +539,7 @@ class AdminCurationApiTest {
                 .andExpect(jsonPath("$.achievements[1].youtubeId").doesNotExist())
                 .andExpect(jsonPath("$.achievements[1].description").doesNotExist())
                 .andExpect(jsonPath("$.achievements[0].iconUrl")
-                        .value("https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/1/abc.jpg"))
+                        .value("https://shared.fastly.steamstatic.com/community_assets/images/apps/1/abc.jpg"))
                 .andExpect(jsonPath("$.achievements[1].iconUrl").doesNotExist());
         mvc.perform(get("/api/games"))
                 .andExpect(jsonPath("$.content[0].hasPlayVideo").value(true))
@@ -563,7 +563,8 @@ class AdminCurationApiTest {
         // 아이콘은 Steam 업적 이미지 주소만 받는다
         for (String icon : List.of("http://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/1/a.jpg",
                 "https://evil.example/steamcommunity/public/images/apps/1/a.jpg",
-                "https://cdn.fastly.steamstatic.com/other/a.jpg", "javascript:alert(1)")) {
+                "https://cdn.fastly.steamstatic.com/other/a.jpg",
+                "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1/a.jpg", "javascript:alert(1)")) {
             mvc.perform(admin(put("/api/admin/games/{id}/achievements", id))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"achievements\":[{\"name\":\"x\",\"iconUrl\":\"" + icon + "\"}]}"))
