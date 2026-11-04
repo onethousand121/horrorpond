@@ -37,7 +37,8 @@ class SteamCommunityClientTest {
         SteamAchievement first = achievements.get(0);
         assertThat(first.description()).isEqualTo("Clear Chapter 1");
         assertThat(first.hidden()).isFalse();
-        assertThat(first.iconUrl()).isEqualTo("https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/"
+        // 최근 게임의 아이콘은 community_assets 주소에만 있다 (예전 주소는 404)
+        assertThat(first.iconUrl()).isEqualTo("https://shared.fastly.steamstatic.com/community_assets/images/apps/"
                 + "4615780/d1d9d84db746d51d7495034e01153ad9eaf40128.jpg");
         SteamAchievement hidden = achievements.get(achievements.size() - 1);
         assertThat(hidden.hidden()).isTrue();

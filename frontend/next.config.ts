@@ -15,7 +15,10 @@ const nextConfig: NextConfig = {
         hostname: "shared.akamai.steamstatic.com",
         pathname: "/store_item_assets/steam/apps/**",
       },
-      // Steam 업적 아이콘 (achievement_guide.icon_url, 백엔드 AchievementIconUrl과 같은 호스트)
+      // Steam 업적 아이콘 (achievement_guide.icon_url, 백엔드 AchievementIconUrl과 같은 호스트·경로)
+      ...["shared.akamai.steamstatic.com", "shared.fastly.steamstatic.com", "shared.cloudflare.steamstatic.com"].map(
+        (hostname) => ({ protocol: "https" as const, hostname, pathname: "/community_assets/images/apps/**" }),
+      ),
       ...["cdn.akamai.steamstatic.com", "cdn.fastly.steamstatic.com", "cdn.cloudflare.steamstatic.com", "steamcdn-a.akamaihd.net"].map(
         (hostname) => ({ protocol: "https" as const, hostname, pathname: "/steamcommunity/public/images/apps/**" }),
       ),

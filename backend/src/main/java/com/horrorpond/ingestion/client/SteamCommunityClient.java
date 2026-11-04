@@ -28,9 +28,13 @@ public class SteamCommunityClient {
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final Pattern SSR_DATA = Pattern.compile(
             "<script[^>]*\\bid=\"valve-ssr-data\"[^>]*>(.*?)</script>", Pattern.DOTALL);
-    private static final String DEFAULT_CDN = "cdn.fastly.steamstatic.com";
-    /** 페이지가 알려 주는 CDN 이름이 이 모양일 때만 아이콘 주소에 쓴다 */
-    private static final Pattern CDN_HOST = Pattern.compile("cdn\\.[a-z]+\\.steamstatic\\.com");
+    /**
+     * 업적 아이콘이 있는 곳. 최근 게임의 아이콘은 이 주소에만 있다(예전 cdn.*.steamstatic.com/steamcommunity/... 는 404).
+     * 페이지 설정(Config.MEDIA_CDN_COMMUNITY_URL)이 같은 모양이면 그 값을 쓴다
+     */
+    private static final String DEFAULT_COMMUNITY_CDN = "https://shared.fastly.steamstatic.com/community_assets/";
+    private static final Pattern COMMUNITY_CDN = Pattern.compile(
+            "https://shared\\.[a-z]+\\.steamstatic\\.com/community_assets/");
     private static final Pattern ICON_FILE = Pattern.compile("[0-9a-f]{40}\\.(jpg|png)");
 
     private final RestClient restClient;
@@ -73,9 +77,9 @@ public class SteamCommunityClient {
         }
         try {
             JsonNode ssr = JSON.readTree(matcher.group(1));
-            String cdn = ssr.path("cdn").asString("");
-            if (!CDN_HOST.matcher(cdn).matches()) {
-                cdn = DEFAULT_CDN;
+            String cdn = ssr.path("Config").path("MEDIA_CDN_COMMUNITY_URL").asString("");
+            if (!COMMUNITY_CDN.matcher(cdn).matches()) {
+                cdn = DEFAULT_COMMUNITY_CDN;
             }
             JsonNode queryData = ssr.path("renderContext").path("queryData");
             if (!queryData.isString()) {
@@ -104,7 +108,7 @@ public class SteamCommunityClient {
                 }
                 String icon = achievement.path("icon_achieved").asString("");
                 String iconUrl = ICON_FILE.matcher(icon).matches()
-                        ? "https://" + cdn + "/steamcommunity/public/images/apps/" + appid + "/" + icon
+                        ? cdn + "images/apps/" + appid + "/" + icon
                         : null;
                 String description = achievement.path("description").asString("").strip();
                 result.add(new SteamAchievement(name, description.isEmpty() ? null : description,
