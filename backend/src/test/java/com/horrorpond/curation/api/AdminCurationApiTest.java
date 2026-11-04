@@ -619,6 +619,21 @@ class AdminCurationApiTest {
                 .andExpect(jsonPath("$.endings[0].name").value("탈출"))
                 .andExpect(jsonPath("$.endings[0].descriptionEn").value("Use the door"))
                 .andExpect(jsonPath("$.achievements[0].nameEn").value("Survivor"));
+
+        // 엔딩 설명은 한국어·영어 모두 5000자까지 (DB 제약도 함께 넓혔다)
+        String longText = "x".repeat(5000);
+        mvc.perform(admin(put("/api/admin/games/{id}/endings", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"endingType\":\"SINGLE\",\"endings\":[{\"name\":\"엔딩\",\"description\":\""
+                                + longText + "\",\"descriptionEn\":\"" + longText + "\"}]}"))
+                .andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("SELECT char_length(description_en) FROM ending_guide", Integer.class))
+                .isEqualTo(5000);
+        mvc.perform(admin(put("/api/admin/games/{id}/endings", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"endingType\":\"SINGLE\",\"endings\":[{\"name\":\"엔딩\",\"descriptionEn\":\""
+                                + longText + "x\"}]}"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
