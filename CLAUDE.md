@@ -27,6 +27,7 @@
   참고 영상은 주인장 영상이 없을 때만 상세에 "참고 영상 · 채널"로 보이고 뱃지·추천 줄에는 안 쓴다. API는 /videos와 /reference-videos로 분리
   엔딩: game.ending_type(SINGLE | MULTIPLE | null=표시 안 함) + ending_guide(이름·보는 방법·영상, MULTIPLE은 여러 개, SINGLE은 엔딩 설명 1개까지, null은 없음). PUT /endings가 구분과 목록을 함께 교체.
   단일 엔딩에 설명이 있으면 펼쳤을 때 그 설명, 없으면 "엔딩이 하나" 안내.
+  업적 공략·엔딩은 선택적 영어 번역(name_en·description_en)이 있으면 lang=en 응답의 name·description에 반영(없는 값은 한국어), 관리 응답만 번역 칸을 그대로 준다
   상세는 큐레이터 글 아래(글이 없으면 업적 공략 아래)에 SINGLE·MULTIPLE 모두 같은 모양의 닫힌 details 스포일러("엔딩 정보 · 스포일러 주의", 개수도 펼쳐야 보임). 멀티 엔딩 여부 자체가 스포일러라 카드에는 표시하지 않는다
   유저 한글패치: korean_patch(https 배포처 주소·제작자·메모, KoreanPatch가 검증). korean=true 필터에 포함, 카드 "한글패치" 뱃지(공식 한국어면 안 붙음)·상세 지원 언어 아래 nofollow ugc 링크, 한국어 화면만
   성인 게임(adult)은 자동 노출 제외, 고정 노출해도 이미지 흐림 + 19 표시, 상세는 소개·미디어 없이 Steam 링크만, noindex·사이트맵 제외 장르 = 큐레이터 지정 장르 ∪ SteamSpy 태그 매핑(genre.steam_tags)

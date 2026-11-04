@@ -46,6 +46,14 @@ public class AchievementGuide extends BaseTimeEntity {
     @Column(length = YoutubeVideoId.LENGTH)
     private String youtubeId;
 
+    /** 영어 화면용 이름 (선택). 없으면 영어 화면도 한국어 이름 */
+    @Column(length = MAX_NAME_LENGTH)
+    private String nameEn;
+
+    /** 영어 화면용 달성 방법 (선택) */
+    @Column(length = MAX_DESCRIPTION_LENGTH)
+    private String descriptionEn;
+
     /** Steam 업적 아이콘 주소 ({@link AchievementIconUrl}). 없으면 null */
     @Column(length = AchievementIconUrl.MAX_LENGTH)
     private String iconUrl;
@@ -56,9 +64,10 @@ public class AchievementGuide extends BaseTimeEntity {
     /**
      * @param videoUrl 유튜브 주소 또는 영상 ID. 비어 있으면 영상 없음
      * @param iconUrl  Steam 업적 아이콘 주소. 비어 있으면 아이콘 없음
+     * @param english  영어 번역 (이름·설명 모두 선택)
      */
     public static AchievementGuide create(Long gameId, String name, String description, String videoUrl,
-                                          String iconUrl, int sortOrder) {
+                                          String iconUrl, EnglishText english, int sortOrder) {
         AchievementGuide guide = new AchievementGuide();
         guide.gameId = Objects.requireNonNull(gameId, "gameId");
         guide.name = PlayVideo.optionalText(name, MAX_NAME_LENGTH, "AchievementGuide.name");
@@ -69,6 +78,9 @@ public class AchievementGuide extends BaseTimeEntity {
                 "AchievementGuide.description");
         guide.youtubeId = videoUrl == null || videoUrl.isBlank() ? null : YoutubeVideoId.parse(videoUrl);
         guide.iconUrl = AchievementIconUrl.parseOptional(iconUrl);
+        guide.nameEn = PlayVideo.optionalText(english.name(), MAX_NAME_LENGTH, "AchievementGuide.nameEn");
+        guide.descriptionEn = PlayVideo.optionalText(english.description(), MAX_DESCRIPTION_LENGTH,
+                "AchievementGuide.descriptionEn");
         guide.sortOrder = sortOrder;
         return guide;
     }

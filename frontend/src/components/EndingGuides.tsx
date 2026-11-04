@@ -1,11 +1,12 @@
 import { YouTubeEmbed } from "@/components/YouTubeEmbed";
 import { getDictionary, type Locale } from "@/lib/i18n";
+import { textLang } from "@/lib/textLang";
 import type { EndingGuide, EndingType } from "@/lib/types";
 
 /**
- * 엔딩 영역. 단일·멀티 모두 같은 모양으로 접어 둔다 (펼치기 전에는 엔딩이 몇 개인지도 알 수 없게).
+ * 엔딩 영역 (이름·설명은 큐레이터 글: 영어 번역이 있으면 영어 화면에 영어, 없으면 한국어). 단일·멀티 모두 같은 모양으로 접어 둔다 (펼치기 전에는 엔딩이 몇 개인지도 알 수 없게).
  * 단일 엔딩은 큐레이터가 엔딩 설명을 적었으면 그 설명을, 아니면 "엔딩이 하나" 안내를 보여 준다
- * (네이티브 details/summary라 JS 없이도 열리고 키보드로도 연다). 엔딩 이름·설명은 큐레이터 글이라 한국어다.
+ * (네이티브 details/summary라 JS 없이도 열리고 키보드로도 연다).
  */
 export function EndingGuides({ endingType, endings, locale }: {
   endingType: EndingType;
@@ -27,9 +28,9 @@ export function EndingGuides({ endingType, endings, locale }: {
         {endingType === "SINGLE" && endings.length === 0 ? (
           <p className="border-t border-border p-4 text-sm text-muted">{t.singleEnding}</p>
         ) : (
-          <ol lang="ko" className="divide-y divide-border border-t border-border">
+          <ol className="divide-y divide-border border-t border-border">
             {endings.map((ending, index) => (
-              <li key={`${ending.name}-${index}`} className="space-y-3 p-4">
+              <li key={`${ending.name}-${index}`} lang={textLang(ending.name, ending.description)} className="space-y-3 p-4">
                 <div>
                   <h3 className="font-medium">{ending.name}</h3>
                   {ending.description && (

@@ -1,6 +1,7 @@
 package com.horrorpond.curation.application;
 
 import com.horrorpond.catalog.domain.EndingType;
+import com.horrorpond.common.domain.Language;
 import com.horrorpond.curation.domain.AchievementGuide;
 import com.horrorpond.curation.domain.EndingGuide;
 import com.horrorpond.curation.domain.KoreanPatch;
@@ -30,12 +31,20 @@ public final class GameGuideResponses {
     /**
      * @param description 없으면 null
      * @param youtubeId   공략 영상. 없으면 null
+     * @param nameEn      영어 번역 (관리 화면용). 공개 응답에서는 언어에 맞춰 name에 반영하고 null
      */
-    public record AchievementGuideResponse(String name, String description, String youtubeId, String iconUrl) {
+    public record AchievementGuideResponse(String name, String description, String youtubeId, String iconUrl,
+                                           String nameEn, String descriptionEn) {
 
         static AchievementGuideResponse from(AchievementGuide guide) {
             return new AchievementGuideResponse(guide.getName(), guide.getDescription(), guide.getYoutubeId(),
-                    guide.getIconUrl());
+                    guide.getIconUrl(), guide.getNameEn(), guide.getDescriptionEn());
+        }
+
+        /** 공개 화면용: 영어 화면이면 번역이 있는 값만 영어로 바꾼다 */
+        public AchievementGuideResponse in(Language language) {
+            return new AchievementGuideResponse(language.pick(name, nameEn), language.pick(description, descriptionEn),
+                    youtubeId, iconUrl, null, null);
         }
     }
 
@@ -43,10 +52,18 @@ public final class GameGuideResponses {
      * @param description 보는 방법. 없으면 null
      * @param youtubeId   엔딩 영상. 없으면 null
      */
-    public record EndingGuideResponse(String name, String description, String youtubeId) {
+    public record EndingGuideResponse(String name, String description, String youtubeId, String nameEn,
+                                      String descriptionEn) {
 
         static EndingGuideResponse from(EndingGuide ending) {
-            return new EndingGuideResponse(ending.getName(), ending.getDescription(), ending.getYoutubeId());
+            return new EndingGuideResponse(ending.getName(), ending.getDescription(), ending.getYoutubeId(),
+                    ending.getNameEn(), ending.getDescriptionEn());
+        }
+
+        /** 공개 화면용: 영어 화면이면 번역이 있는 값만 영어로 바꾼다 */
+        public EndingGuideResponse in(Language language) {
+            return new EndingGuideResponse(language.pick(name, nameEn), language.pick(description, descriptionEn),
+                    youtubeId, null, null);
         }
     }
 

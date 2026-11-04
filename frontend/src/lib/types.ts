@@ -187,6 +187,9 @@ export interface AchievementGuide {
   youtubeId: string | null;
   /** Steam 업적 아이콘 주소. 없으면 null (백엔드 배포 전 응답에는 없다) */
   iconUrl?: string | null;
+  /** 영어 번역 (관리 화면 응답만). 공개 응답은 lang에 맞춰 name·description에 이미 반영돼 있다 */
+  nameEn?: string | null;
+  descriptionEn?: string | null;
 }
 
 /** 백엔드 GameGuideResponses.EndingGuideResponse */
@@ -196,6 +199,9 @@ export interface EndingGuide {
   description: string | null;
   /** 엔딩 영상. 없으면 null */
   youtubeId: string | null;
+  /** 영어 번역 (관리 화면 응답만). 공개 응답은 lang에 맞춰 name·description에 이미 반영돼 있다 */
+  nameEn?: string | null;
+  descriptionEn?: string | null;
 }
 
 /** 백엔드 GameGuideResponses.KoreanPatchResponse */

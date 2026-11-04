@@ -67,7 +67,7 @@ const games = [
     priceCurrency: "KRW",
     reviewCount: 4321,
     endingType: "SINGLE",
-    endings: [{ name: "엔딩", description: "집은 결국 당신을 기억한다.", youtubeId: null }],
+    endings: [{ name: "엔딩", description: "집은 결국 당신을 기억한다.", youtubeId: null, nameEn: "Ending", descriptionEn: "The house remembers you after all." }],
   }),
   steamGame(2, 1002, {
     slug: "free-scream",
@@ -177,6 +177,12 @@ const games = [
   }),
 ];
 
+/** 업적·엔딩 번역: 영어 화면이면 번역이 있는 값만 바꾸고, 번역 칸은 공개 응답에 싣지 않는다 (백엔드와 같은 규칙) */
+function localizedGuide({ nameEn, descriptionEn, ...guide }, lang) {
+  if (lang !== "en") return guide;
+  return { ...guide, name: nameEn || guide.name, description: descriptionEn || guide.description };
+}
+
 function localized(game, lang) {
   return lang === "en" && game.en ? { ...game, ...game.en } : game;
 }
@@ -245,13 +251,13 @@ function toDetail(raw, lang) {
     article: g.article,
     playVideos: g.playVideos,
     referenceVideos: g.referenceVideos,
-    achievements: g.achievements,
+    achievements: g.achievements.map((a) => localizedGuide(a, lang)),
     source: g.source,
     free: g.free,
     priceAmount: g.priceAmount,
     priceCurrency: g.priceCurrency,
     endingType: g.endingType,
-    endings: g.endingType ? g.endings : [],
+    endings: g.endingType ? g.endings.map((e) => localizedGuide(e, lang)) : [],
     koreanPatches: g.koreanPatches,
   };
 }

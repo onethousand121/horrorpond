@@ -12,6 +12,7 @@ import com.horrorpond.curation.application.GameGuideResponses.KoreanPatchRespons
 import com.horrorpond.curation.application.GameGuideResponses.PlayVideoResponse;
 import com.horrorpond.curation.domain.AchievementGuide;
 import com.horrorpond.curation.domain.EndingGuide;
+import com.horrorpond.curation.domain.EnglishText;
 import com.horrorpond.curation.domain.KoreanPatch;
 import com.horrorpond.curation.domain.PlayVideo;
 import com.horrorpond.curation.domain.VideoKind;
@@ -115,7 +116,7 @@ public class GameGuideService {
         for (int i = 0; i < commands.size(); i++) {
             AchievementCommand command = commands.get(i);
             guides.add(AchievementGuide.create(gameId, command.name(), command.description(), command.videoUrl(),
-                    command.iconUrl(), i));
+                    command.iconUrl(), EnglishText.of(command.nameEn(), command.descriptionEn()), i));
         }
         achievementGuideRepository.deleteByGameId(gameId);
         return achievementGuideRepository.saveAll(guides).stream().map(AchievementGuideResponse::from).toList();
@@ -138,7 +139,8 @@ public class GameGuideService {
         List<EndingGuide> endings = new ArrayList<>();
         for (int i = 0; i < commands.size(); i++) {
             EndingCommand command = commands.get(i);
-            endings.add(EndingGuide.create(gameId, command.name(), command.description(), command.videoUrl(), i));
+            endings.add(EndingGuide.create(gameId, command.name(), command.description(), command.videoUrl(),
+                    EnglishText.of(command.nameEn(), command.descriptionEn()), i));
         }
         // 구분을 먼저 바꾼다: 아래 삭제 쿼리가 영속성 컨텍스트를 flush 후 비우므로 그 전에 반영돼야 한다
         game.changeEndingType(endingType);
@@ -189,15 +191,19 @@ public class GameGuideService {
     /**
      * @param videoUrl 공략 영상 주소. 비어 있으면 영상 없음
      * @param iconUrl  Steam 업적 아이콘 주소. 비어 있으면 아이콘 없음
+     * @param nameEn   영어 이름. 비어 있으면 번역 없음
      */
-    public record AchievementCommand(String name, String description, String videoUrl, String iconUrl) {
+    public record AchievementCommand(String name, String description, String videoUrl, String iconUrl,
+                                     String nameEn, String descriptionEn) {
     }
 
     /**
      * @param description 엔딩 보는 방법. 비어 있으면 없음
      * @param videoUrl    엔딩 영상 주소(쇼츠 포함). 비어 있으면 영상 없음
+     * @param nameEn      영어 이름. 비어 있으면 번역 없음
      */
-    public record EndingCommand(String name, String description, String videoUrl) {
+    public record EndingCommand(String name, String description, String videoUrl, String nameEn,
+                                String descriptionEn) {
     }
 
     /**

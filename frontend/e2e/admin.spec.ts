@@ -42,8 +42,10 @@ test("맞는 키로 로그인 → 게임 목록 → 로그아웃", async ({ page
   // 엔딩 정보는 글 편집 아래에 접혀 있고, 펼치면 저장된 구분과 목록이 보인다
   const endings = page.locator("details").filter({ hasText: "엔딩 정보 (플레이해 보고 체크)" });
   await expect(endings.getByRole("radio", { name: "멀티 엔딩" })).toBeHidden();
-  await endings.locator("summary").click();
+  await endings.locator("summary").first().click();
   await expect(endings.getByRole("radio", { name: "멀티 엔딩" })).toBeChecked();
+  // 엔딩마다 영어 번역 칸이 접혀 있다
+  await expect(endings.getByText("영어 번역 (선택)")).toHaveCount(2);
   await expect(endings.getByPlaceholder("엔딩 이름").first()).toHaveValue("새벽의 등대");
   // 단일 엔딩은 엔딩 설명 칸 1개만 (추가 버튼 없음), 표시 안 함은 칸이 없다
   await endings.getByRole("radio", { name: "단일 엔딩" }).check();

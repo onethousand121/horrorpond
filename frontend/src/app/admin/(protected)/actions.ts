@@ -123,12 +123,16 @@ export async function saveAchievementsAction(_prev: ActionResult | null, formDat
   const descriptions = formData.getAll("achievementDescription").map((v) => String(v).trim());
   const videoUrls = formData.getAll("achievementVideoUrl").map((v) => String(v).trim());
   const iconUrls = formData.getAll("achievementIconUrl").map((v) => String(v).trim());
+  const namesEn = formData.getAll("achievementNameEn").map((v) => String(v).trim());
+  const descriptionsEn = formData.getAll("achievementDescriptionEn").map((v) => String(v).trim());
   const achievements = names
     .map((name, i) => ({
       name,
       description: descriptions[i] ?? "",
       videoUrl: videoUrls[i] ?? "",
       iconUrl: iconUrls[i] ?? "",
+      nameEn: namesEn[i] ?? "",
+      descriptionEn: descriptionsEn[i] ?? "",
     }))
     .filter((row) => row.name);
   return run(() => replaceAchievements(id, achievements), `업적 ${achievements.length}개를 저장했습니다.`);
@@ -164,8 +168,16 @@ export async function saveEndingsAction(_prev: ActionResult | null, formData: Fo
   const names = formData.getAll("endingName").map((v) => String(v).trim());
   const descriptions = formData.getAll("endingDescription").map((v) => String(v).trim());
   const videoUrls = formData.getAll("endingVideoUrl").map((v) => String(v).trim());
+  const namesEn = formData.getAll("endingNameEn").map((v) => String(v).trim());
+  const descriptionsEn = formData.getAll("endingDescriptionEn").map((v) => String(v).trim());
   const rows = names
-    .map((name, i) => ({ name, description: descriptions[i] ?? "", videoUrl: videoUrls[i] ?? "" }))
+    .map((name, i) => ({
+      name,
+      description: descriptions[i] ?? "",
+      videoUrl: videoUrls[i] ?? "",
+      nameEn: namesEn[i] ?? "",
+      descriptionEn: descriptionsEn[i] ?? "",
+    }))
     .filter((row) => row.name);
   const endings = endingType === "MULTIPLE" ? rows : endingType === "SINGLE" ? rows.slice(0, 1) : [];
   const message =

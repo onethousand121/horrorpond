@@ -76,6 +76,47 @@ function isPreviewableIcon(value: string): boolean {
   }
 }
 
+/**
+ * 행마다 접어 두는 영어 번역 칸 (선택). 접혀 있어도 입력값은 함께 저장된다.
+ * 번역이 있으면 영어 화면(/en)에 영어로, 없으면 한국어로 보인다.
+ */
+function EnglishFields({ prefix, nameEn, descriptionEn, nameMax, descriptionMax, onChange }: {
+  prefix: "achievement" | "ending";
+  nameEn: string;
+  descriptionEn: string;
+  nameMax: number;
+  descriptionMax: number;
+  onChange: (patch: { nameEn?: string; descriptionEn?: string }) => void;
+}) {
+  const filled = Boolean(nameEn || descriptionEn);
+  return (
+    <details className="rounded border border-dashed border-border px-3 py-2 text-sm" open={filled || undefined}>
+      <summary className="cursor-pointer text-xs text-muted">영어 번역 (선택){filled ? " · 입력됨" : ""}</summary>
+      <div className="mt-2 space-y-2">
+        <input
+          name={`${prefix}NameEn`}
+          value={nameEn}
+          onChange={(e) => onChange({ nameEn: e.target.value })}
+          maxLength={nameMax}
+          placeholder="영어 이름"
+          lang="en"
+          className={inputClass}
+        />
+        <textarea
+          name={`${prefix}DescriptionEn`}
+          value={descriptionEn}
+          onChange={(e) => onChange({ descriptionEn: e.target.value })}
+          maxLength={descriptionMax}
+          rows={2}
+          placeholder="영어 설명"
+          lang="en"
+          className={inputClass}
+        />
+      </div>
+    </details>
+  );
+}
+
 function youtubeUrl(id: string | null): string {
   return id ? `https://youtu.be/${id}` : "";
 }
@@ -222,8 +263,10 @@ export function AchievementForm({ gameId, steamAppId, achievements }: {
       description: a.description ?? "",
       videoUrl: youtubeUrl(a.youtubeId),
       iconUrl: a.iconUrl ?? "",
+      nameEn: a.nameEn ?? "",
+      descriptionEn: a.descriptionEn ?? "",
     })),
-    { name: "", description: "", videoUrl: "", iconUrl: "" },
+    { name: "", description: "", videoUrl: "", iconUrl: "", nameEn: "", descriptionEn: "" },
   );
 
   function loadFromSteam() {
@@ -260,6 +303,8 @@ export function AchievementForm({ gameId, steamAppId, achievements }: {
           description: (a.description ?? "").slice(0, GUIDE_LIMITS.achievementDescription),
           videoUrl: "",
           iconUrl: a.iconUrl ?? "",
+          nameEn: "",
+          descriptionEn: "",
         }));
       replace([...merged, ...added]);
       setLoadMessage({
@@ -325,6 +370,14 @@ export function AchievementForm({ gameId, steamAppId, achievements }: {
             placeholder="아이콘 이미지 주소 (선택, Steam 업적 이미지 주소)"
             className={`${inputClass} font-mono text-xs`}
           />
+          <EnglishFields
+            prefix="achievement"
+            nameEn={row.nameEn}
+            descriptionEn={row.descriptionEn}
+            nameMax={GUIDE_LIMITS.achievementName}
+            descriptionMax={GUIDE_LIMITS.achievementDescription}
+            onChange={(patch) => update(i, patch)}
+          />
         </div>
       ))}
       <div className="flex flex-wrap items-center gap-3">
@@ -371,8 +424,14 @@ export function EndingForm({ gameId, endingType, endings }: {
   const [state, action, pending] = useActionState(saveEndingsAction, null);
   const [type, setType] = useState<EndingType | "">(endingType ?? "");
   const { rows, update, add, remove, move } = useRows(
-    endings.map((e) => ({ name: e.name, description: e.description ?? "", videoUrl: youtubeUrl(e.youtubeId) })),
-    { name: "", description: "", videoUrl: "" },
+    endings.map((e) => ({
+      name: e.name,
+      description: e.description ?? "",
+      videoUrl: youtubeUrl(e.youtubeId),
+      nameEn: e.nameEn ?? "",
+      descriptionEn: e.descriptionEn ?? "",
+    })),
+    { name: "", description: "", videoUrl: "", nameEn: "", descriptionEn: "" },
   );
 
   return (
@@ -425,6 +484,14 @@ export function EndingForm({ gameId, endingType, endings }: {
                 onChange={(e) => update(i, { videoUrl: e.target.value })}
                 placeholder="엔딩 영상 주소 (선택, 쇼츠 가능)"
                 className={inputClass}
+              />
+              <EnglishFields
+                prefix="ending"
+                nameEn={row.nameEn}
+                descriptionEn={row.descriptionEn}
+                nameMax={GUIDE_LIMITS.endingName}
+                descriptionMax={GUIDE_LIMITS.endingDescription}
+                onChange={(patch) => update(i, patch)}
               />
             </div>
           ))}

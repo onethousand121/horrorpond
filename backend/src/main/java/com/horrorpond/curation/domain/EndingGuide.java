@@ -44,6 +44,14 @@ public class EndingGuide extends BaseTimeEntity {
     @Column(columnDefinition = "text")
     private String description;
 
+    /** 영어 화면용 이름 (선택). 없으면 영어 화면도 한국어 이름 */
+    @Column(length = MAX_NAME_LENGTH)
+    private String nameEn;
+
+    /** 영어 화면용 보는 방법 (선택) */
+    @Column(columnDefinition = "text")
+    private String descriptionEn;
+
     /** 엔딩 영상. 없으면 null */
     @Column(length = YoutubeVideoId.LENGTH)
     private String youtubeId;
@@ -53,8 +61,10 @@ public class EndingGuide extends BaseTimeEntity {
 
     /**
      * @param videoUrl 유튜브 주소(쇼츠 포함) 또는 영상 ID. 비어 있으면 영상 없음
+     * @param english  영어 번역 (이름·설명 모두 선택)
      */
-    public static EndingGuide create(Long gameId, String name, String description, String videoUrl, int sortOrder) {
+    public static EndingGuide create(Long gameId, String name, String description, String videoUrl,
+                                     EnglishText english, int sortOrder) {
         EndingGuide ending = new EndingGuide();
         ending.gameId = Objects.requireNonNull(gameId, "gameId");
         ending.name = PlayVideo.optionalText(name, MAX_NAME_LENGTH, "EndingGuide.name");
@@ -62,6 +72,9 @@ public class EndingGuide extends BaseTimeEntity {
             throw new DomainValidationException("EndingGuide.name must not be blank");
         }
         ending.description = PlayVideo.optionalText(description, MAX_DESCRIPTION_LENGTH, "EndingGuide.description");
+        ending.nameEn = PlayVideo.optionalText(english.name(), MAX_NAME_LENGTH, "EndingGuide.nameEn");
+        ending.descriptionEn = PlayVideo.optionalText(english.description(), MAX_DESCRIPTION_LENGTH,
+                "EndingGuide.descriptionEn");
         ending.youtubeId = videoUrl == null || videoUrl.isBlank() ? null : YoutubeVideoId.parse(videoUrl);
         ending.sortOrder = sortOrder;
         return ending;

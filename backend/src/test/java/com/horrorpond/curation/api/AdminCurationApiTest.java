@@ -583,6 +583,45 @@ class AdminCurationApiTest {
     }
 
     @Test
+    void endingsAndAchievementsShowEnglishTranslationOnTheEnglishSite() throws Exception {
+        Long id = steamCandidate(1, "Translated", "translated-1");
+        mvc.perform(admin(post("/api/admin/games/{id}/publish", id))).andExpect(status().isOk());
+        mvc.perform(admin(put("/api/admin/games/{id}/endings", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"endingType":"MULTIPLE","endings":[
+                                  {"name":"탈출","description":"문으로","nameEn":" Escape ","descriptionEn":"Use the door"},
+                                  {"name":"죽음","description":"함정","nameEn":"","descriptionEn":""}]}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.endings[0].nameEn").value("Escape"));
+        mvc.perform(admin(put("/api/admin/games/{id}/achievements", id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"achievements":[{"name":"생존자","description":"죽지 않고 끝낸다",
+                                                  "nameEn":"Survivor","descriptionEn":"Finish without dying"}]}"""))
+                .andExpect(status().isOk());
+
+        // 영어 화면: 번역이 있는 값만 영어, 없으면 한국어 (번역 칸 자체는 공개 응답에 싣지 않는다)
+        mvc.perform(get("/api/games/translated-1").param("lang", "en"))
+                .andExpect(jsonPath("$.endings[0].name").value("Escape"))
+                .andExpect(jsonPath("$.endings[0].description").value("Use the door"))
+                .andExpect(jsonPath("$.endings[1].name").value("죽음"))
+                .andExpect(jsonPath("$.endings[1].description").value("함정"))
+                .andExpect(jsonPath("$.endings[0].nameEn").doesNotExist())
+                .andExpect(jsonPath("$.achievements[0].name").value("Survivor"))
+                .andExpect(jsonPath("$.achievements[0].description").value("Finish without dying"));
+        // 한국어 화면은 그대로
+        mvc.perform(get("/api/games/translated-1"))
+                .andExpect(jsonPath("$.endings[0].name").value("탈출"))
+                .andExpect(jsonPath("$.achievements[0].name").value("생존자"));
+        // 관리 화면은 한국어와 번역을 모두 돌려준다
+        mvc.perform(admin(get("/api/admin/games/{id}", id)))
+                .andExpect(jsonPath("$.endings[0].name").value("탈출"))
+                .andExpect(jsonPath("$.endings[0].descriptionEn").value("Use the door"))
+                .andExpect(jsonPath("$.achievements[0].nameEn").value("Survivor"));
+    }
+
+    @Test
     void endingTypeAndEndingsAreReplacedTogether() throws Exception {
         Long id = steamCandidate(1, "Endings", "endings-1");
         mvc.perform(admin(post("/api/admin/games/{id}/publish", id))).andExpect(status().isOk());

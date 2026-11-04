@@ -180,7 +180,7 @@ export function replaceReferenceVideos(id: number, videos: { url: string; title:
 
 export function replaceAchievements(
   id: number,
-  achievements: { name: string; description: string; videoUrl: string; iconUrl: string }[],
+  achievements: { name: string; description: string; videoUrl: string; iconUrl: string; nameEn: string; descriptionEn: string }[],
 ) {
   return adminFetch<unknown>(`/api/admin/games/${id}/achievements`, { method: "PUT", body: { achievements } });
 }
@@ -203,7 +203,7 @@ export function getSteamAchievements(appid: number): Promise<SteamAchievement[]>
 export function replaceEndings(
   id: number,
   endingType: EndingType | null,
-  endings: { name: string; description: string; videoUrl: string }[],
+  endings: { name: string; description: string; videoUrl: string; nameEn: string; descriptionEn: string }[],
 ) {
   return adminFetch<unknown>(`/api/admin/games/${id}/endings`, { method: "PUT", body: { endingType, endings } });
 }
