@@ -28,7 +28,7 @@ public class EndingGuide extends BaseTimeEntity {
 
     public static final int MAX_PER_GAME = 30;
     public static final int MAX_NAME_LENGTH = 100;
-    public static final int MAX_DESCRIPTION_LENGTH = 2000;
+    public static final int MAX_DESCRIPTION_LENGTH = 5000;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -33,7 +33,7 @@ class EndingGuideTest {
                 .isInstanceOf(DomainValidationException.class);
         assertThatThrownBy(() -> EndingGuide.create(1L, "a".repeat(101), null, null, EnglishText.NONE, 0))
                 .isInstanceOf(DomainValidationException.class);
-        assertThatThrownBy(() -> EndingGuide.create(1L, "a", "b".repeat(2001), null, EnglishText.NONE, 0))
+        assertThatThrownBy(() -> EndingGuide.create(1L, "a", "b".repeat(5001), null, EnglishText.NONE, 0))
                 .isInstanceOf(DomainValidationException.class);
         assertThatThrownBy(() -> EndingGuide.create(1L, "a", null, "https://vimeo.com/1", EnglishText.NONE, 0))
                 .isInstanceOf(DomainValidationException.class);

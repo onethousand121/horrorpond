@@ -109,7 +109,7 @@ export const GUIDE_LIMITS = {
   achievementIconUrl: 500,
   endings: 30,
   endingName: 100,
-  endingDescription: 2000,
+  endingDescription: 5000,
   koreanPatches: 10,
   patchUrl: 500,
   patchAuthor: 100,

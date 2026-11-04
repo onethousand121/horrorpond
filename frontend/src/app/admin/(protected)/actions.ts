@@ -54,6 +54,14 @@ async function run(task: () => Promise<unknown>, success: string): Promise<Actio
   return { ok: true, message: success };
 }
 
+/**
+ * 같은 이름의 입력값 목록. 브라우저는 textarea 줄바꿈을 CRLF(2자)로 보내지만 maxLength는 1자로 세므로,
+ * LF로 바꿔 화면에서 센 글자 수와 서버 검증 글자 수를 맞춘다.
+ */
+function formTexts(formData: FormData, name: string): string[] {
+  return formData.getAll(name).map((v) => String(v).replace(/\r\n?/g, "\n").trim());
+}
+
 function gameId(formData: FormData): number {
   const id = Number(formData.get("gameId"));
   if (!Number.isInteger(id) || id <= 0) throw new Error("invalid gameId");
@@ -119,12 +127,12 @@ export async function savePlayVideosAction(_prev: ActionResult | null, formData:
 export async function saveAchievementsAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   await requireAdminKey();
   const id = gameId(formData);
-  const names = formData.getAll("achievementName").map((v) => String(v).trim());
-  const descriptions = formData.getAll("achievementDescription").map((v) => String(v).trim());
-  const videoUrls = formData.getAll("achievementVideoUrl").map((v) => String(v).trim());
-  const iconUrls = formData.getAll("achievementIconUrl").map((v) => String(v).trim());
-  const namesEn = formData.getAll("achievementNameEn").map((v) => String(v).trim());
-  const descriptionsEn = formData.getAll("achievementDescriptionEn").map((v) => String(v).trim());
+  const names = formTexts(formData, "achievementName");
+  const descriptions = formTexts(formData, "achievementDescription");
+  const videoUrls = formTexts(formData, "achievementVideoUrl");
+  const iconUrls = formTexts(formData, "achievementIconUrl");
+  const namesEn = formTexts(formData, "achievementNameEn");
+  const descriptionsEn = formTexts(formData, "achievementDescriptionEn");
   const achievements = names
     .map((name, i) => ({
       name,
@@ -165,11 +173,11 @@ export async function saveEndingsAction(_prev: ActionResult | null, formData: Fo
   const id = gameId(formData);
   const raw = formData.get("endingType");
   const endingType = raw === "SINGLE" || raw === "MULTIPLE" ? raw : null;
-  const names = formData.getAll("endingName").map((v) => String(v).trim());
-  const descriptions = formData.getAll("endingDescription").map((v) => String(v).trim());
-  const videoUrls = formData.getAll("endingVideoUrl").map((v) => String(v).trim());
-  const namesEn = formData.getAll("endingNameEn").map((v) => String(v).trim());
-  const descriptionsEn = formData.getAll("endingDescriptionEn").map((v) => String(v).trim());
+  const names = formTexts(formData, "endingName");
+  const descriptions = formTexts(formData, "endingDescription");
+  const videoUrls = formTexts(formData, "endingVideoUrl");
+  const namesEn = formTexts(formData, "endingNameEn");
+  const descriptionsEn = formTexts(formData, "endingDescriptionEn");
   const rows = names
     .map((name, i) => ({
       name,
