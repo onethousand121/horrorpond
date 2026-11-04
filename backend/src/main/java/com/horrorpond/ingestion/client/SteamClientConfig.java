@@ -34,6 +34,16 @@ public class SteamClientConfig {
                 .build();
     }
 
+    /** Steam 커뮤니티 업적 페이지 (관리 화면에서 업적 불러오기) */
+    @Bean
+    public RestClient steamCommunityRestClient(RestClient.Builder builder) {
+        return builder
+                .baseUrl("https://steamcommunity.com")
+                .defaultHeader(HttpHeaders.USER_AGENT, ITCH_USER_AGENT)
+                .requestFactory(requestFactory(Duration.ofSeconds(20)))
+                .build();
+    }
+
     /**
      * itch.io는 게임마다 주소(작성자 하위 도메인)가 달라 baseUrl 없이 절대 주소로 부른다.
      */

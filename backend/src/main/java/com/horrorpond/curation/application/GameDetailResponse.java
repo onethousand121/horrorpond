@@ -61,7 +61,7 @@ public record GameDetailResponse(
         String priceCurrency,
         /** 엔딩 구분 SINGLE | MULTIPLE. 표시 안 함이면 null */
         EndingType endingType,
-        /** 엔딩 공략 (멀티 엔딩일 때만). 없으면 빈 목록 */
+        /** 엔딩 공략 (멀티 엔딩은 여러 개, 단일 엔딩은 최대 1개). 없으면 빈 목록 */
         List<EndingGuideResponse> endings,
         /** 유저 한글패치 배포처. 없으면 빈 목록 */
         List<KoreanPatchResponse> koreanPatches
@@ -97,7 +97,7 @@ public record GameDetailResponse(
                 adult ? List.of() : achievements, game.getSource(),
                 adult ? List.of() : referenceVideos, game.isFree(), game.getPriceAmount(), game.getPriceCurrency(),
                 adult ? null : game.getEndingType(),
-                adult || game.getEndingType() != EndingType.MULTIPLE ? List.of() : endings,
+                adult || game.getEndingType() == null ? List.of() : endings,
                 adult ? List.of() : koreanPatches);
     }
 

@@ -45,7 +45,11 @@ test("맞는 키로 로그인 → 게임 목록 → 로그아웃", async ({ page
   await endings.locator("summary").click();
   await expect(endings.getByRole("radio", { name: "멀티 엔딩" })).toBeChecked();
   await expect(endings.getByPlaceholder("엔딩 이름").first()).toHaveValue("새벽의 등대");
+  // 단일 엔딩은 엔딩 설명 칸 1개만 (추가 버튼 없음), 표시 안 함은 칸이 없다
   await endings.getByRole("radio", { name: "단일 엔딩" }).check();
+  await expect(endings.getByPlaceholder("엔딩 이름")).toHaveCount(1);
+  await expect(endings.getByRole("button", { name: "+ 엔딩 추가" })).toHaveCount(0);
+  await endings.getByRole("radio", { name: "표시 안 함" }).check();
   await expect(endings.getByPlaceholder("엔딩 이름")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "한글패치 저장" })).toBeVisible();
 

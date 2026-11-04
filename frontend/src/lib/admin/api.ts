@@ -180,12 +180,26 @@ export function replaceReferenceVideos(id: number, videos: { url: string; title:
 
 export function replaceAchievements(
   id: number,
-  achievements: { name: string; description: string; videoUrl: string }[],
+  achievements: { name: string; description: string; videoUrl: string; iconUrl: string }[],
 ) {
   return adminFetch<unknown>(`/api/admin/games/${id}/achievements`, { method: "PUT", body: { achievements } });
 }
 
-/** 엔딩 구분과 엔딩 목록을 한 번에 저장 (목록은 멀티 엔딩일 때만) */
+/** 백엔드 SteamCommunityClient.SteamAchievement (이름·설명은 영어) */
+export interface SteamAchievement {
+  name: string;
+  description: string | null;
+  /** Steam에서 숨긴 업적 */
+  hidden: boolean;
+  iconUrl: string | null;
+}
+
+/** Steam 커뮤니티 업적 목록 (저장하지 않고 폼을 채우는 데만 쓴다). 502: Steam이 응답하지 않음 */
+export function getSteamAchievements(appid: number): Promise<SteamAchievement[]> {
+  return adminFetch(`/api/admin/ingestion/steam-achievements?appid=${appid}`);
+}
+
+/** 엔딩 구분과 엔딩 목록을 한 번에 저장 (멀티 엔딩은 여러 개, 단일 엔딩은 1개까지) */
 export function replaceEndings(
   id: number,
   endingType: EndingType | null,

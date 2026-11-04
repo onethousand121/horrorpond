@@ -67,6 +67,7 @@ const games = [
     priceCurrency: "KRW",
     reviewCount: 4321,
     endingType: "SINGLE",
+    endings: [{ name: "엔딩", description: "집은 결국 당신을 기억한다.", youtubeId: null }],
   }),
   steamGame(2, 1002, {
     slug: "free-scream",
@@ -250,7 +251,7 @@ function toDetail(raw, lang) {
     priceAmount: g.priceAmount,
     priceCurrency: g.priceCurrency,
     endingType: g.endingType,
-    endings: g.endingType === "MULTIPLE" ? g.endings : [],
+    endings: g.endingType ? g.endings : [],
     koreanPatches: g.koreanPatches,
   };
 }

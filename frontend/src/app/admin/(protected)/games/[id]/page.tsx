@@ -254,7 +254,12 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
       <section className="space-y-3">
         <h2 className="font-semibold">업적 공략</h2>
         <p className="text-sm text-muted">없으면 사이트에 이 영역이 보이지 않습니다.</p>
-        <AchievementForm key={JSON.stringify(game.achievements)} gameId={game.id} achievements={game.achievements} />
+        <AchievementForm
+          key={JSON.stringify(game.achievements)}
+          gameId={game.id}
+          steamAppId={game.source === "STEAM" && game.externalId ? Number(game.externalId) : null}
+          achievements={game.achievements}
+        />
       </section>
     </div>
   );

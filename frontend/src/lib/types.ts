@@ -185,6 +185,8 @@ export interface AchievementGuide {
   description: string | null;
   /** 공략 영상. 없으면 null */
   youtubeId: string | null;
+  /** Steam 업적 아이콘 주소. 없으면 null (백엔드 배포 전 응답에는 없다) */
+  iconUrl?: string | null;
 }
 
 /** 백엔드 GameGuideResponses.EndingGuideResponse */

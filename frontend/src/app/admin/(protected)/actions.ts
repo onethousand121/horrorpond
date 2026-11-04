@@ -13,6 +13,7 @@ import {
   changeTrendingOverride,
   clearArticleTranslation,
   deleteArticle,
+  getSteamAchievements,
   hideGame,
   publishGame,
   replaceAchievements,
@@ -25,6 +26,7 @@ import {
   updateCuration,
   upsertArticle,
   translateArticle,
+  type SteamAchievement,
 } from "@/lib/admin/api";
 import { CACHE_TAGS } from "@/lib/api";
 import { youtubeInfo } from "@/lib/admin/youtubeInfo";
@@ -120,14 +122,39 @@ export async function saveAchievementsAction(_prev: ActionResult | null, formDat
   const names = formData.getAll("achievementName").map((v) => String(v).trim());
   const descriptions = formData.getAll("achievementDescription").map((v) => String(v).trim());
   const videoUrls = formData.getAll("achievementVideoUrl").map((v) => String(v).trim());
+  const iconUrls = formData.getAll("achievementIconUrl").map((v) => String(v).trim());
   const achievements = names
-    .map((name, i) => ({ name, description: descriptions[i] ?? "", videoUrl: videoUrls[i] ?? "" }))
+    .map((name, i) => ({
+      name,
+      description: descriptions[i] ?? "",
+      videoUrl: videoUrls[i] ?? "",
+      iconUrl: iconUrls[i] ?? "",
+    }))
     .filter((row) => row.name);
   return run(() => replaceAchievements(id, achievements), `업적 ${achievements.length}개를 저장했습니다.`);
 }
 
 /**
- * 엔딩 구분과 엔딩 목록을 함께 저장. 목록은 멀티 엔딩일 때만 보내고, 이름이 빈 행은 버린다.
+ * Steam 커뮤니티 업적 목록을 받아 폼에 돌려준다 (저장하지 않는다).
+ */
+export async function loadSteamAchievementsAction(
+  appid: number,
+): Promise<{ ok: true; achievements: SteamAchievement[] } | { ok: false; message: string }> {
+  await requireAdminKey();
+  if (!Number.isInteger(appid) || appid <= 0) return { ok: false, message: "Steam 게임이 아닙니다." };
+  try {
+    return { ok: true, achievements: await getSteamAchievements(appid) };
+  } catch (e) {
+    if (e instanceof AdminApiError) {
+      return { ok: false, message: "Steam 업적을 불러오지 못했습니다. 잠시 뒤 다시 시도하거나 아이콘 주소를 직접 넣어 주세요." };
+    }
+    throw e;
+  }
+}
+
+/**
+ * 엔딩 구분과 엔딩 목록을 함께 저장. 멀티 엔딩은 목록 전체, 단일 엔딩은 첫 행 1개(스포일러 설명)만 보내고,
+ * 이름이 빈 행은 버린다.
  */
 export async function saveEndingsAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   await requireAdminKey();
@@ -137,17 +164,17 @@ export async function saveEndingsAction(_prev: ActionResult | null, formData: Fo
   const names = formData.getAll("endingName").map((v) => String(v).trim());
   const descriptions = formData.getAll("endingDescription").map((v) => String(v).trim());
   const videoUrls = formData.getAll("endingVideoUrl").map((v) => String(v).trim());
-  const endings =
-    endingType === "MULTIPLE"
-      ? names
-          .map((name, i) => ({ name, description: descriptions[i] ?? "", videoUrl: videoUrls[i] ?? "" }))
-          .filter((row) => row.name)
-      : [];
+  const rows = names
+    .map((name, i) => ({ name, description: descriptions[i] ?? "", videoUrl: videoUrls[i] ?? "" }))
+    .filter((row) => row.name);
+  const endings = endingType === "MULTIPLE" ? rows : endingType === "SINGLE" ? rows.slice(0, 1) : [];
   const message =
     endingType === "MULTIPLE"
       ? `멀티 엔딩, 엔딩 ${endings.length}개를 저장했습니다.`
       : endingType === "SINGLE"
-        ? "단일 엔딩으로 저장했습니다."
+        ? endings.length > 0
+          ? "단일 엔딩과 엔딩 설명을 저장했습니다."
+          : "단일 엔딩으로 저장했습니다."
         : "엔딩 표시를 껐습니다.";
   return run(() => replaceEndings(id, endingType, endings), message);
 }

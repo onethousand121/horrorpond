@@ -121,7 +121,8 @@ public class AdminCurationController {
     public List<AchievementGuideResponse> replaceAchievements(@PathVariable Long id,
                                                               @Valid @RequestBody AchievementsRequest request) {
         return gameGuideService.replaceAchievements(id, request.achievements().stream()
-                .map(a -> new GameGuideService.AchievementCommand(a.name(), a.description(), a.videoUrl()))
+                .map(a -> new GameGuideService.AchievementCommand(a.name(), a.description(), a.videoUrl(),
+                        a.iconUrl()))
                 .toList());
     }
 
@@ -232,11 +233,11 @@ public class AdminCurationController {
     public record ReferenceVideoItem(String url, String title, String channelName) {
     }
 
-    /** 이름 필수·길이·개수는 도메인(AchievementGuide)이 검증한다 */
+    /** 이름 필수·길이·개수·아이콘 주소는 도메인(AchievementGuide)이 검증한다 */
     public record AchievementsRequest(@NotNull List<@NotNull AchievementItem> achievements) {
     }
 
-    public record AchievementItem(String name, String description, String videoUrl) {
+    public record AchievementItem(String name, String description, String videoUrl, String iconUrl) {
     }
 
     /** 이름 필수·길이·개수·영상 주소는 도메인(EndingGuide)이, 구분과 목록의 짝은 GameGuideService가 검증한다 */
