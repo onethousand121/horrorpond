@@ -66,7 +66,8 @@
   ```
 - Maven Central이 429(요청 과다)로 막히면 Gradle에 Google 미러를 쓰는 init 스크립트를 임시로 준다
   (`maven-central.storage-download.googleapis.com/maven2/`를 저장소 맨 앞에 추가, 저장소에는 커밋하지 않음).
-- 개발 중에는 바뀐 영역만: `./gradlew test --tests 'com.horrorpond.curation.*'`. 커밋 전 전체 `./gradlew test` (현재 294개).
+- 개발 중에는 바뀐 영역만: `./gradlew test --tests 'com.horrorpond.curation.*'`. 작은 수정은 그대로 커밋하고 전체는 CI에 맡긴다
+  (운영자가 머지 속도를 원함). 마이그레이션·큰 기능·수집 변경만 커밋 전 전체 `./gradlew test` (현재 299개).
 - 새 Spring 테스트 컨텍스트(설정이 다른 `@SpringBootTest`)를 늘리면 Postgres 연결 수가 넘친다. 기존 테스트 클래스에 추가한다.
 - 프론트 (`frontend/`):
   ```bash
