@@ -51,12 +51,15 @@ class IngestionMappingTest {
         steamGame(4, false, today.minusDays(1), fetched, false);     // 이미 출시됨 → 제외
         steamGame(5, true, today.minusDays(1), fetched, true);       // 숨김 → 제외
         steamGame(6, true, today, Instant.parse("2026-10-13T00:30:00Z"), false); // 오늘 이미 받음 → 제외
+        steamGame(7, true, null, fetched, false);                    // 출시일 없음 → 제외
+        steamGame(8, true, null, fetched, false);                    // 출시일 없지만 "지금 뜨는" 고정 → 대상
         flushAndClear();
+        em.createNativeQuery("UPDATE game SET trending_override = 'PINNED' WHERE external_id = '8'").executeUpdate();
 
         assertThat(seedRepository.findReleaseWindowRefreshTargets(today.minusDays(14), today.plusDays(3),
                 Instant.parse("2026-10-13T00:00:00Z"), 10))
                 .extracting(SteamAppSeed::getAppid)
-                .containsExactly(1, 2);
+                .containsExactly(1, 2, 8);
     }
 
     @Test
@@ -94,7 +97,7 @@ class IngestionMappingTest {
         com.horrorpond.catalog.domain.Game game = com.horrorpond.catalog.domain.Game.candidateFromSteam(
                 appid, "Game " + appid, "game-" + appid);
         game.applySteamData(new com.horrorpond.catalog.domain.SteamGameData("Game " + appid, null, null, releaseDate,
-                releaseDate.toString(), comingSoon, false, null, false, java.util.List.of(), java.util.List.of()));
+                releaseDate == null ? "출시 예정" : releaseDate.toString(), comingSoon, false, null, false, java.util.List.of(), java.util.List.of()));
         if (hidden) {
             game.hide();
         }

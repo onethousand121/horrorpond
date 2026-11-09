@@ -28,6 +28,8 @@ public interface SteamAppSeedRepository extends JpaRepository<SteamAppSeed, Inte
     /**
      * 출시 무렵이라 상세가 자주 바뀌는 게임: 아직 "출시 예정"인데 출시일이 [releaseFrom, releaseTo] 안에 있는(지났거나 곧인) 것.
      * 출시·연기·날짜 확정이 이때 몰리므로 7일 갱신 주기를 기다리지 않고 매일 다시 받는다. 숨긴 게임은 뺀다.
+     * 출시일이 없는("출시 예정"만 적힌) 게임은 날짜로 고를 수 없어서, 메인 "지금 뜨는"에 고정된 것만 함께 넣는다
+     * (동향 조사로 추가된 게임이 이미 출시됐는데 "출시 예정"으로 남아 있지 않게).
      */
     @Query(nativeQuery = true, value = """
             SELECT s.* FROM steam_app_seed s
@@ -35,7 +37,8 @@ public interface SteamAppSeedRepository extends JpaRepository<SteamAppSeed, Inte
             WHERE s.fetch_status = 'OK'
               AND g.coming_soon
               AND g.status <> 'HIDDEN'
-              AND g.release_date BETWEEN :releaseFrom AND :releaseTo
+              AND (g.release_date BETWEEN :releaseFrom AND :releaseTo
+                   OR (g.release_date IS NULL AND g.trending_override = 'PINNED'))
               AND s.last_fetched_at < :fetchedBefore
             ORDER BY g.release_date, s.appid
             LIMIT :limit""")
