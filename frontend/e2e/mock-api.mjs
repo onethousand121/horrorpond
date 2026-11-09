@@ -370,6 +370,17 @@ function handlePublic(req, res, path, query) {
   if (path === "/api/games") {
     return send(res, 200, page(filterGames(query).map((g) => toSummary(g, lang)), query, 24));
   }
+  if (path === "/api/games/daily-pick") {
+    // 오늘의 게임: 큐레이터 후보(개발사 제공), 영어 소개가 있으면 영어 화면에 영어 (백엔드와 같은 규칙)
+    const game = games.find((g) => g.slug === "dark-house");
+    return send(res, 200, {
+      date: "2026-11-09",
+      source: "CANDIDATE",
+      intro: lang === "en" ? "A house that remembers every visitor" : "찾아온 사람을 모두 기억하는 집",
+      sponsored: true,
+      game: toSummary(game, lang),
+    });
+  }
   const detail = /^\/api\/games\/([^/]+)$/.exec(path);
   if (detail) {
     const slug = decodeURIComponent(detail[1]);
@@ -405,6 +416,11 @@ async function handleAdmin(req, res, path, query) {
     ]);
   }
   if (req.method === "PUT" && path === "/api/admin/games/trending-pins/order") return send(res, 200, []);
+  if (req.method === "GET" && path === "/api/admin/games/daily-picks") {
+    return send(res, 200, [
+      { gameId: 1, title: "어두운 집", slug: "dark-house", intro: "찾아온 사람을 모두 기억하는 집", introEn: null, sponsored: true, featuredOn: null, showable: true },
+    ]);
+  }
   if (req.method === "GET" && path === "/api/admin/games/lookup") {
     const appid = query.get("steamAppId");
     const itchUrl = query.get("itchUrl");

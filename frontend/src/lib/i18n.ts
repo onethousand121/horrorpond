@@ -86,6 +86,12 @@ const ko = {
     keeper: "주인장 추천",
     keeperIntro: "주인장이 직접 플레이한 게임 중에서 골라 왔어요.",
     trending: "지금 뜨는 공포게임",
+    dailyPick: "오늘의 게임",
+    dailyPickDate: (date: string) => {
+      const [, m, d] = date.split("-").map(Number);
+      return `${m}월 ${d}일`;
+    },
+    dailyPickMore: "자세히 보기",
     steady: "꾸준히 사랑받는 명작",
     recent: "최근 출시",
     upcoming: "출시 예정",
@@ -304,6 +310,10 @@ const en: Dictionary = {
     keeper: "Keeper's picks",
     keeperIntro: "Picked from the games the keeper has played.",
     trending: "Trending now",
+    dailyPick: "Game of the day",
+    dailyPickDate: (date: string) =>
+      new Date(`${date}T00:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" }),
+    dailyPickMore: "See details",
     steady: "All-time favorites",
     recent: "New releases",
     upcoming: "Coming soon",

@@ -5,12 +5,13 @@ import { connection } from "next/server";
 import { CollectionLinks } from "@/components/CollectionLinks";
 import { GameRow } from "@/components/GameRow";
 import { KeeperFrog } from "@/components/KeeperFrog";
+import { DailyPickSpotlight } from "@/components/DailyPickSpotlight";
 import { PopularShowcase } from "@/components/PopularShowcase";
 import { VideoRow } from "@/components/VideoRow";
-import { getGames, getGenres, getStats } from "@/lib/api";
+import { getDailyPick, getGames, getGenres, getStats } from "@/lib/api";
 import { alternatesFor, getDictionary, isLocale, localePath } from "@/lib/i18n";
 import { CURATOR } from "@/lib/site";
-import { pickRandomTiered } from "@/lib/random";
+import { pickRandom, pickRandomTiered } from "@/lib/random";
 import { getFreshVideos } from "@/lib/youtube";
 
 // 요청 시 렌더링: 고정 경로는 빌드 때 사전 렌더링되므로, connection()으로 빌드가 백엔드에 의존하지 않게 한다.
@@ -23,6 +24,8 @@ export async function generateMetadata({ params }: PageProps<"/[lang]">): Promis
 
 const SHOWCASE = 5;
 const ROW = 8;
+/** 명작 줄: 누적 인기 상위 이만큼 중에서 매번 ROW개를 무작위로 (늘 같은 줄이면 메인이 멈춰 보인다) */
+const STEADY_POOL = 40;
 const VIDEOS = 4;
 /** 주인장 추천 후보 수 (API 페이지 상한) */
 const KEEPER_POOL = 48;
@@ -48,7 +51,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
   await connection();
   const dict = getDictionary(lang);
   const t = dict.home;
-  const [stats, genres, trending, recent, upcoming, steady, pickPool, keeperPool, videos] = await Promise.all([
+  const [stats, genres, trending, recent, upcoming, steadyPool, pickPool, keeperPool, videos, dailyPick] = await Promise.all([
     getStats(),
     getGenres(lang),
     // 지금 뜨는: 최근 7일 리뷰 증가량 순(관리자 고정 게임이 맨 앞). 누적 리뷰 수(스테디셀러)는 바로 아래 줄로 따로 보여준다
@@ -56,12 +59,15 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
     getGames({ sort: "TRENDING", size: SHOWCASE, lang }).catch(() => getGames({ sort: "POPULAR", size: SHOWCASE, lang })),
     getGames({ release: "RECENT", sort: "RELEASE", size: ROW, lang }),
     getGames({ release: "UPCOMING", size: ROW, lang }),
-    getGames({ sort: "POPULAR", size: ROW, lang }),
+    getGames({ sort: "POPULAR", size: STEADY_POOL, lang }),
     // 주인장 추천: 추천 글을 쓴 게임을 먼저, 다음은 플레이 후기, 남는 칸은 주인장 플레이 영상이 있는 게임으로
     getGames({ picked: true, sort: "POPULAR", size: KEEPER_POOL, lang }).catch(() => null),
     getGames({ keeper: true, sort: "POPULAR", size: KEEPER_POOL, lang }).catch(() => null),
     getFreshVideos(VIDEOS, VIDEO_FRESH_DAYS),
+    // 오늘의 게임: 백엔드 배포 전이거나 실패하면 영역만 숨긴다
+    getDailyPick(lang).catch(() => null),
   ]);
+  const steady = pickRandom(steadyPool.content, ROW);
 
   // 추천 → 플레이 후기 → 주인장 영상만 있는 게임 순으로 채우고, 같은 단계 안에서는 무작위
   const keeperRest = (keeperPool?.content ?? []).filter((game) => !game.picked);
@@ -139,10 +145,12 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         </section>
       )}
 
-      {steady.content.length > 0 && (
+      {dailyPick && <DailyPickSpotlight pick={dailyPick} locale={lang} />}
+
+      {steady.length > 0 && (
         <section className="space-y-4">
           <SectionHeader title={t.steady} href={localePath(lang, "/games?view=popular")} more={t.more} />
-          <GameRow games={steady.content} locale={lang} />
+          <GameRow games={steady} locale={lang} />
         </section>
       )}
 

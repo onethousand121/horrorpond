@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 공개 사이트용 조회. 노출 규칙(ExposurePolicy)을 만족하지 않으면 존재 여부도 드러내지 않는다.
@@ -62,6 +63,21 @@ public class PublicGameQueryService {
                 rows.map(CuratedGameRow::id).getContent());
         GenreResolver resolver = new GenreResolver(genres);
         return rows.map(row -> GameSummaryResponse.of(row,
+                resolver.resolve(curatorGenres.getOrDefault(row.id(), List.of()), row.tags(), language), language));
+    }
+
+    /** 공개 게임 하나를 목록 카드 모양으로 (보이지 않는 게임이면 빈 값) */
+    public Optional<GameSummaryResponse> summary(Long gameId, Language language) {
+        PublicGameQuery query = new PublicGameQuery(exposurePolicy.visible(QGame.game).and(QGame.game.id.eq(gameId)),
+                null, null, null, null, exposurePolicy.today(), false, CuratedGameSort.LATEST, false, false, false);
+        Page<CuratedGameRow> rows = curatedGameQueryRepository.findVisible(query, Pageable.ofSize(1));
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        CuratedGameRow row = rows.getContent().get(0);
+        Map<Long, List<String>> curatorGenres = curatedGameQueryRepository.findCuratorGenreSlugs(List.of(row.id()));
+        GenreResolver resolver = new GenreResolver(genreRepository.findAllByOrderByDisplayOrderAsc());
+        return Optional.of(GameSummaryResponse.of(row,
                 resolver.resolve(curatorGenres.getOrDefault(row.id(), List.of()), row.tags(), language), language));
     }
 

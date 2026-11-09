@@ -34,7 +34,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.http.HttpStatus;
+import com.horrorpond.curation.application.DailyPickService;
+import com.horrorpond.curation.application.DailyPickService.AdminDailyPickResponse;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -48,6 +53,7 @@ public class AdminCurationController {
     private final CurationService curationService;
     private final PublishingService publishingService;
     private final GameGuideService gameGuideService;
+    private final DailyPickService dailyPickService;
 
     /**
      * 검토 대기열. status를 생략하면 전체, q는 제목 부분일치(대소문자 무시).
@@ -84,6 +90,28 @@ public class AdminCurationController {
     public AdminArticleResponse translateArticle(@PathVariable Long id, @RequestBody TranslationRequest request) {
         return curationService.translateArticle(id, new CurationService.TranslationCommand(request.title(),
                 request.oneLiner(), request.body(), request.highlights()));
+    }
+
+    /** "오늘의 게임" 후보 전체 (등록 순) */
+    @GetMapping("/daily-picks")
+    public List<AdminDailyPickResponse> dailyPicks() {
+        return dailyPickService.candidates();
+    }
+
+    /** "오늘의 게임" 후보로 저장 (없으면 추가, 있으면 수정). 소개 필수·길이·날짜 중복은 서비스·도메인이 검증 */
+    @PutMapping("/{id}/daily-pick")
+    public AdminDailyPickResponse saveDailyPick(@PathVariable Long id, @RequestBody DailyPickRequest request) {
+        return dailyPickService.save(id, request.intro(), request.introEn(), Boolean.TRUE.equals(request.sponsored()),
+                request.featuredOn());
+    }
+
+    @DeleteMapping("/{id}/daily-pick")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeDailyPick(@PathVariable Long id) {
+        dailyPickService.remove(id);
+    }
+
+    public record DailyPickRequest(String intro, String introEn, Boolean sponsored, LocalDate featuredOn) {
     }
 
     @DeleteMapping("/{id}/article/translation")

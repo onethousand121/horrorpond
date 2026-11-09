@@ -16,11 +16,13 @@ import {
   getSteamAchievements,
   hideGame,
   publishGame,
+  removeDailyPick,
   replaceAchievements,
   replaceEndings,
   replaceKoreanPatches,
   replacePlayVideos,
   replaceReferenceVideos,
+  saveDailyPick,
   unhideGame,
   unpublishArticle,
   updateCuration,
@@ -197,6 +199,32 @@ export async function saveEndingsAction(_prev: ActionResult | null, formData: Fo
           : "단일 엔딩으로 저장했습니다."
         : "엔딩 표시를 껐습니다.";
   return run(() => replaceEndings(id, endingType, endings), message);
+}
+
+/**
+ * 오늘의 게임 후보로 저장 (한 줄 소개 필수, 영어 소개·날짜 고정 선택).
+ */
+export async function saveDailyPickAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
+  const id = gameId(formData);
+  const [intro] = formTexts(formData, "intro");
+  const [introEn] = formTexts(formData, "introEn");
+  const featuredOn = String(formData.get("featuredOn") ?? "").trim();
+  const body = {
+    intro: intro ?? "",
+    introEn: introEn ?? "",
+    sponsored: formData.get("sponsored") === "on",
+    featuredOn: /^\d{4}-\d{2}-\d{2}$/.test(featuredOn) ? featuredOn : null,
+  };
+  if (!body.intro) return { ok: false, message: "한 줄 소개를 적어 주세요." };
+  return run(() => saveDailyPick(id, body),
+    body.featuredOn ? `오늘의 게임 후보로 저장했습니다 (${body.featuredOn}에 고정).` : "오늘의 게임 후보로 저장했습니다.");
+}
+
+export async function removeDailyPickAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireAdminKey();
+  const id = gameId(formData);
+  return run(() => removeDailyPick(id), "오늘의 게임 후보에서 뺐습니다.");
 }
 
 /**

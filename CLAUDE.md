@@ -37,6 +37,10 @@
   고정 게임끼리는 game.trending_pin_order 순(관리 화면 /admin/trending "고정 순서", PUT trending-pins/order), 순서 없는 고정 게임은 그 뒤
   매주 반영: Perplexity 조사 JSON을 관리 화면 /admin/trending에 붙여넣기 → 서버 액션이 lookup(appid·itch 주소)·추가·
   고정(trending_auto=true)·참고 영상(oEmbed 확인)·지난주 자동 고정 해제(결과 5개 이상일 때, 관리자 고정은 유지)
+- 오늘의 게임(메인 "지금 뜨는" 아래 큰 카드 1개): daily_pick_candidate(게임당 1행, 한 줄 소개 필수·영어 소개·개발사 제공·날짜 고정 선택).
+  오늘(한국) 날짜 고정 후보 → 없으면 순서 후보(고정 없음 또는 지난 날짜, 등록 순)를 epochDay % 개수로 → 후보가 없으면 주인장 추천(PICK) 게임에서.
+  사이트에 안 보이는 게임·성인 게임은 건너뜀. GET /api/games/daily-pick(없으면 204), 관리 PUT/DELETE /api/admin/games/{id}/daily-pick, 목록 GET /api/admin/games/daily-picks
+  메인 "꾸준히 사랑받는 명작" 줄은 누적 인기 상위 40개 중 요청마다 8개 무작위
 - 장르: 자체 택소노미(curator 관리) + SteamSpy 태그 자동 매핑. Steam genres/categories는 참고용 raw 데이터로만 보관
 - 수집: discovery(Steam 스토어 검색: Horror 전체 최신 출시순(약 1.5만, 중간 실패 시 받은 데까지) + 인기 출시 예정 200, SteamSpy tag 전체(2025년 이후 누락 많음)) → enrichment(appdetails, 1.5s throttle, 429→60s backoff)
         → raw_snapshot(JSONB) 저장 → normalize(별도 단계, 재실행 가능)
