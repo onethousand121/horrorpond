@@ -1,7 +1,7 @@
 import "server-only";
 
 import { DEFAULT_LOCALE, type Locale } from "./i18n";
-import type { GameDetail, GameSort, GameSummary, Genre, HubStats, PageResponse, ReleaseWindow } from "./types";
+import type { DailyPick, GameDetail, GameSort, GameSummary, Genre, HubStats, PageResponse, ReleaseWindow } from "./types";
 
 /**
  * 데이터 캐시 수명(초). 페이지의 `export const revalidate`와 같은 값으로 맞춘다
@@ -128,6 +128,15 @@ export async function getGame(slug: string, lang?: Locale): Promise<GameDetail |
 export async function getGenres(lang?: Locale): Promise<Genre[]> {
   const path = withLang("/api/genres", lang);
   const res = await apiFetch(path, [CACHE_TAGS.genres]);
+  if (!res.ok) throw await failure(res, path);
+  return res.json();
+}
+
+/** 오늘의 게임. 후보도 주인장 추천 게임도 없으면(204) null */
+export async function getDailyPick(lang?: Locale): Promise<DailyPick | null> {
+  const path = withLang("/api/games/daily-pick", lang);
+  const res = await apiFetch(path, [CACHE_TAGS.games]);
+  if (res.status === 204) return null;
   if (!res.ok) throw await failure(res, path);
   return res.json();
 }

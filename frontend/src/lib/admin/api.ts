@@ -55,6 +55,8 @@ async function adminFetch<T>(path: string, init: { method?: string; body?: unkno
     const error = (await res.json().catch(() => null)) as ErrorResponse | null;
     throw new AdminApiError(res.status, error?.message ?? `API ${res.status} ${path}`);
   }
+  // 본문 없는 응답(204, 예: 오늘의 게임 후보 빼기)
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 
@@ -197,6 +199,42 @@ export interface SteamAchievement {
 /** Steam 커뮤니티 업적 목록 (저장하지 않고 폼을 채우는 데만 쓴다). 502: Steam이 응답하지 않음 */
 export function getSteamAchievements(appid: number): Promise<SteamAchievement[]> {
   return adminFetch(`/api/admin/ingestion/steam-achievements?appid=${appid}`);
+}
+
+/** 백엔드 DailyPickService.AdminDailyPickResponse: 오늘의 게임 후보 */
+export interface AdminDailyPick {
+  gameId: number;
+  title: string | null;
+  slug: string | null;
+  intro: string;
+  introEn: string | null;
+  sponsored: boolean;
+  /** 이 날짜(한국)에 고정. 없으면 순서대로 */
+  featuredOn: string | null;
+  /** 지금 사이트에 보일 수 있는지 (아니면 메인에 나오지 않는다: 공개 버튼 필요) */
+  showable: boolean;
+}
+
+/** 오늘의 게임 후보 전체 (등록 순). 백엔드 배포 전이면 빈 목록 */
+export async function getDailyPicks(): Promise<AdminDailyPick[]> {
+  try {
+    return await adminFetch<AdminDailyPick[]>(`/api/admin/games/daily-picks`);
+  } catch (e) {
+    if (e instanceof AdminApiError && e.status === 404) return [];
+    throw e;
+  }
+}
+
+/** 오늘의 게임 후보로 저장 (없으면 추가, 있으면 수정) */
+export function saveDailyPick(
+  id: number,
+  body: { intro: string; introEn: string; sponsored: boolean; featuredOn: string | null },
+) {
+  return adminFetch<AdminDailyPick>(`/api/admin/games/${id}/daily-pick`, { method: "PUT", body });
+}
+
+export function removeDailyPick(id: number) {
+  return adminFetch<void>(`/api/admin/games/${id}/daily-pick`, { method: "DELETE" });
 }
 
 /** 엔딩 구분과 엔딩 목록을 한 번에 저장 (멀티 엔딩은 여러 개, 단일 엔딩은 1개까지) */

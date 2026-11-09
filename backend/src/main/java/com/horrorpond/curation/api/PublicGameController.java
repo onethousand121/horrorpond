@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import com.horrorpond.curation.application.DailyPickService;
+import com.horrorpond.curation.application.DailyPickService.DailyPickResponse;
 
 @RestController
 @RequestMapping("/api/games")
@@ -28,6 +31,7 @@ public class PublicGameController {
     static final int MAX_SEARCH_LENGTH = 100;
 
     private final PublicGameQueryService queryService;
+    private final DailyPickService dailyPickService;
 
     @GetMapping
     public PageResponse<GameSummaryResponse> list(
@@ -45,6 +49,17 @@ public class PublicGameController {
             @RequestParam(defaultValue = "ko") @Pattern(regexp = Language.PARAM_PATTERN) String lang) {
         return PageResponse.from(queryService.list(q, genre, coop, release, picked, korean, keeper, free, sort, Language.from(lang),
                 PageRequest.of(page, size)));
+    }
+
+    /**
+     * 오늘의 게임. 후보도 주인장 추천 게임도 없으면 204
+     */
+    @GetMapping("/daily-pick")
+    public ResponseEntity<DailyPickResponse> dailyPick(
+            @RequestParam(defaultValue = "ko") @Pattern(regexp = Language.PARAM_PATTERN) String lang) {
+        return dailyPickService.today(Language.from(lang))
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @GetMapping("/{slug}")

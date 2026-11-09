@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAdminGame } from "@/lib/admin/api";
+import { getAdminGame, getDailyPicks } from "@/lib/admin/api";
 import { getGenres } from "@/lib/api";
 import { formatCount, formatDate } from "@/lib/format";
 import {
@@ -19,6 +19,7 @@ import { ActionButton } from "../../components/ActionButton";
 import { ArticleForm } from "../../components/ArticleForm";
 import { TranslationForm } from "../../components/TranslationForm";
 import { CurationForm } from "../../components/CurationForm";
+import { DailyPickForm } from "../../components/DailyPickForm";
 import { AchievementForm, EndingForm, KoreanPatchForm, PlayVideoForm, ReferenceVideoForm } from "../../components/GuideForms";
 import { AdultBadge, ArticleStatusBadge, GameStatusBadge, VisibilityBadge } from "../../components/StatusBadge";
 
@@ -37,7 +38,7 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
   const { id } = await params;
   const gameId = parseId(id);
   if (gameId === null) notFound();
-  const [game, genres] = await Promise.all([getAdminGame(gameId), getGenres()]);
+  const [game, genres, dailyPicks] = await Promise.all([getAdminGame(gameId), getGenres(), getDailyPicks()]);
   if (!game) notFound();
 
   const article = game.article;
@@ -216,6 +217,20 @@ export default async function AdminGameEditPage({ params }: PageProps<"/admin/ga
             />
           </div>
         </details>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-semibold">오늘의 게임 후보</h2>
+        <p className="text-sm text-muted">
+          후보로 등록하면 메인 &quot;지금 뜨는&quot; 아래 &quot;오늘의 게임&quot;에 하루씩 돌아가며 크게 보입니다. 날짜를 고르면 그날
+          고정돼요 (출시일 맞춤 등). 후보가 하나도 없으면 주인장 추천 게임에서 골라 보여 줍니다.
+        </p>
+        <DailyPickForm
+          key={JSON.stringify(dailyPicks.find((p) => p.gameId === game.id) ?? null)}
+          gameId={game.id}
+          pick={dailyPicks.find((p) => p.gameId === game.id) ?? null}
+          sponsoredDefault={game.article?.sponsored ?? false}
+        />
       </section>
 
       <section className="space-y-3">

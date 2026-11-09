@@ -77,7 +77,7 @@
   PW_CHROMIUM_PATH=/opt/pw-browsers/chromium CI=1 npm run test:e2e   # 현재 42개, mock API는 e2e/mock-api.mjs
   ```
   e2e가 부하로 한 개 시간 초과나면 그 파일만 다시 돌려 확인한다.
-- 마이그레이션 최신은 **V24** (엔딩 설명 5000자). 다음은 V25. 추가만, 적용된 파일 수정 금지.
+- 마이그레이션 최신은 **V25** (오늘의 게임 후보). 다음은 V26. 추가만, 적용된 파일 수정 금지.
 
 ### 비밀값·환경변수 (값은 운영자만 안다)
 - 서버 `~/horrorpond/.env`: `POSTGRES_PASSWORD`, `ADMIN_API_KEY`, `API_DOMAIN`, `APP_MEM_LIMIT`, `DEEPL_API_KEY`,

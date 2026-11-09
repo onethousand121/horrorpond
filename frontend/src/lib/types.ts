@@ -49,6 +49,19 @@ export interface GenreSummary {
   name: string;
 }
 
+/** 백엔드 DailyPickService.DailyPickResponse: 오늘의 게임 */
+export interface DailyPick {
+  /** 한국 날짜 (YYYY-MM-DD) */
+  date: string;
+  /** CANDIDATE: 큐레이터가 고른 후보, PICK: 후보가 없어 주인장 추천 게임에서 고름 */
+  source: "CANDIDATE" | "PICK";
+  /** 한 줄 소개 (PICK이면 추천 글의 한 줄 평). 없을 수 있다 */
+  intro: string | null;
+  /** 개발사에게 키·자료를 제공받은 게임 */
+  sponsored: boolean;
+  game: GameSummary;
+}
+
 export interface GameSummary {
   slug: string;
   title: string;

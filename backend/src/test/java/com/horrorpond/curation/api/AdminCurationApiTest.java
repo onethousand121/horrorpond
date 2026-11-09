@@ -230,6 +230,71 @@ class AdminCurationApiTest {
     }
 
     @Test
+    void dailyPickShowsTheFixedDateThenRotatesThenFallsBackToPicks() throws Exception {
+        String today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).toString();
+        // 후보도 추천도 없으면 204
+        mvc.perform(get("/api/games/daily-pick")).andExpect(status().isNoContent());
+
+        // 후보가 없으면 주인장 추천 게임에서 고른다 (한 줄 평이 소개)
+        Long pick = steamCandidate(10, "Picked", "picked-10");
+        mvc.perform(admin(put("/api/admin/games/{id}/article", pick))
+                        .contentType(MediaType.APPLICATION_JSON).content(ARTICLE))
+                .andExpect(status().isOk());
+        mvc.perform(admin(post("/api/admin/games/{id}/publish", pick))).andExpect(status().isOk());
+        mvc.perform(get("/api/games/daily-pick"))
+                .andExpect(jsonPath("$.source").value("PICK"))
+                .andExpect(jsonPath("$.date").value(today))
+                .andExpect(jsonPath("$.intro").value("4인 협동 유령 조사"))
+                .andExpect(jsonPath("$.game.slug").value("picked-10"));
+
+        // 후보: 사이트에 보이지 않는 게임(공개 전)은 건너뛰고 추천으로 대신한다
+        Long hidden = steamCandidate(11, "Hidden", "hidden-11");
+        mvc.perform(admin(put("/api/admin/games/{id}/daily-pick", hidden))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"intro\":\" 감옥 추리 호러 \",\"sponsored\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.intro").value("감옥 추리 호러"))
+                .andExpect(jsonPath("$.showable").value(false));
+        mvc.perform(get("/api/games/daily-pick")).andExpect(jsonPath("$.source").value("PICK"));
+
+        // 공개하면 후보가 나온다 (개발사 제공 표시, 영어 소개가 있으면 영어 화면에 영어)
+        mvc.perform(admin(post("/api/admin/games/{id}/publish", hidden))).andExpect(status().isOk());
+        mvc.perform(admin(put("/api/admin/games/{id}/daily-pick", hidden))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"intro\":\"감옥 추리 호러\",\"introEn\":\"Prison mystery horror\",\"sponsored\":true}"))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/games/daily-pick"))
+                .andExpect(jsonPath("$.source").value("CANDIDATE"))
+                .andExpect(jsonPath("$.sponsored").value(true))
+                .andExpect(jsonPath("$.game.slug").value("hidden-11"));
+        mvc.perform(get("/api/games/daily-pick").param("lang", "en"))
+                .andExpect(jsonPath("$.intro").value("Prison mystery horror"));
+
+        // 오늘 날짜로 고정한 후보가 순서보다 먼저, 같은 날짜에 두 게임은 안 된다
+        Long fixed = steamCandidate(12, "Fixed", "fixed-12");
+        mvc.perform(admin(post("/api/admin/games/{id}/publish", fixed))).andExpect(status().isOk());
+        mvc.perform(admin(put("/api/admin/games/{id}/daily-pick", fixed))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"intro\":\"출시일 기념\",\"featuredOn\":\"" + today + "\"}"))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/games/daily-pick")).andExpect(jsonPath("$.game.slug").value("fixed-12"));
+        mvc.perform(admin(put("/api/admin/games/{id}/daily-pick", hidden))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"intro\":\"x\",\"featuredOn\":\"" + today + "\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(admin(put("/api/admin/games/{id}/daily-pick", hidden))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"intro\":\" \"}"))
+                .andExpect(status().isBadRequest());
+
+        // 관리 목록, 빼기
+        mvc.perform(admin(get("/api/admin/games/daily-picks")))
+                .andExpect(jsonPath("$[*].slug", contains("hidden-11", "fixed-12")))
+                .andExpect(jsonPath("$[1].featuredOn").value(today));
+        mvc.perform(admin(delete("/api/admin/games/{id}/daily-pick", fixed))).andExpect(status().isNoContent());
+        mvc.perform(get("/api/games/daily-pick")).andExpect(jsonPath("$.game.slug").value("hidden-11"));
+    }
+
+    @Test
     void publishedPickCanBeUnpublishedAndDeleted() throws Exception {
         Long id = steamCandidate(3, "Pick", "pick-3");
         mvc.perform(admin(put("/api/admin/games/{id}/article", id))
